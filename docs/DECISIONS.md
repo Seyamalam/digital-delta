@@ -64,15 +64,15 @@ Use this log for choices that affect scope, claims, compatibility, or safety.
 
 **Consequences:** If strict gRPC on every node-to-node path remains a goal, the chosen network transport must support it and pass a compliance test.
 
-## DD-007: proposed implementation stack
+## DD-007: native Android implementation stack
 
-**Status:** Proposed
+**Status:** Accepted
 
-**Decision:** Flutter for the field interface, native Android proximity adapter where required, Go for node and simulation services, React and TypeScript for the dashboard, SQLite for local state, and ONNX Runtime Mobile for inference.
+**Decision:** Use Kotlin and Jetpack Compose for the field application. Use Room over SQLite for mission data, Proto DataStore for small settings, Nearby Connections for nearby communication, a foreground service for an active relay session, Hilt for dependency injection, and Coroutines with Flow for asynchronous state. Use Go for node and simulation services, React and TypeScript for the dashboard, and ONNX Runtime Android for inference.
 
-**Reason:** This separates field UI, radio-specific code, systems simulation, and projector presentation while keeping each part testable.
+**Reason:** The highest-risk features are Android-specific radio, background execution, local persistence, secure key handling, and device lifecycle behavior. Native Android removes a cross-platform plugin boundary from those paths.
 
-**Before acceptance:** Record developer familiarity, target device versions, setup time, package maintenance, and a small nearby-transfer spike.
+**Consequences:** The fair build targets Android phones. The field app uses Gradle Kotlin DSL, a version catalog, KSP, Material 3, Navigation Compose, ViewModel, and Compose UI tests. Other mobile platforms can reuse schemas and domain rules later but are outside the first implementation.
 
 ## DD-008: event log with selective CRDTs
 
@@ -83,6 +83,36 @@ Use this log for choices that affect scope, claims, compatibility, or safety.
 **Reason:** Those fields need provenance and, in some cases, human resolution.
 
 **Before acceptance:** Build convergence property tests for the chosen types.
+
+## DD-009: Android transport and background execution
+
+**Status:** Accepted
+
+**Decision:** Use Google Nearby Connections as the first nearby transport behind a `PeerTransport` interface. Keep an active disaster-relay session in an Android foreground service. Use WorkManager only for deferrable retries, cleanup, and maintenance.
+
+**Reason:** Nearby Connections exchanges data through nearby Bluetooth and Wi-Fi without commercial internet. Android background limits make WorkManager unsuitable for a continuous live relay.
+
+**Consequences:** The target phones need Google Play services for the first implementation. The app must display foreground-service state and permissions clearly. A future Wi-Fi Direct transport can implement the same interface without changing domain logic.
+
+## DD-010: Android storage and cryptography
+
+**Status:** Accepted
+
+**Decision:** Use Room for structured mission data and Proto DataStore for small typed preferences. Use Google Tink for Ed25519 and AES-256-GCM primitives, with device-local keysets protected through Android Keystore.
+
+**Reason:** Room provides SQLite migrations and compile-time query checks. DataStore fits small transactional settings. Tink avoids custom cryptographic construction, while Android Keystore makes device keys harder to extract.
+
+**Consequences:** Sensitive stores are excluded from cloud backup. Signature tests use canonical Protobuf bytes. The implementation must verify target-device Keystore behavior before describing keys as hardware-backed.
+
+## DD-011: Android mapping and QR
+
+**Status:** Accepted
+
+**Decision:** Embed MapLibre Native Android in Compose and package an offline Sylhet region. Use ZXing Core to generate QR images and the bundled ML Kit barcode model to scan them offline.
+
+**Reason:** MapLibre Native has Android offline-region support. The newer MapLibre Compose wrapper is not yet API-stable. A bundled barcode scanner avoids model download during the demonstration.
+
+**Consequences:** The map boundary sits behind a Compose adapter. Offline assets, tile licensing, attribution, storage size, and scanner availability become release checks.
 
 ## New decision template
 
@@ -99,4 +129,3 @@ Use this log for choices that affect scope, claims, compatibility, or safety.
 
 **Evidence:** Prototype, test, documentation, or measurement.
 ```
-

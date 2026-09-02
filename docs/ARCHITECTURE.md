@@ -27,7 +27,7 @@ flowchart LR
 
 The dotted observer links can fail without stopping the field mission. Disaster Control events use the same event pipeline as field changes and carry an explicit simulation marker.
 
-## Proposed components
+## Components
 
 ### Field application
 
@@ -42,7 +42,9 @@ Responsibilities:
 - on-device route search and risk inference;
 - Bangla and English rendering.
 
-The initial target is Android because nearby-radio behavior must be tested on real phones. The architecture should isolate the proximity adapter so other transports can be added later.
+The field app is a native Android application written in Kotlin and Jetpack Compose. ViewModels expose immutable screen state through StateFlow. Repositories coordinate Room, Proto DataStore, cryptography, routing, and the nearby transport. Hilt supplies replaceable production, simulation, and test implementations.
+
+Nearby Connections runs behind a `PeerTransport` interface. An Android foreground service owns an active relay session. WorkManager handles deferrable cleanup and retry work but does not run the continuous mesh. The first supported device baseline is Android 8 or newer, subject to confirmation against the phones used at the fair.
 
 ### Node and simulation service
 
@@ -280,27 +282,25 @@ Every transition checks role, current custodian, delivery ID, nonce, credential 
 
 ```text
 apps/
-  field/
-    lib/
-      app/
-      domain/
-      features/
-        identity/
-        requests/
-        sync/
-        mesh/
-        routing/
-        pod/
-        triage/
-        prediction/
-        fleet/
-      infrastructure/
-        crypto/
-        database/
-        localization/
-        proximity/
-        proto/
-      ui/
+  field-android/
+    app/                    Compose screens, navigation, and app wiring
+    core/
+      domain/               Language-neutral events, policies, and algorithms
+      data/                 Room, Proto DataStore, repositories, and sync
+      network/              Nearby, gRPC, Protobuf, and foreground relay
+      security/             Tink, Android Keystore, identity, and QR verification
+      ui/                   Material theme, reusable components, and localization
+      testing/              Fakes, fixtures, property tests, and device helpers
+    feature/
+      identity/
+      requests/
+      sync/
+      mesh/
+      routing/
+      pod/
+      triage/
+      prediction/
+      fleet/
   command/
     src/
       features/
@@ -319,7 +319,6 @@ services/
       evidence/
 packages/
   proto/
-  domain/
   localization/
   scenario/
 models/
@@ -331,13 +330,12 @@ artifacts/
 
 ## Open technical decisions
 
-- Final mobile framework and native proximity boundary
-- Exact nearby transport and its supported device matrix
 - CRDT library versus small audited custom types
-- Offline map renderer and packaging format
 - gRPC-Web or alternate observer transport
-- On-device secure-storage behavior across target Android versions
+- Exact Android minimum version after the physical-device inventory
+- Nearby Connections compatibility and permission behavior on each target phone
+- Offline Sylhet tile source, attribution, zoom range, and package size
+- Android Keystore behavior and secure-hardware availability on target phones
 - Model runtime size and memory budget
 
 Record decisions and evidence in [DECISIONS.md](DECISIONS.md).
-

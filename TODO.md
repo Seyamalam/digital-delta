@@ -10,7 +10,7 @@ This checklist tracks implementation. Milestone exit criteria live in [MILESTONE
 - [x] Create milestone, screenshot, demo, security, testing, and traceability plans.
 - [ ] Confirm the fair participation status, date, booth rules, and pitch duration.
 - [ ] Record available Android phones, operating-system versions, laptops, and projector resolution.
-- [ ] Confirm the implementation stack in `docs/DECISIONS.md`.
+- [x] Confirm the implementation stack in `docs/DECISIONS.md`.
 - [ ] Decide whether strict HackFusion gRPC transport compliance is a target for this fair build.
 - [ ] Define measurable targets for latency, memory, battery, relay success, and load.
 
@@ -19,7 +19,9 @@ This checklist tracks implementation. Milestone exit criteria live in [MILESTONE
 - [ ] Create the monorepo folders described in `README.md`.
 - [ ] Add root setup, format, lint, test, seed, reset, and demo commands.
 - [ ] Add environment example files with no secrets.
-- [ ] Add CI for Go, Flutter, TypeScript, Protobuf compatibility, and documentation links.
+- [ ] Scaffold the Android project with Gradle Kotlin DSL and a version catalog.
+- [ ] Add Compose, Material 3, Navigation Compose, Hilt, Room, DataStore, WorkManager, KSP, and test dependencies.
+- [ ] Add CI for Kotlin and Android, Go, TypeScript, Protobuf compatibility, and documentation links.
 - [ ] Add deterministic clocks, random seeds, and device IDs for demo scenarios.
 - [ ] Add a fixture validator for node and edge references.
 - [ ] Correct the supplied chaos-server formatting and keep it as a development fixture only.
@@ -32,7 +34,7 @@ This checklist tracks implementation. Milestone exit criteria live in [MILESTONE
 - [ ] Define identity, request, cargo, route, vehicle, handoff, receipt, prediction, and audit events.
 - [ ] Add schema version and minimum reader version.
 - [ ] Add TTL, hop count, creation time, sender, recipient, payload hash, and nonce fields.
-- [ ] Generate Dart, Go, and TypeScript clients.
+- [ ] Generate Kotlin Lite, gRPC Kotlin, Go, and TypeScript clients.
 - [ ] Add backward-compatibility tests for stored fixtures.
 - [ ] Ban JSON serialization from the mesh package.
 - [ ] Document gRPC links and framed-Protobuf links separately.
@@ -40,8 +42,9 @@ This checklist tracks implementation. Milestone exit criteria live in [MILESTONE
 ## Bangla and English foundation
 
 - [ ] Bundle Bangla and English strings into the app.
+- [ ] Add `values/strings.xml`, `values-bn/strings.xml`, and generated locale configuration.
 - [ ] Add a first-run language chooser with `বাংলা` first and `English` second.
-- [ ] Add a persistent language switch in settings.
+- [ ] Persist the selected language in Proto DataStore.
 - [ ] Add Noto Sans Bengali or another tested Bengali font with an offline license file.
 - [ ] Create the glossary in `packages/localization/glossary.csv`.
 - [ ] Add translation-key completeness tests.
@@ -81,6 +84,11 @@ This checklist tracks implementation. Milestone exit criteria live in [MILESTONE
 
 ## M3 nearby mesh
 
+- [ ] Define the `PeerTransport` interface and transport-neutral connection state.
+- [ ] Implement Nearby Connections using the cluster strategy.
+- [ ] Add Android 12 and newer Bluetooth and nearby-device permission handling.
+- [ ] Implement the active relay as an Android foreground service.
+- [ ] Use WorkManager only for deferred retries, queue cleanup, and maintenance.
 - [ ] Implement neighbor advertising and discovery.
 - [ ] Authenticate peers before accepting payloads.
 - [ ] Build persistent inbox, outbox, retry, and dead-letter queues.
@@ -108,10 +116,14 @@ This checklist tracks implementation. Milestone exit criteria live in [MILESTONE
 - [ ] Recompute active missions after relevant graph events.
 - [ ] Record computation latency and selected alternatives.
 - [ ] Render routes using bundled offline data.
+- [ ] Embed MapLibre Native Android in Compose through an adapter.
+- [ ] Package and verify the offline Sylhet map region and attribution.
 - [ ] Explain why a route was selected or rejected.
 
 ## M5 proof of delivery
 
+- [ ] Generate QR images with ZXing Core.
+- [ ] Scan with the bundled ML Kit barcode model and verify airplane-mode behavior.
 - [ ] Build the signed QR payload.
 - [ ] Verify sender identity, signature, payload hash, nonce, timestamp, and delivery state.
 - [ ] Add nonce persistence and replay rejection.
@@ -146,7 +158,7 @@ This checklist tracks implementation. Milestone exit criteria live in [MILESTONE
 - [ ] Train and select the smallest defensible classifier.
 - [ ] Report precision, recall, F1, confusion matrix, and threshold.
 - [ ] Export and validate the ONNX model.
-- [ ] Run inference on the field device.
+- [ ] Run inference through ONNX Runtime Android on the field device.
 - [ ] Add risk overlay and explanation panel.
 - [ ] Feed risk penalties into M4.
 - [ ] Write the model card with failure modes and safety limits.
@@ -193,4 +205,3 @@ This checklist tracks implementation. Milestone exit criteria live in [MILESTONE
 - [ ] Record three unchanged successful final passes.
 - [ ] Create the architecture diagram, model card, deck, and backup video.
 - [ ] Audit every claim for evidence or a visible simulation label.
-

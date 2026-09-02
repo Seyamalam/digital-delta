@@ -23,7 +23,7 @@ A working screen is not enough. Each public claim needs a repeatable test, measu
 
 ### Contract tests
 
-- Protobuf encode and decode across Dart, Go, and TypeScript;
+- Protobuf encode and decode across Kotlin, Go, and TypeScript;
 - schema compatibility with stored fixtures;
 - signature stability over canonical bytes;
 - unsupported-version preservation;
@@ -43,6 +43,11 @@ A working screen is not enough. Each public claim needs a repeatable test, measu
 ### Device tests
 
 - three physical Android phones;
+- Compose navigation and state restoration;
+- Room migration and process-restart recovery;
+- Proto DataStore language persistence;
+- Nearby Connections permission, discovery, and transfer behavior;
+- foreground-service start, stop, notification, and process recovery;
 - commercial internet unavailable;
 - process kill and restart during transfer;
 - screen lock and unlock;
@@ -180,4 +185,3 @@ artifacts/
     localization/
   rehearsals/
 ```
-

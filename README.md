@@ -40,20 +40,23 @@ The project is designed for an innovation-fair demonstration using Android phone
 
 All phones enter airplane mode before the mission. Bluetooth and local Wi-Fi may be enabled for nearby communication. The laptops may join the local demonstration network, but the field workflow must not depend on them.
 
-## Proposed software stack
+## Software stack
 
-The stack remains an architecture decision until the first implementation milestone is approved.
-
-- Flutter field application, Android first
-- Native Android proximity adapter where Flutter cannot expose the required radio behavior reliably
+- Kotlin and Jetpack Compose field application, Android first
+- Material 3, Navigation Compose, ViewModel, Coroutines, Flow, and Hilt
+- Room over SQLite for the event log, queues, projections, identities, and conflicts
+- Proto DataStore for language and small device settings
+- Google Nearby Connections with an Android foreground service for active relay
+- WorkManager for deferred retries and maintenance, not continuous mesh operation
 - Go node services, chaos simulator, load tests, and gRPC services
-- React, TypeScript, and Vite command dashboard
-- SQLite with an explicit operation log and CRDT data types
-- Protocol Buffers for all mesh payloads
+- React, TypeScript, Vite, and MapLibre GL JS command dashboard
+- Protocol Buffers Kotlin Lite, Go, and TypeScript generated contracts
 - gRPC on supported IP links, with framed Protobuf transport for nearby-radio links
-- Ed25519 identity and signatures, AES-256-GCM payload encryption, SHA-256 hashes
-- MapLibre or a schematic vector map with bundled offline map data
-- ONNX Runtime Mobile for the on-device route-risk classifier
+- Google Tink and Android Keystore for Ed25519, AES-256-GCM, and protected keysets
+- MapLibre Native Android embedded in Compose with bundled offline regions
+- ZXing Core for QR generation and bundled ML Kit barcode scanning
+- ONNX Runtime Android for the on-device route-risk classifier
+- Python, pandas, scikit-learn, and skl2onnx for model training and export
 
 The transport distinction above is deliberate. Nearby radio APIs do not magically provide gRPC. We will document which links use gRPC and will not claim strict gRPC compliance for a transport that only carries framed Protobuf messages.
 
@@ -61,7 +64,7 @@ The transport distinction above is deliberate. Nearby radio APIs do not magicall
 
 ```text
 apps/
-  field/                  Flutter field application
+  field-android/          Kotlin and Jetpack Compose field application
   command/                Projector-friendly web dashboard
 services/
   node/                   Go node, gRPC, simulation, and load-test code
@@ -84,6 +87,7 @@ research/                 Source-backed problem and fair research
 - [Screenshot plan](SCREENSHOTS.md)
 - [Live demo script](DEMO.md)
 - [Product requirements](docs/PRD.md)
+- [Technology stack](docs/STACK.md)
 - [Technical architecture](docs/ARCHITECTURE.md)
 - [Bangla and English requirements](docs/LOCALIZATION.md)
 - [Security model](docs/SECURITY.md)
@@ -107,4 +111,3 @@ The project is fair-ready when:
 ## Current status
 
 Documentation and acceptance criteria are being established. Implementation has not started, so none of the eight modules should yet be described as working.
-

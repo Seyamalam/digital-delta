@@ -90,7 +90,7 @@ At each size:
 
 ## Translation workflow
 
-1. Developers add a stable semantic key, English source, context, and screenshot reference.
+1. Developers add a stable Android string-resource key, English source, context, and screenshot reference.
 2. A fluent Bangla reviewer translates and checks field meaning.
 3. The build rejects missing critical keys.
 4. Screenshot tests render both languages.
@@ -103,6 +103,8 @@ Suggested localization record:
 key,english,bangla,context,critical,reviewer,status
 status.offline,Offline,অফলাইন,global connectivity state,true,,draft
 ```
+
+The Android source of truth uses `values/strings.xml` and `values-bn/strings.xml`. Proto DataStore persists the selected language. Compose screens receive localized resources through the Android resource system rather than storing translated display text in Room or mesh events.
 
 ## Critical-screen release gate
 
@@ -129,4 +131,3 @@ The release fails if any of these screens has a missing, untranslated, clipped, 
 - Could the wording make a prediction sound confirmed?
 - Could the wording hide that a vehicle or environmental feed is simulated?
 - Does the screen remain usable for someone reading slowly under pressure?
-
