@@ -99,6 +99,25 @@ message PreemptionConfirmed {
   uint32 estimated_minutes_gained = 8;
 }
 
+message DeliveryOffer {
+  string delivery_id = 1;
+  string mission_id = 2;
+  string sender_identity_id = 3;
+  string recipient_identity_id = 4;
+  bytes payload_sha256 = 5;
+  bytes nonce = 6;
+  int64 timestamp_unix_ms = 7;
+  bytes previous_receipt_sha256 = 8;
+  bool simulated_vehicle = 9;
+}
+
+message SignedDeliveryOffer {
+  DeliveryOffer offer = 1;
+  string sender_signing_key_id = 2;
+  bytes sender_signing_public_key_der = 3;
+  Signature sender_signature = 4;
+}
+
 message CustodyTransfer {
   string delivery_id = 1;
   string sender_identity_id = 2;

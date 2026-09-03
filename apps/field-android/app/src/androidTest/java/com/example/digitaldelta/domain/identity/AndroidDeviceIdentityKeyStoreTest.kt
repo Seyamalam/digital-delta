@@ -6,6 +6,9 @@ import org.junit.Assert.assertArrayEquals
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNotEquals
 import org.junit.Assert.assertThrows
+import java.security.KeyFactory
+import java.security.spec.X509EncodedKeySpec
+import com.example.digitaldelta.domain.pod.newRsaPssSignature
 import org.junit.Test
 import org.junit.runner.RunWith
 
@@ -33,5 +36,24 @@ class AndroidDeviceIdentityKeyStoreTest {
         assertThrows(SecurityException::class.java) {
             keyStore.decrypt("identity-test-relay", encrypted, aad)
         }
+    }
+
+    @Test
+    fun deviceBoundSigningKeyProducesVerifiableRsaPssSignature() {
+        val keyStore = AndroidDeviceIdentityKeyStore()
+        val identity = keyStore.createOrGet("identity-test-pod-signer")
+        val payload = "signed protobuf delivery offer".encodeToByteArray()
+
+        val signature = keyStore.sign("identity-test-pod-signer", payload)
+
+        val publicKey = KeyFactory.getInstance("RSA").generatePublic(
+            X509EncodedKeySpec(identity.signingPublicKeyDer),
+        )
+        val verified = newRsaPssSignature().run {
+            initVerify(publicKey)
+            update(payload)
+            verify(signature)
+        }
+        assertEquals(true, verified)
     }
 }

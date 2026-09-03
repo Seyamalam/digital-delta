@@ -8,7 +8,9 @@ import java.security.KeyPairGenerator
 import java.security.KeyStore
 import java.security.MessageDigest
 import java.security.PrivateKey
+import java.security.Signature
 import java.security.spec.MGF1ParameterSpec
+import java.security.spec.PSSParameterSpec
 import javax.crypto.Cipher
 import javax.crypto.spec.GCMParameterSpec
 import javax.crypto.spec.OAEPParameterSpec
@@ -86,6 +88,18 @@ class AndroidDeviceIdentityKeyStore {
         throw SecurityException("device could not decrypt payload", error)
     }
 
+    fun sign(nodeId: String, payload: ByteArray): ByteArray = try {
+        createOrGet(nodeId)
+        val privateKey = keyStore().getKey(alias(nodeId, "signing"), null) as PrivateKey
+        newRsaPssSignature().run {
+            initSign(privateKey)
+            update(payload)
+            sign()
+        }
+    } catch (error: Exception) {
+        throw SecurityException("device could not sign payload", error)
+    }
+
     private fun generateEncryptionKey(alias: String) {
         KeyPairGenerator.getInstance(KeyProperties.KEY_ALGORITHM_RSA, "AndroidKeyStore").run {
             initialize(
@@ -117,6 +131,14 @@ class AndroidDeviceIdentityKeyStore {
     }
 
     private fun keyStore(): KeyStore = KeyStore.getInstance("AndroidKeyStore").apply { load(null) }
+
+    private fun newRsaPssSignature(): Signature = runCatching {
+        Signature.getInstance("RSASSA-PSS").apply {
+            setParameter(PSSParameterSpec("SHA-256", "MGF1", MGF1ParameterSpec.SHA256, 32, 1))
+        }
+    }.getOrElse {
+        Signature.getInstance("SHA256withRSA/PSS")
+    }
 
     private fun alias(nodeId: String, purpose: String): String =
         "digital-delta-$purpose-${sha256(nodeId.encodeToByteArray()).toHex().take(24)}"
