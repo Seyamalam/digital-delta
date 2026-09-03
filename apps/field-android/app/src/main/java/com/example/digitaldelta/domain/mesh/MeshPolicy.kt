@@ -36,11 +36,11 @@ class MeshPolicy(
 ) {
     fun broadcastIntervalMillis(batteryPercent: Int, urgent: Boolean): Long {
         require(batteryPercent in 0..100)
-        if (urgent) return urgentIntervalMillis
+        val baseInterval = if (urgent) urgentIntervalMillis else normalIntervalMillis
         return if (batteryPercent < 30) {
-            (normalIntervalMillis / 0.40).toLong()
+            (baseInterval / 0.40).toLong()
         } else {
-            normalIntervalMillis
+            baseInterval
         }
     }
 

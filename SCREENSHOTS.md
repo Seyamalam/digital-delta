@@ -58,6 +58,7 @@ These are real emulator captures from the working application, not final submiss
 | Surface | Bangla | English | Evidence |
 |---|---:|---:|---|
 | Offline device enrollment and pinned administrator | Captured | Captured | `artifacts/screenshots/field-bn/09-field-bn-offline-provisioning-trusted-1280x2856.png`, `artifacts/screenshots/field-en/09-field-en-offline-provisioning-trusted-1280x2856.png` |
+| Nearby foreground relay active on Android 15 | Captured | Captured | `artifacts/screenshots/field-bn/10-field-bn-nearby-relay-active-1280x2856.png`, `artifacts/screenshots/field-en/10-field-en-nearby-relay-active-1280x2856.png` |
 
 ## Field application shots
 
@@ -69,7 +70,7 @@ These are real emulator captures from the working application, not final submiss
 - [ ] New request form in English
 - [ ] P0 to P3 priority explanation
 - [ ] Local outbox with pending relay
-- [ ] Nearby-node list
+- [ ] Nearby-node list; the active zero-peer discovery state is captured, while a physical peer remains required.
 - [ ] Syncing state
 - [ ] Conflict-detected state
 - [ ] Human conflict resolution

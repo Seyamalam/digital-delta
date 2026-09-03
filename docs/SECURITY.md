@@ -68,6 +68,8 @@ For an incoming envelope:
 9. Append accepted event and rebuild affected projections.
 10. Record rejection or acceptance without exposing protected content.
 
+Nearby's connection comparison digits are displayed to both operators before a candidate is accepted. They help detect a transport-level man-in-the-middle during pairing, but they do not bind the peer to a Digital Delta provisioning credential. Signed application-layer peer identity and signed acknowledgements remain required before the interface may label a peer as authenticated.
+
 ## Proof-of-delivery verification
 
 The verifier checks:
@@ -137,5 +139,6 @@ The final policy will use explicit permissions rather than hard-coded screen nam
 - Physical possession of a provisioned unlocked phone may authorize actions until it locks.
 - Offline revocation cannot reach a disconnected device until contact occurs.
 - Nearby transport security does not replace application-layer recipient encryption.
+- Nearby comparison digits are not yet bound to signed Digital Delta peer identity.
 - The demo has not undergone an independent security audit.
 - Load simulation does not prove production behavior across real disaster geography.

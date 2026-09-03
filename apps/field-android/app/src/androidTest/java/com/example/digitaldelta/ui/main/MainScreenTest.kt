@@ -13,7 +13,11 @@ import androidx.compose.ui.test.swipeUp
 import androidx.compose.runtime.MutableState
 import androidx.compose.runtime.mutableStateOf
 import com.example.digitaldelta.theme.DigitalDeltaTheme
+import com.example.digitaldelta.domain.mesh.MeshRuntimeState
+import com.example.digitaldelta.domain.mesh.NearbyMeshState
+import com.example.digitaldelta.domain.mesh.NearbyPeerCandidate
 import org.junit.Before
+import org.junit.Assert.assertTrue
 import org.junit.Rule
 import org.junit.Test
 
@@ -22,15 +26,21 @@ class MainScreenTest {
     val composeTestRule = createAndroidComposeRule<ComponentActivity>()
 
     private lateinit var requestState: MutableState<RequestQueueUiState>
+    private lateinit var meshState: MutableState<MeshRuntimeState>
+    private var relayStartRequested = false
 
     @Before
     fun setup() {
         requestState = mutableStateOf(RequestQueueUiState.Idle)
+        meshState = mutableStateOf(MeshRuntimeState())
+        relayStartRequested = false
         composeTestRule.setContent {
             DigitalDeltaTheme(darkTheme = false) {
                 DigitalDeltaApp(
                     showBootSequence = false,
                     requestQueueState = requestState.value,
+                    meshRuntimeState = meshState.value,
+                    onStartRelay = { relayStartRequested = true },
                 )
             }
         }
@@ -93,5 +103,27 @@ class MainScreenTest {
 
         composeTestRule.onNodeWithText("English").performClick()
         composeTestRule.onNodeWithText("Provision the destination identity before sending.").assertIsDisplayed()
+    }
+
+    @Test
+    fun nearbyRelayShowsManualAuthenticationAndBilingualRuntimeState() {
+        composeTestRule.onNodeWithText("পথ ও মেশ").performClick()
+        composeTestRule.onNode(hasScrollAction()).performTouchInput { swipeUp() }
+        composeTestRule.onNode(hasTestTag("mesh-relay-toggle")).performClick()
+        composeTestRule.runOnIdle {
+            assertTrue(relayStartRequested)
+            meshState.value = MeshRuntimeState(
+                nearby = NearbyMeshState(
+                    running = true,
+                    pendingCandidates = listOf(NearbyPeerCandidate("endpoint-c", "N6", "482 193")),
+                ),
+                batteryPercent = 28,
+                broadcastIntervalMillis = 25_000,
+            )
+        }
+        composeTestRule.onNodeWithText("দুই ফোনে কোড মিলান: 482 193").assertIsDisplayed()
+        composeTestRule.onNodeWithText("English").performClick()
+        composeTestRule.onNodeWithText("Compare on both phones: 482 193").assertIsDisplayed()
+        composeTestRule.onNodeWithText("Stop nearby relay").assertIsDisplayed()
     }
 }

@@ -84,6 +84,13 @@ message Acknowledgement {
   Signature node_signature = 6;
 }
 
+message PeerFrame {
+  oneof body {
+    Envelope envelope = 1;
+    Acknowledgement acknowledgement = 2;
+  }
+}
+
 enum IdentityRole {
   IDENTITY_ROLE_UNSPECIFIED = 0;
   IDENTITY_ROLE_ADMIN = 1;

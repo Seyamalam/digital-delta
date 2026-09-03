@@ -122,6 +122,7 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.digitaldelta.R
+import com.example.digitaldelta.domain.mesh.MeshRuntimeState
 import com.example.digitaldelta.theme.AlertCoral
 import com.example.digitaldelta.theme.DeltaTeal
 import com.example.digitaldelta.theme.DigitalDeltaTheme
@@ -168,6 +169,11 @@ fun DigitalDeltaApp(
     identityState: IdentityUiState = IdentityUiState.Loading,
     onPinAdministrator: ((String) -> Unit)? = null,
     onImportRecipientCredential: ((String) -> Unit)? = null,
+    meshRuntimeState: MeshRuntimeState = MeshRuntimeState(),
+    onStartRelay: (() -> Unit)? = null,
+    onStopRelay: (() -> Unit)? = null,
+    onAcceptPeer: ((String) -> Unit)? = null,
+    onRejectPeer: ((String) -> Unit)? = null,
 ) {
     var booting by rememberSaveable { mutableStateOf(showBootSequence) }
     LaunchedEffect(showBootSequence) {
@@ -193,6 +199,11 @@ fun DigitalDeltaApp(
                 identityState = identityState,
                 onPinAdministrator = onPinAdministrator,
                 onImportRecipientCredential = onImportRecipientCredential,
+                meshRuntimeState = meshRuntimeState,
+                onStartRelay = onStartRelay,
+                onStopRelay = onStopRelay,
+                onAcceptPeer = onAcceptPeer,
+                onRejectPeer = onRejectPeer,
             )
         }
     }
@@ -284,6 +295,11 @@ private fun DeltaShell(
     identityState: IdentityUiState,
     onPinAdministrator: ((String) -> Unit)?,
     onImportRecipientCredential: ((String) -> Unit)?,
+    meshRuntimeState: MeshRuntimeState,
+    onStartRelay: (() -> Unit)?,
+    onStopRelay: (() -> Unit)?,
+    onAcceptPeer: ((String) -> Unit)?,
+    onRejectPeer: ((String) -> Unit)?,
 ) {
     var destination by rememberSaveable { mutableStateOf(DeltaDestination.OPERATIONS) }
     var identityOpen by rememberSaveable { mutableStateOf(false) }
@@ -354,7 +370,14 @@ private fun DeltaShell(
                     requestQueueState = requestQueueState,
                     onQueueRequest = onQueueRequest,
                 )
-                DeltaDestination.ROUTE -> RouteAndMeshScreen(language)
+                DeltaDestination.ROUTE -> RouteAndMeshScreen(
+                    language = language,
+                    meshRuntimeState = meshRuntimeState,
+                    onStartRelay = onStartRelay,
+                    onStopRelay = onStopRelay,
+                    onAcceptPeer = onAcceptPeer,
+                    onRejectPeer = onRejectPeer,
+                )
                 DeltaDestination.HANDOFF -> HandoffScreen(language)
             }
         }
@@ -882,7 +905,14 @@ private fun RequestScreen(
 }
 
 @Composable
-private fun RouteAndMeshScreen(language: AppLanguage) {
+private fun RouteAndMeshScreen(
+    language: AppLanguage,
+    meshRuntimeState: MeshRuntimeState,
+    onStartRelay: (() -> Unit)?,
+    onStopRelay: (() -> Unit)?,
+    onAcceptPeer: ((String) -> Unit)?,
+    onRejectPeer: ((String) -> Unit)?,
+) {
     var flooded by rememberSaveable { mutableStateOf(true) }
     val progress by animateFloatAsState(
         targetValue = if (flooded) 1f else .42f,
@@ -903,6 +933,14 @@ private fun RouteAndMeshScreen(language: AppLanguage) {
                 modifier = Modifier.fillMaxWidth().offset(y = (-20).dp),
             ) {
                 Column(Modifier.padding(18.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                    MeshRelayCard(
+                        language = language,
+                        state = meshRuntimeState,
+                        onStart = onStartRelay,
+                        onStop = onStopRelay,
+                        onAcceptPeer = onAcceptPeer,
+                        onRejectPeer = onRejectPeer,
+                    )
                     Text(
                         text(R.string.road_flooded, language),
                         style = MaterialTheme.typography.titleLarge,
@@ -925,6 +963,94 @@ private fun RouteAndMeshScreen(language: AppLanguage) {
                         Text(text(R.string.trigger_flood, language))
                     }
                 }
+            }
+        }
+    }
+}
+
+@Composable
+private fun MeshRelayCard(
+    language: AppLanguage,
+    state: MeshRuntimeState,
+    onStart: (() -> Unit)?,
+    onStop: (() -> Unit)?,
+    onAcceptPeer: ((String) -> Unit)?,
+    onRejectPeer: ((String) -> Unit)?,
+) {
+    val nearby = state.nearby
+    Surface(
+        color = if (nearby.running) DeltaTeal.copy(alpha = .10f) else MaterialTheme.colorScheme.surfaceVariant,
+        shape = RoundedCornerShape(16.dp),
+        modifier = Modifier.fillMaxWidth().testTag("mesh-relay-card"),
+    ) {
+        Column(Modifier.padding(14.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Icon(Icons.Default.Hub, null, tint = if (nearby.running) DeltaTeal else MaterialTheme.colorScheme.onSurfaceVariant)
+                Spacer(Modifier.width(10.dp))
+                Column(Modifier.weight(1f)) {
+                    Text(text(R.string.nearby_relay, language), fontWeight = FontWeight.Bold)
+                    Text(
+                        text(if (nearby.running) R.string.relay_active else R.string.relay_stopped, language),
+                        style = MaterialTheme.typography.bodySmall,
+                    )
+                }
+                Text(
+                    if (nearby.running) "●" else "○",
+                    color = if (nearby.running) VerifiedGreen else MaterialTheme.colorScheme.onSurfaceVariant,
+                    fontSize = 22.sp,
+                )
+            }
+            if (nearby.running) {
+                Text(
+                    "${text(R.string.connected_peers, language)} ${nearby.connectedNodeIds.size} • " +
+                        "${text(R.string.battery, language)} ${state.batteryPercent}% • " +
+                        "${text(R.string.broadcast_every, language)} ${state.broadcastIntervalMillis / 1_000}s",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+                if (nearby.connectedNodeIds.isEmpty() && nearby.pendingCandidates.isEmpty()) {
+                    Text(text(R.string.scanning_for_peers, language), style = MaterialTheme.typography.bodySmall)
+                }
+            }
+            nearby.pendingCandidates.forEach { candidate ->
+                Surface(color = RiskAmber.copy(alpha = .12f), shape = RoundedCornerShape(12.dp)) {
+                    Column(Modifier.fillMaxWidth().padding(12.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                        Text("${text(R.string.connection_request, language)} • ${candidate.nodeId}", fontWeight = FontWeight.Bold)
+                        Text(
+                            "${text(R.string.compare_code, language)} ${candidate.authenticationDigits}",
+                            style = MaterialTheme.typography.bodySmall,
+                        )
+                        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                            Button(
+                                onClick = { onAcceptPeer?.invoke(candidate.endpointId) },
+                                modifier = Modifier.weight(1f).testTag("accept-peer"),
+                            ) { Text(text(R.string.accept, language)) }
+                            OutlinedButton(
+                                onClick = { onRejectPeer?.invoke(candidate.endpointId) },
+                                modifier = Modifier.weight(1f),
+                            ) { Text(text(R.string.reject, language)) }
+                        }
+                    }
+                }
+            }
+            nearby.lastError?.let { error ->
+                Text(
+                    if (error == "PERMISSION_DENIED") {
+                        text(R.string.mesh_permission_denied, language)
+                    } else {
+                        "${text(R.string.mesh_error, language)} $error"
+                    },
+                    color = MaterialTheme.colorScheme.error,
+                    style = MaterialTheme.typography.bodySmall,
+                )
+            }
+            Button(
+                onClick = { if (nearby.running) onStop?.invoke() else onStart?.invoke() },
+                modifier = Modifier.fillMaxWidth().height(48.dp).testTag("mesh-relay-toggle"),
+            ) {
+                Icon(if (nearby.running) Icons.Default.WifiOff else Icons.Default.Hub, null)
+                Spacer(Modifier.width(8.dp))
+                Text(text(if (nearby.running) R.string.stop_relay else R.string.start_relay, language))
             }
         }
     }

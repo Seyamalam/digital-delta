@@ -12,7 +12,7 @@ class MeshPolicyTest {
     fun `low battery reduces normal broadcast frequency by sixty percent`() {
         assertEquals(10_000L, policy.broadcastIntervalMillis(batteryPercent = 80, urgent = false))
         assertEquals(25_000L, policy.broadcastIntervalMillis(batteryPercent = 29, urgent = false))
-        assertEquals(5_000L, policy.broadcastIntervalMillis(batteryPercent = 15, urgent = true))
+        assertEquals(12_500L, policy.broadcastIntervalMillis(batteryPercent = 15, urgent = true))
     }
 
     @Test

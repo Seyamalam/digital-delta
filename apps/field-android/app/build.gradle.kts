@@ -81,6 +81,7 @@ dependencies {
   implementation(libs.androidx.datastore)
   implementation(libs.kotlinx.serialization.json)
   implementation(libs.hilt.android)
+  implementation(libs.play.services.nearby)
   ksp(libs.hilt.compiler)
   ksp(libs.androidx.room.compiler)
   androidTestImplementation(libs.androidx.room.testing)

@@ -750,6 +750,88 @@ func (x *Acknowledgement) GetNodeSignature() *Signature {
 	return nil
 }
 
+type PeerFrame struct {
+	state protoimpl.MessageState `protogen:"open.v1"`
+	// Types that are valid to be assigned to Body:
+	//
+	//	*PeerFrame_Envelope
+	//	*PeerFrame_Acknowledgement
+	Body          isPeerFrame_Body `protobuf_oneof:"body"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *PeerFrame) Reset() {
+	*x = PeerFrame{}
+	mi := &file_digitaldelta_v1_common_proto_msgTypes[6]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *PeerFrame) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*PeerFrame) ProtoMessage() {}
+
+func (x *PeerFrame) ProtoReflect() protoreflect.Message {
+	mi := &file_digitaldelta_v1_common_proto_msgTypes[6]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use PeerFrame.ProtoReflect.Descriptor instead.
+func (*PeerFrame) Descriptor() ([]byte, []int) {
+	return file_digitaldelta_v1_common_proto_rawDescGZIP(), []int{6}
+}
+
+func (x *PeerFrame) GetBody() isPeerFrame_Body {
+	if x != nil {
+		return x.Body
+	}
+	return nil
+}
+
+func (x *PeerFrame) GetEnvelope() *Envelope {
+	if x != nil {
+		if x, ok := x.Body.(*PeerFrame_Envelope); ok {
+			return x.Envelope
+		}
+	}
+	return nil
+}
+
+func (x *PeerFrame) GetAcknowledgement() *Acknowledgement {
+	if x != nil {
+		if x, ok := x.Body.(*PeerFrame_Acknowledgement); ok {
+			return x.Acknowledgement
+		}
+	}
+	return nil
+}
+
+type isPeerFrame_Body interface {
+	isPeerFrame_Body()
+}
+
+type PeerFrame_Envelope struct {
+	Envelope *Envelope `protobuf:"bytes,1,opt,name=envelope,proto3,oneof"`
+}
+
+type PeerFrame_Acknowledgement struct {
+	Acknowledgement *Acknowledgement `protobuf:"bytes,2,opt,name=acknowledgement,proto3,oneof"`
+}
+
+func (*PeerFrame_Envelope) isPeerFrame_Body() {}
+
+func (*PeerFrame_Acknowledgement) isPeerFrame_Body() {}
+
 type IdentityProvisioningClaims struct {
 	state                          protoimpl.MessageState `protogen:"open.v1"`
 	CredentialId                   string                 `protobuf:"bytes,1,opt,name=credential_id,json=credentialId,proto3" json:"credential_id,omitempty"`
@@ -771,7 +853,7 @@ type IdentityProvisioningClaims struct {
 
 func (x *IdentityProvisioningClaims) Reset() {
 	*x = IdentityProvisioningClaims{}
-	mi := &file_digitaldelta_v1_common_proto_msgTypes[6]
+	mi := &file_digitaldelta_v1_common_proto_msgTypes[7]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -783,7 +865,7 @@ func (x *IdentityProvisioningClaims) String() string {
 func (*IdentityProvisioningClaims) ProtoMessage() {}
 
 func (x *IdentityProvisioningClaims) ProtoReflect() protoreflect.Message {
-	mi := &file_digitaldelta_v1_common_proto_msgTypes[6]
+	mi := &file_digitaldelta_v1_common_proto_msgTypes[7]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -796,7 +878,7 @@ func (x *IdentityProvisioningClaims) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use IdentityProvisioningClaims.ProtoReflect.Descriptor instead.
 func (*IdentityProvisioningClaims) Descriptor() ([]byte, []int) {
-	return file_digitaldelta_v1_common_proto_rawDescGZIP(), []int{6}
+	return file_digitaldelta_v1_common_proto_rawDescGZIP(), []int{7}
 }
 
 func (x *IdentityProvisioningClaims) GetCredentialId() string {
@@ -900,7 +982,7 @@ type IdentityProvisioningCredential struct {
 
 func (x *IdentityProvisioningCredential) Reset() {
 	*x = IdentityProvisioningCredential{}
-	mi := &file_digitaldelta_v1_common_proto_msgTypes[7]
+	mi := &file_digitaldelta_v1_common_proto_msgTypes[8]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -912,7 +994,7 @@ func (x *IdentityProvisioningCredential) String() string {
 func (*IdentityProvisioningCredential) ProtoMessage() {}
 
 func (x *IdentityProvisioningCredential) ProtoReflect() protoreflect.Message {
-	mi := &file_digitaldelta_v1_common_proto_msgTypes[7]
+	mi := &file_digitaldelta_v1_common_proto_msgTypes[8]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -925,7 +1007,7 @@ func (x *IdentityProvisioningCredential) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use IdentityProvisioningCredential.ProtoReflect.Descriptor instead.
 func (*IdentityProvisioningCredential) Descriptor() ([]byte, []int) {
-	return file_digitaldelta_v1_common_proto_rawDescGZIP(), []int{7}
+	return file_digitaldelta_v1_common_proto_rawDescGZIP(), []int{8}
 }
 
 func (x *IdentityProvisioningCredential) GetClaims() *IdentityProvisioningClaims {
@@ -960,7 +1042,7 @@ type IdentityEnrollmentRequest struct {
 
 func (x *IdentityEnrollmentRequest) Reset() {
 	*x = IdentityEnrollmentRequest{}
-	mi := &file_digitaldelta_v1_common_proto_msgTypes[8]
+	mi := &file_digitaldelta_v1_common_proto_msgTypes[9]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -972,7 +1054,7 @@ func (x *IdentityEnrollmentRequest) String() string {
 func (*IdentityEnrollmentRequest) ProtoMessage() {}
 
 func (x *IdentityEnrollmentRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_digitaldelta_v1_common_proto_msgTypes[8]
+	mi := &file_digitaldelta_v1_common_proto_msgTypes[9]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -985,7 +1067,7 @@ func (x *IdentityEnrollmentRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use IdentityEnrollmentRequest.ProtoReflect.Descriptor instead.
 func (*IdentityEnrollmentRequest) Descriptor() ([]byte, []int) {
-	return file_digitaldelta_v1_common_proto_rawDescGZIP(), []int{8}
+	return file_digitaldelta_v1_common_proto_rawDescGZIP(), []int{9}
 }
 
 func (x *IdentityEnrollmentRequest) GetIdentityId() string {
@@ -1110,7 +1192,11 @@ const file_digitaldelta_v1_common_proto_rawDesc = "" +
 	"\vreason_code\x18\x04 \x01(\tR\n" +
 	"reasonCode\x12-\n" +
 	"\x13recorded_at_unix_ms\x18\x05 \x01(\x03R\x10recordedAtUnixMs\x12A\n" +
-	"\x0enode_signature\x18\x06 \x01(\v2\x1a.digitaldelta.v1.SignatureR\rnodeSignature\"\xcf\x04\n" +
+	"\x0enode_signature\x18\x06 \x01(\v2\x1a.digitaldelta.v1.SignatureR\rnodeSignature\"\x9a\x01\n" +
+	"\tPeerFrame\x127\n" +
+	"\benvelope\x18\x01 \x01(\v2\x19.digitaldelta.v1.EnvelopeH\x00R\benvelope\x12L\n" +
+	"\x0facknowledgement\x18\x02 \x01(\v2 .digitaldelta.v1.AcknowledgementH\x00R\x0facknowledgementB\x06\n" +
+	"\x04body\"\xcf\x04\n" +
 	"\x1aIdentityProvisioningClaims\x12#\n" +
 	"\rcredential_id\x18\x01 \x01(\tR\fcredentialId\x12\x1f\n" +
 	"\videntity_id\x18\x02 \x01(\tR\n" +
@@ -1181,7 +1267,7 @@ func file_digitaldelta_v1_common_proto_rawDescGZIP() []byte {
 }
 
 var file_digitaldelta_v1_common_proto_enumTypes = make([]protoimpl.EnumInfo, 4)
-var file_digitaldelta_v1_common_proto_msgTypes = make([]protoimpl.MessageInfo, 9)
+var file_digitaldelta_v1_common_proto_msgTypes = make([]protoimpl.MessageInfo, 10)
 var file_digitaldelta_v1_common_proto_goTypes = []any{
 	(PriorityClass)(0),                     // 0: digitaldelta.v1.PriorityClass
 	(TransportMode)(0),                     // 1: digitaldelta.v1.TransportMode
@@ -1193,9 +1279,10 @@ var file_digitaldelta_v1_common_proto_goTypes = []any{
 	(*EncryptedPayload)(nil),               // 7: digitaldelta.v1.EncryptedPayload
 	(*Envelope)(nil),                       // 8: digitaldelta.v1.Envelope
 	(*Acknowledgement)(nil),                // 9: digitaldelta.v1.Acknowledgement
-	(*IdentityProvisioningClaims)(nil),     // 10: digitaldelta.v1.IdentityProvisioningClaims
-	(*IdentityProvisioningCredential)(nil), // 11: digitaldelta.v1.IdentityProvisioningCredential
-	(*IdentityEnrollmentRequest)(nil),      // 12: digitaldelta.v1.IdentityEnrollmentRequest
+	(*PeerFrame)(nil),                      // 10: digitaldelta.v1.PeerFrame
+	(*IdentityProvisioningClaims)(nil),     // 11: digitaldelta.v1.IdentityProvisioningClaims
+	(*IdentityProvisioningCredential)(nil), // 12: digitaldelta.v1.IdentityProvisioningCredential
+	(*IdentityEnrollmentRequest)(nil),      // 13: digitaldelta.v1.IdentityEnrollmentRequest
 }
 var file_digitaldelta_v1_common_proto_depIdxs = []int32{
 	4,  // 0: digitaldelta.v1.VectorClock.entries:type_name -> digitaldelta.v1.VectorClockEntry
@@ -1205,15 +1292,17 @@ var file_digitaldelta_v1_common_proto_depIdxs = []int32{
 	6,  // 4: digitaldelta.v1.Envelope.sender_signature:type_name -> digitaldelta.v1.Signature
 	2,  // 5: digitaldelta.v1.Acknowledgement.status:type_name -> digitaldelta.v1.AcknowledgementStatus
 	6,  // 6: digitaldelta.v1.Acknowledgement.node_signature:type_name -> digitaldelta.v1.Signature
-	3,  // 7: digitaldelta.v1.IdentityProvisioningClaims.role:type_name -> digitaldelta.v1.IdentityRole
-	10, // 8: digitaldelta.v1.IdentityProvisioningCredential.claims:type_name -> digitaldelta.v1.IdentityProvisioningClaims
-	6,  // 9: digitaldelta.v1.IdentityProvisioningCredential.issuer_signature:type_name -> digitaldelta.v1.Signature
-	3,  // 10: digitaldelta.v1.IdentityEnrollmentRequest.role:type_name -> digitaldelta.v1.IdentityRole
-	11, // [11:11] is the sub-list for method output_type
-	11, // [11:11] is the sub-list for method input_type
-	11, // [11:11] is the sub-list for extension type_name
-	11, // [11:11] is the sub-list for extension extendee
-	0,  // [0:11] is the sub-list for field type_name
+	8,  // 7: digitaldelta.v1.PeerFrame.envelope:type_name -> digitaldelta.v1.Envelope
+	9,  // 8: digitaldelta.v1.PeerFrame.acknowledgement:type_name -> digitaldelta.v1.Acknowledgement
+	3,  // 9: digitaldelta.v1.IdentityProvisioningClaims.role:type_name -> digitaldelta.v1.IdentityRole
+	11, // 10: digitaldelta.v1.IdentityProvisioningCredential.claims:type_name -> digitaldelta.v1.IdentityProvisioningClaims
+	6,  // 11: digitaldelta.v1.IdentityProvisioningCredential.issuer_signature:type_name -> digitaldelta.v1.Signature
+	3,  // 12: digitaldelta.v1.IdentityEnrollmentRequest.role:type_name -> digitaldelta.v1.IdentityRole
+	13, // [13:13] is the sub-list for method output_type
+	13, // [13:13] is the sub-list for method input_type
+	13, // [13:13] is the sub-list for extension type_name
+	13, // [13:13] is the sub-list for extension extendee
+	0,  // [0:13] is the sub-list for field type_name
 }
 
 func init() { file_digitaldelta_v1_common_proto_init() }
@@ -1221,13 +1310,17 @@ func file_digitaldelta_v1_common_proto_init() {
 	if File_digitaldelta_v1_common_proto != nil {
 		return
 	}
+	file_digitaldelta_v1_common_proto_msgTypes[6].OneofWrappers = []any{
+		(*PeerFrame_Envelope)(nil),
+		(*PeerFrame_Acknowledgement)(nil),
+	}
 	type x struct{}
 	out := protoimpl.TypeBuilder{
 		File: protoimpl.DescBuilder{
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_digitaldelta_v1_common_proto_rawDesc), len(file_digitaldelta_v1_common_proto_rawDesc)),
 			NumEnums:      4,
-			NumMessages:   9,
+			NumMessages:   10,
 			NumExtensions: 0,
 			NumServices:   0,
 		},

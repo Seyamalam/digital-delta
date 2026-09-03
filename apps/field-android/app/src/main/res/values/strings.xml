@@ -39,6 +39,21 @@
     <string name="risk_notice">High-risk area avoided</string>
     <string name="weather_simulated">Heavy rainfall and flood conditions are simulated</string>
     <string name="trigger_flood">Trigger simulated flood</string>
+    <string name="nearby_relay">Nearby encrypted relay</string>
+    <string name="relay_active">Advertising and discovering without internet</string>
+    <string name="relay_stopped">Relay radio is stopped</string>
+    <string name="start_relay">Start nearby relay</string>
+    <string name="stop_relay">Stop nearby relay</string>
+    <string name="connected_peers">Peers</string>
+    <string name="battery">Battery</string>
+    <string name="broadcast_every">Broadcast every</string>
+    <string name="scanning_for_peers">Scanning for provisioned phones nearby…</string>
+    <string name="connection_request">Connection request</string>
+    <string name="compare_code">Compare on both phones:</string>
+    <string name="accept">Accept</string>
+    <string name="reject">Reject</string>
+    <string name="mesh_permission_denied">Nearby permissions are required to start the relay.</string>
+    <string name="mesh_error">Relay error:</string>
     <string name="qr_scan_step">Step 1: Scan QR</string>
     <string name="scan_recipient_qr">Scan recipient QR code</string>
     <string name="handoff_check_step">Step 2: Verify handoff</string>
@@ -76,4 +91,7 @@
     <string name="preparing_device_keys">Preparing protected device keys</string>
     <string name="private_keys_never_leave">RSA-2048 private keys remain non-exportable in Android Keystore.</string>
     <string name="signed_delivery_qr_description">Signed delivery handoff QR code</string>
+    <string name="relay_notification_channel">Nearby disaster relay</string>
+    <string name="relay_notification_title">রিলে সক্রিয় • Relay active</string>
+    <string name="relay_notification_text">Offline encrypted messages can pass through this phone.</string>
 </resources>

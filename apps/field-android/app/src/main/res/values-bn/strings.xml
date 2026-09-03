@@ -39,6 +39,21 @@
     <string name="risk_notice">উচ্চ ঝুঁকির এলাকা এড়ানো হয়েছে</string>
     <string name="weather_simulated">ভারী বৃষ্টি ও বন্যা পরিস্থিতি সিমুলেটেড</string>
     <string name="trigger_flood">সিমুলেটেড বন্যা চালু করুন</string>
+    <string name="nearby_relay">নিকটবর্তী এনক্রিপ্টেড রিলে</string>
+    <string name="relay_active">ইন্টারনেট ছাড়াই বিজ্ঞাপন ও অনুসন্ধান চলছে</string>
+    <string name="relay_stopped">রিলে রেডিও বন্ধ আছে</string>
+    <string name="start_relay">নিকটবর্তী রিলে চালু করুন</string>
+    <string name="stop_relay">নিকটবর্তী রিলে বন্ধ করুন</string>
+    <string name="connected_peers">পিয়ার</string>
+    <string name="battery">ব্যাটারি</string>
+    <string name="broadcast_every">সম্প্রচার বিরতি</string>
+    <string name="scanning_for_peers">নিকটবর্তী নিবন্ধিত ফোন খোঁজা হচ্ছে…</string>
+    <string name="connection_request">সংযোগ অনুরোধ</string>
+    <string name="compare_code">দুই ফোনে কোড মিলান:</string>
+    <string name="accept">গ্রহণ করুন</string>
+    <string name="reject">প্রত্যাখ্যান করুন</string>
+    <string name="mesh_permission_denied">রিলে চালু করতে নিকটবর্তী ডিভাইসের অনুমতি দিন।</string>
+    <string name="mesh_error">রিলে ত্রুটি:</string>
     <string name="qr_scan_step">ধাপ ১: QR স্ক্যান করুন</string>
     <string name="scan_recipient_qr">প্রাপক QR কোড স্ক্যান করুন</string>
     <string name="handoff_check_step">ধাপ ২: হস্তান্তর যাচাই</string>
@@ -76,4 +91,7 @@
     <string name="preparing_device_keys">সুরক্ষিত ডিভাইস কী প্রস্তুত হচ্ছে</string>
     <string name="private_keys_never_leave">RSA-2048 প্রাইভেট কী Android Keystore থেকে কখনও বের হয় না।</string>
     <string name="signed_delivery_qr_description">স্বাক্ষরিত সরবরাহ হস্তান্তর QR কোড</string>
+    <string name="relay_notification_channel">নিকটবর্তী দুর্যোগ রিলে</string>
+    <string name="relay_notification_title">রিলে সক্রিয় • Relay active</string>
+    <string name="relay_notification_text">অফলাইন এনক্রিপ্টেড বার্তা এই ফোনের মাধ্যমে যেতে পারবে।</string>
 </resources>

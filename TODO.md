@@ -20,7 +20,7 @@ This checklist tracks implementation. Milestone exit criteria live in [MILESTONE
 - [ ] Add root setup, format, lint, test, seed, reset, and demo commands.
 - [ ] Add environment example files with no secrets.
 - [x] Scaffold the Android project with Gradle Kotlin DSL and a version catalog.
-- [ ] Add the complete Android dependency set. Compose, Material 3, Navigation 3, ZXing, Protobuf Lite, gRPC OkHttp, and test dependencies are present; Hilt, Room, DataStore, WorkManager, Nearby, Tink, MapLibre, and ONNX remain.
+- [ ] Add the complete Android dependency set. Compose, Material 3, Navigation 3, ZXing, Protobuf Lite, gRPC OkHttp, Hilt, Room, DataStore, Nearby Connections, and test dependencies are present; WorkManager, Tink, MapLibre, and ONNX remain.
 - [x] Add a local Kotlin and Android verification runner; extend it for Go, TypeScript, and Protobuf compatibility as those projects land. Hosted CI and GitHub Actions are deliberately excluded.
 - [ ] Add deterministic clocks, random seeds, and device IDs for demo scenarios.
 - [ ] Add a fixture validator for node and edge references.
@@ -85,21 +85,21 @@ This checklist tracks implementation. Milestone exit criteria live in [MILESTONE
 ## M3 nearby mesh
 
 - [x] Define the byte-oriented `PeerTransport` interface; transport connection-state reporting remains with the Nearby adapter.
-- [ ] Implement Nearby Connections using the cluster strategy.
-- [ ] Add Android 12 and newer Bluetooth and nearby-device permission handling.
-- [ ] Implement the active relay as an Android foreground service.
+- [x] Implement Nearby Connections using the cluster strategy; physical three-phone evidence remains.
+- [x] Add Android 12 and newer Bluetooth and nearby-device permission handling, including Android 17 local-network policy.
+- [x] Implement the active relay as an Android `connectedDevice` foreground service.
 - [ ] Use WorkManager only for deferred retries, queue cleanup, and maintenance.
-- [ ] Implement neighbor advertising and discovery.
-- [ ] Authenticate peers before accepting payloads.
+- [x] Implement neighbor advertising and discovery with an explicit human accept or reject step.
+- [ ] Authenticate peers before accepting payloads. Nearby comparison digits are displayed, but signed application identity binding remains.
 - [x] Build persistent Android inbox/outbox/seen-message state with bounded retry and dead-letter transitions; Go retains its durable Bolt inbox.
-- [x] Implement the transport-neutral store-and-forward relay engine with atomic durable receipt; the Nearby live adapter remains.
+- [x] Implement the store-and-forward relay engine with atomic durable receipt and connect it to the Nearby byte transport.
 - [x] Implement TTL and hop-limit enforcement in both Android and Go durable ingress.
 - [x] Implement durable duplicate rejection before domain-event application in both Android and Go.
 - [x] Encrypt payloads for the final recipient through the signed public-key directory using RSA-OAEP-wrapped AES-256-GCM; production instrumentation decrypts the persisted request with only the intended recipient key.
 - [x] Keep relay-visible routing metadata outside recipient-only ciphertext; relays never receive a content decryption key.
 - [ ] Select relay behavior using battery, signal, queue size, and proximity.
-- [ ] Reduce broadcast frequency by 60 percent below 30 percent battery.
-- [ ] Display topology, queue depth, last contact, and relay reason.
+- [x] Reduce broadcast frequency by 60 percent below 30 percent battery.
+- [ ] Display topology, queue depth, last contact, and relay reason. The live card currently shows relay state, peers, battery, broadcast interval, discovery, candidates, and errors.
 - [x] Test interrupted transfer retry and Room close/reopen recovery; physical process-kill evidence remains.
 - [ ] Test A to B to C with no commercial internet.
 

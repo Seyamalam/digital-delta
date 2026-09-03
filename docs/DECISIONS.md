@@ -92,7 +92,9 @@ Use this log for choices that affect scope, claims, compatibility, or safety.
 
 **Reason:** Nearby Connections exchanges data through nearby Bluetooth and Wi-Fi without commercial internet. Android background limits make WorkManager unsuitable for a continuous live relay.
 
-**Consequences:** The target phones need Google Play services for the first implementation. The app must display foreground-service state and permissions clearly. A future Wi-Fi Direct transport can implement the same interface without changing domain logic.
+**Consequences:** The target phones need Google Play services for the first implementation. Version 19.5.0 is pinned for the current build. The app displays foreground-service state, battery cadence, permission errors, discovered candidates, and Nearby comparison digits. Although Google's current manifest sample caps `ACCESS_WIFI_STATE` and `CHANGE_WIFI_STATE` at API 31, Play services 19.5.0 returned `MISSING_PERMISSION_ACCESS_WIFI_STATE` on the Android 15 emulator with that cap; the build therefore retains both normal permissions on newer versions and records the behavior as tested compatibility evidence. A future Wi-Fi Direct transport can implement the same interface without changing domain logic.
+
+**Evidence:** `NearbyPermissionPolicyTest`, `PeerFrameCodecTest`, `MainScreenTest`, and the paired API 35 relay screenshots in `artifacts/screenshots/`.
 
 ## DD-010: Android storage and cryptography
 
