@@ -19,9 +19,9 @@ This checklist tracks implementation. Milestone exit criteria live in [MILESTONE
 - [ ] Create the monorepo folders described in `README.md`.
 - [ ] Add root setup, format, lint, test, seed, reset, and demo commands.
 - [ ] Add environment example files with no secrets.
-- [ ] Scaffold the Android project with Gradle Kotlin DSL and a version catalog.
-- [ ] Add Compose, Material 3, Navigation Compose, Hilt, Room, DataStore, WorkManager, KSP, and test dependencies.
-- [ ] Add CI for Kotlin and Android, Go, TypeScript, Protobuf compatibility, and documentation links.
+- [x] Scaffold the Android project with Gradle Kotlin DSL and a version catalog.
+- [ ] Add the complete Android dependency set. Compose, Material 3, Navigation 3, ZXing, Protobuf Lite, gRPC OkHttp, and test dependencies are present; Hilt, Room, DataStore, WorkManager, Nearby, Tink, MapLibre, and ONNX remain.
+- [x] Add a local Kotlin and Android verification runner; extend it for Go, TypeScript, and Protobuf compatibility as those projects land. Hosted CI and GitHub Actions are deliberately excluded.
 - [ ] Add deterministic clocks, random seeds, and device IDs for demo scenarios.
 - [ ] Add a fixture validator for node and edge references.
 - [ ] Correct the supplied chaos-server formatting and keep it as a development fixture only.
@@ -30,13 +30,13 @@ This checklist tracks implementation. Milestone exit criteria live in [MILESTONE
 
 ## Protocol and domain contracts
 
-- [ ] Define `Envelope`, `VectorClock`, `Signature`, `EncryptedPayload`, and `Acknowledgement` messages.
-- [ ] Define identity, request, cargo, route, vehicle, handoff, receipt, prediction, and audit events.
-- [ ] Add schema version and minimum reader version.
-- [ ] Add TTL, hop count, creation time, sender, recipient, payload hash, and nonce fields.
-- [ ] Generate Kotlin Lite, gRPC Kotlin, Go, and TypeScript clients.
+- [x] Define `Envelope`, `VectorClock`, `Signature`, `EncryptedPayload`, and `Acknowledgement` messages.
+- [ ] Define identity, request, cargo, route, vehicle, handoff, receipt, prediction, and audit events. Request, cargo, route, handoff, prediction, conflict, SLA, and preemption events exist; identity, vehicle, and audit events remain.
+- [x] Add schema version and minimum reader version.
+- [x] Add TTL, hop count, creation time, sender, recipient, payload hash, and nonce fields.
+- [ ] Generate Kotlin/Java Lite gRPC and Go clients. TypeScript generation remains.
 - [ ] Add backward-compatibility tests for stored fixtures.
-- [ ] Ban JSON serialization from the mesh package.
+- [x] Ban JSON serialization from the mesh package through the local verification script.
 - [ ] Document gRPC links and framed-Protobuf links separately.
 
 ## Bangla and English foundation
@@ -93,8 +93,8 @@ This checklist tracks implementation. Milestone exit criteria live in [MILESTONE
 - [ ] Authenticate peers before accepting payloads.
 - [ ] Build persistent inbox, outbox, retry, and dead-letter queues.
 - [ ] Implement store-and-forward relay.
-- [ ] Implement TTL and hop-limit enforcement.
-- [ ] Implement deduplication before domain-event application.
+- [ ] Implement TTL and hop-limit enforcement. The Go durable relay enforces both; Android queue enforcement remains.
+- [ ] Implement deduplication before domain-event application. The Go durable relay rejects duplicate message IDs; Android persistence remains.
 - [ ] Encrypt payloads for the final recipient.
 - [ ] Allow relays to inspect routing metadata only.
 - [ ] Select relay behavior using battery, signal, queue size, and proximity.

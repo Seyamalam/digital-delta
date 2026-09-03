@@ -4,6 +4,23 @@
 
 A working screen is not enough. Each public claim needs a repeatable test, measured result, or visible simulation label.
 
+## Local commands
+
+Digital Delta deliberately uses local verification rather than GitHub Actions or hosted CI.
+
+```bash
+# JVM tests plus debug APK build
+scripts/verify-local.sh
+
+# The same checks plus Compose journeys on a connected emulator or phone
+scripts/verify-local.sh --connected
+
+# Build, install, and launch the field app with the official Android CLI
+scripts/run-field-android.sh --device=emulator-5554
+```
+
+The local runner lints Protobuf schemas, rejects JSON references in mesh packages, runs Android tests and APK assembly, then runs Go race tests, vet, and the node build. The Android suite tests the public domain seams for authorization, vector clocks, relay policy, routing, signed handoff verification, triage, route-risk classification, fleet rendezvous, and binary Protobuf envelope compatibility. Connected Compose tests cover language parity, mid-flow state preservation, offline request queuing, and replay rejection. Go integration tests exercise durable restart recovery and the bidirectional gRPC acknowledgement stream.
+
 ## Test layers
 
 ### Unit tests

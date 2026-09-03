@@ -1,0 +1,125 @@
+syntax = "proto3";
+
+package digitaldelta.v1;
+
+option java_package = "com.example.digitaldelta.proto.v1";
+option java_multiple_files = true;
+option optimize_for = LITE_RUNTIME;
+option go_package = "github.com/Seyamalam/digital-delta/services/node/gen/digitaldelta/v1;deltav1";
+
+import "digitaldelta/v1/common.proto";
+
+message CargoItem {
+  string cargo_id = 1;
+  string item_code = 2;
+  uint32 quantity = 3;
+  string unit_code = 4;
+  PriorityClass priority = 5;
+}
+
+message ReliefRequestCreated {
+  string request_id = 1;
+  string requester_node_id = 2;
+  string origin_node_id = 3;
+  string destination_node_id = 4;
+  repeated CargoItem cargo = 5;
+  int64 created_at_unix_ms = 6;
+}
+
+message EdgeStatusChanged {
+  string edge_id = 1;
+  bool failed = 2;
+  string reason_code = 3;
+  bool simulated = 4;
+}
+
+message EdgeRiskPredicted {
+  string edge_id = 1;
+  float probability = 2;
+  float threshold = 3;
+  string model_version = 4;
+  float rainfall_mm_per_hour = 5;
+  float elevation_meters = 6;
+  float soil_saturation = 7;
+  bool simulated_inputs = 8;
+}
+
+message RoutePlanned {
+  string mission_id = 1;
+  string vehicle_id = 2;
+  TransportMode mode = 3;
+  repeated string edge_ids = 4;
+  uint32 eta_minutes = 5;
+  bool risk_adjusted = 6;
+  string explanation_code = 7;
+}
+
+message ConflictRaised {
+  string conflict_id = 1;
+  string mission_id = 2;
+  string field_code = 3;
+  bytes left_value = 4;
+  bytes right_value = 5;
+  VectorClock left_clock = 6;
+  VectorClock right_clock = 7;
+  bool requires_human_resolution = 8;
+}
+
+message ConflictResolved {
+  string conflict_id = 1;
+  bytes selected_value = 2;
+  string resolver_identity_id = 3;
+  string reason_code = 4;
+}
+
+message SlaBreachPredicted {
+  string mission_id = 1;
+  PriorityClass priority = 2;
+  uint32 baseline_eta_minutes = 3;
+  uint32 slowed_eta_minutes = 4;
+  uint32 sla_minutes = 5;
+  string policy_version = 6;
+}
+
+message PreemptionConfirmed {
+  string mission_id = 1;
+  string urgent_cargo_id = 2;
+  string deposited_cargo_id = 3;
+  string waypoint_node_id = 4;
+  string confirmer_identity_id = 5;
+  string policy_version = 6;
+}
+
+message CustodyTransfer {
+  string delivery_id = 1;
+  string sender_identity_id = 2;
+  string recipient_identity_id = 3;
+  bytes payload_sha256 = 4;
+  bytes nonce = 5;
+  int64 timestamp_unix_ms = 6;
+  bytes previous_receipt_sha256 = 7;
+  Signature sender_signature = 8;
+  Signature recipient_signature = 9;
+  bool simulated_vehicle = 10;
+}
+
+message DomainEvent {
+  string event_id = 1;
+  uint32 schema_version = 2;
+  string actor_identity_id = 3;
+  int64 occurred_at_unix_ms = 4;
+  bool simulated = 5;
+  string scenario_seed = 6;
+
+  oneof body {
+    ReliefRequestCreated relief_request_created = 20;
+    EdgeStatusChanged edge_status_changed = 21;
+    EdgeRiskPredicted edge_risk_predicted = 22;
+    RoutePlanned route_planned = 23;
+    ConflictRaised conflict_raised = 24;
+    ConflictResolved conflict_resolved = 25;
+    SlaBreachPredicted sla_breach_predicted = 26;
+    PreemptionConfirmed preemption_confirmed = 27;
+    CustodyTransfer custody_transfer = 28;
+  }
+}

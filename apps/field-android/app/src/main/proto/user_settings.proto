@@ -1,0 +1,17 @@
+syntax = "proto3";
+
+package digitaldelta.settings.v1;
+
+option java_package = "com.example.digitaldelta.settings.v1";
+option java_multiple_files = true;
+option optimize_for = LITE_RUNTIME;
+
+enum InterfaceLanguage {
+  INTERFACE_LANGUAGE_UNSPECIFIED = 0;
+  INTERFACE_LANGUAGE_BANGLA = 1;
+  INTERFACE_LANGUAGE_ENGLISH = 2;
+}
+
+message UserSettings {
+  InterfaceLanguage interface_language = 1;
+}

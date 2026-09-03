@@ -1,0 +1,38 @@
+syntax = "proto3";
+
+package digitaldelta.v1;
+
+option java_package = "com.example.digitaldelta.proto.v1";
+option java_multiple_files = true;
+option optimize_for = LITE_RUNTIME;
+option go_package = "github.com/Seyamalam/digital-delta/services/node/gen/digitaldelta/v1;deltav1";
+
+import "digitaldelta/v1/common.proto";
+import "digitaldelta/v1/events.proto";
+
+service NodeMeshService {
+  rpc Synchronize(stream SynchronizeRequest) returns (stream SynchronizeResponse);
+}
+
+message SynchronizeRequest {
+  Envelope envelope = 1;
+}
+
+message SynchronizeResponse {
+  Acknowledgement acknowledgement = 1;
+}
+
+message ObserveRequest {
+  string observer_id = 1;
+  uint64 after_sequence = 2;
+}
+
+message ObserveResponse {
+  uint64 sequence = 1;
+  string source_node_id = 2;
+  DomainEvent event = 3;
+}
+
+service ObserverService {
+  rpc Observe(ObserveRequest) returns (stream ObserveResponse);
+}

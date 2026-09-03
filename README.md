@@ -110,4 +110,6 @@ The project is fair-ready when:
 
 ## Current status
 
-Documentation and acceptance criteria are being established. Implementation has not started, so none of the eight modules should yet be described as working.
+Implementation is active. The native Android field shell now builds and runs with Bangla-first and English interfaces, four interactive demo surfaces, an animated offline initialization sequence, real QR generation, and device-tested state preservation. Language-neutral engines and passing JVM tests exist for authorization, vector clocks, mesh policy, multimodal routing, proof-of-delivery verification, triage, route-risk prediction, and hybrid-fleet rendezvous.
+
+The shared Protobuf contract now lints and generates Android Lite and Go bindings. The Go node exposes a bidirectional gRPC stream backed by a durable Bolt inbox with TTL, hop-limit, and duplicate rejection. Android creates and round-trips the same binary `Envelope` type. These are integrated foundations, not a claim that all eight modules are complete. Room persistence, Nearby Connections, signed peer acknowledgements, ONNX inference, MapLibre offline regions, and the command dashboard remain under active implementation. Current evidence is recorded in `artifacts/` and can be reproduced with `scripts/verify-local.sh --connected`.

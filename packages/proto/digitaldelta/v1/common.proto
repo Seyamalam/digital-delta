@@ -1,0 +1,80 @@
+syntax = "proto3";
+
+package digitaldelta.v1;
+
+option java_package = "com.example.digitaldelta.proto.v1";
+option java_multiple_files = true;
+option optimize_for = LITE_RUNTIME;
+option go_package = "github.com/Seyamalam/digital-delta/services/node/gen/digitaldelta/v1;deltav1";
+
+enum PriorityClass {
+  PRIORITY_CLASS_UNSPECIFIED = 0;
+  PRIORITY_CLASS_P0 = 1;
+  PRIORITY_CLASS_P1 = 2;
+  PRIORITY_CLASS_P2 = 3;
+  PRIORITY_CLASS_P3 = 4;
+}
+
+enum TransportMode {
+  TRANSPORT_MODE_UNSPECIFIED = 0;
+  TRANSPORT_MODE_ROAD = 1;
+  TRANSPORT_MODE_WATERWAY = 2;
+  TRANSPORT_MODE_AIRWAY = 3;
+}
+
+message VectorClockEntry {
+  string replica_id = 1;
+  uint64 counter = 2;
+}
+
+message VectorClock {
+  repeated VectorClockEntry entries = 1;
+}
+
+message Signature {
+  string key_id = 1;
+  bytes ed25519 = 2;
+}
+
+message EncryptedPayload {
+  string recipient_key_id = 1;
+  bytes aes_256_gcm_ciphertext = 2;
+  bytes nonce = 3;
+  bytes associated_data_sha256 = 4;
+}
+
+message Envelope {
+  string message_id = 1;
+  uint32 schema_version = 2;
+  uint32 minimum_reader_version = 3;
+  string sender_node_id = 4;
+  string recipient_node_id = 5;
+  VectorClock vector_clock = 6;
+  int64 created_at_unix_ms = 7;
+  int64 expires_at_unix_ms = 8;
+  uint32 hop_count = 9;
+  uint32 hop_limit = 10;
+  PriorityClass priority = 11;
+  EncryptedPayload encrypted_payload = 12;
+  bytes payload_sha256 = 13;
+  Signature sender_signature = 14;
+  bool simulated = 15;
+  string scenario_seed = 16;
+  string correlation_id = 17;
+}
+
+enum AcknowledgementStatus {
+  ACKNOWLEDGEMENT_STATUS_UNSPECIFIED = 0;
+  ACKNOWLEDGEMENT_STATUS_DURABLY_STORED = 1;
+  ACKNOWLEDGEMENT_STATUS_APPLIED = 2;
+  ACKNOWLEDGEMENT_STATUS_REJECTED = 3;
+}
+
+message Acknowledgement {
+  string message_id = 1;
+  string node_id = 2;
+  AcknowledgementStatus status = 3;
+  string reason_code = 4;
+  int64 recorded_at_unix_ms = 5;
+  Signature node_signature = 6;
+}

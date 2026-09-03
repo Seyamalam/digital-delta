@@ -21,7 +21,7 @@ Deliverables:
 
 - Proposed stack approved or replaced in `docs/DECISIONS.md`
 - Monorepo folders and development commands
-- Continuous integration for formatting, tests, and Protobuf compatibility
+- Local verification automation for formatting, tests, and Protobuf compatibility; no hosted CI
 - Versioned Protobuf envelopes and domain events
 - Seeded Sylhet mission fixture
 - Bangla and English localization framework
@@ -272,4 +272,3 @@ These remain software-only:
 - Scenario authoring interface
 - Delayed cloud synchronization after connectivity returns
 - Anonymous aggregate analytics for response planning
-
