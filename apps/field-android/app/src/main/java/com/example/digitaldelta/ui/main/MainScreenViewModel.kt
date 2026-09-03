@@ -18,6 +18,11 @@ import com.example.digitaldelta.domain.routing.RouteScenarioSnapshot
 import com.example.digitaldelta.domain.triage.TriageWorkflow
 import com.example.digitaldelta.domain.triage.TriageWorkflowSnapshot
 import com.example.digitaldelta.domain.triage.DefaultTriageWorkflow
+import com.example.digitaldelta.domain.pod.CustodyReceiptRecord
+import com.example.digitaldelta.domain.pod.DeliveryOfferReady
+import com.example.digitaldelta.domain.pod.DeliveryOfferRejection
+import com.example.digitaldelta.domain.pod.DeliveryReceiptResult
+import com.example.digitaldelta.domain.pod.ProofOfDeliveryWorkflow
 import com.example.digitaldelta.proto.v1.PriorityClass
 import dagger.hilt.android.lifecycle.HiltViewModel
 import javax.inject.Inject
@@ -35,6 +40,7 @@ class MainScreenViewModel @Inject constructor(
     private val conflictCoordinator: ConflictCoordinator,
     private val routeScenario: RouteScenario,
     private val triageWorkflow: TriageWorkflow = DefaultTriageWorkflow(),
+    private val proofOfDeliveryWorkflow: ProofOfDeliveryWorkflow = UnavailableProofOfDeliveryWorkflow,
 ) : ViewModel() {
     val language: StateFlow<LanguagePreference> = settingsRepository.language.stateIn(
         scope = viewModelScope,
@@ -59,9 +65,13 @@ class MainScreenViewModel @Inject constructor(
     )
     val triageState: StateFlow<TriageWorkflowSnapshot> = mutableTriageState.asStateFlow()
 
+    private val mutableProofOfDeliveryState = MutableStateFlow<ProofOfDeliveryUiState>(ProofOfDeliveryUiState.Loading)
+    val proofOfDeliveryState: StateFlow<ProofOfDeliveryUiState> = mutableProofOfDeliveryState.asStateFlow()
+
     init {
         viewModelScope.launch { loadIdentity() }
         viewModelScope.launch { mutableConflictState.value = conflictCoordinator.snapshot() }
+        viewModelScope.launch { prepareHandoffInternal() }
     }
 
     fun setBangla(useBangla: Boolean) {
@@ -170,6 +180,49 @@ class MainScreenViewModel @Inject constructor(
         }
     }
 
+    fun verifyHandoff(tamperForDemo: Boolean = false) {
+        val offer = mutableProofOfDeliveryState.value.offerOrNull() ?: return
+        if (mutableProofOfDeliveryState.value is ProofOfDeliveryUiState.Verifying) return
+        mutableProofOfDeliveryState.value = ProofOfDeliveryUiState.Verifying(offer)
+        viewModelScope.launch {
+            val code = if (tamperForDemo) {
+                proofOfDeliveryWorkflow.tamperForDemo(offer.qrCode)
+            } else {
+                offer.qrCode
+            }
+            runCatching { proofOfDeliveryWorkflow.verify(code) }
+                .onSuccess { result ->
+                    mutableProofOfDeliveryState.value = when (result) {
+                        is DeliveryReceiptResult.Verified -> ProofOfDeliveryUiState.Verified(
+                            offer = offer,
+                            receipt = result.receipt,
+                            chain = result.chain,
+                        )
+                        is DeliveryReceiptResult.Rejected -> ProofOfDeliveryUiState.Rejected(
+                            offer = offer,
+                            reason = result.reason,
+                            preservedChain = result.preservedChain,
+                        )
+                    }
+                }
+                .onFailure { mutableProofOfDeliveryState.value = ProofOfDeliveryUiState.Failed }
+        }
+    }
+
+    fun prepareNextHandoff() {
+        if (mutableProofOfDeliveryState.value is ProofOfDeliveryUiState.Verifying) return
+        mutableProofOfDeliveryState.value = ProofOfDeliveryUiState.Loading
+        viewModelScope.launch { prepareHandoffInternal() }
+    }
+
+    private suspend fun prepareHandoffInternal() {
+        mutableProofOfDeliveryState.value = runCatching { proofOfDeliveryWorkflow.prepare() }
+            .fold(
+                onSuccess = ProofOfDeliveryUiState::Ready,
+                onFailure = { ProofOfDeliveryUiState.Failed },
+            )
+    }
+
     private suspend fun loadIdentity() {
         mutableIdentityState.value = runCatching { identityCoordinator.snapshot().toUiState() }
             .getOrElse { IdentityUiState.Failed(null, IdentityFailure.KEYSTORE) }
@@ -182,6 +235,40 @@ class MainScreenViewModel @Inject constructor(
         "P3" -> PriorityClass.PRIORITY_CLASS_P3
         else -> error("unknown priority code")
     }
+}
+
+sealed interface ProofOfDeliveryUiState {
+    data object Loading : ProofOfDeliveryUiState
+    data class Ready(val offer: DeliveryOfferReady) : ProofOfDeliveryUiState
+    data class Verifying(val offer: DeliveryOfferReady) : ProofOfDeliveryUiState
+    data class Verified(
+        val offer: DeliveryOfferReady,
+        val receipt: CustodyReceiptRecord,
+        val chain: List<CustodyReceiptRecord>,
+    ) : ProofOfDeliveryUiState
+    data class Rejected(
+        val offer: DeliveryOfferReady,
+        val reason: DeliveryOfferRejection,
+        val preservedChain: List<CustodyReceiptRecord>,
+    ) : ProofOfDeliveryUiState
+    data object Failed : ProofOfDeliveryUiState
+}
+
+private fun ProofOfDeliveryUiState.offerOrNull(): DeliveryOfferReady? = when (this) {
+    is ProofOfDeliveryUiState.Ready -> offer
+    is ProofOfDeliveryUiState.Verifying -> offer
+    is ProofOfDeliveryUiState.Verified -> offer
+    is ProofOfDeliveryUiState.Rejected -> offer
+    ProofOfDeliveryUiState.Loading,
+    ProofOfDeliveryUiState.Failed,
+    -> null
+}
+
+private object UnavailableProofOfDeliveryWorkflow : ProofOfDeliveryWorkflow {
+    override suspend fun prepare(): DeliveryOfferReady = error("proof-of-delivery workflow is unavailable")
+    override suspend fun verify(code: String): DeliveryReceiptResult = error("proof-of-delivery workflow is unavailable")
+    override suspend fun reconstructChain() = error("proof-of-delivery workflow is unavailable")
+    override fun tamperForDemo(code: String): String = error("proof-of-delivery workflow is unavailable")
 }
 
 private fun com.example.digitaldelta.domain.identity.IdentityProvisioningSnapshot.toUiState(

@@ -22,6 +22,12 @@ import com.example.digitaldelta.domain.routing.VehicleType
 import com.example.digitaldelta.domain.triage.TriageWorkflowSnapshot
 import com.example.digitaldelta.domain.triage.TriageWorkflow
 import com.example.digitaldelta.domain.triage.DefaultTriageWorkflow
+import com.example.digitaldelta.domain.pod.CustodyChain
+import com.example.digitaldelta.domain.pod.CustodyReceiptRecord
+import com.example.digitaldelta.domain.pod.DeliveryOfferReady
+import com.example.digitaldelta.domain.pod.DeliveryOfferRejection
+import com.example.digitaldelta.domain.pod.DeliveryReceiptResult
+import com.example.digitaldelta.domain.pod.ProofOfDeliveryWorkflow
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.Flow
@@ -218,6 +224,35 @@ class MainScreenViewModelTest {
         assertEquals(1, triage.confirmCalls)
         assertEquals(true, viewModel.triageState.value is TriageWorkflowSnapshot.Confirmed)
     }
+
+    @Test
+    fun `handoff verifies once then reports replay without losing receipt chain`() = runTest(dispatcher) {
+        val proof = FakeProofOfDeliveryWorkflow()
+        val viewModel = MainScreenViewModel(
+            FakeSettingsRepository(),
+            FakeRequestSubmission(),
+            FakeIdentityCoordinator(),
+            FakeConflictCoordinator(),
+            FakeRouteScenario(),
+            DefaultTriageWorkflow(),
+            proof,
+        )
+        advanceUntilIdle()
+        assertEquals(true, viewModel.proofOfDeliveryState.value is ProofOfDeliveryUiState.Ready)
+
+        viewModel.verifyHandoff()
+        assertEquals(true, viewModel.proofOfDeliveryState.value is ProofOfDeliveryUiState.Verifying)
+        viewModel.verifyHandoff()
+        advanceUntilIdle()
+        assertEquals(1, proof.verifyCalls)
+        assertEquals(true, viewModel.proofOfDeliveryState.value is ProofOfDeliveryUiState.Verified)
+
+        viewModel.verifyHandoff()
+        advanceUntilIdle()
+        val replay = viewModel.proofOfDeliveryState.value as ProofOfDeliveryUiState.Rejected
+        assertEquals(DeliveryOfferRejection.REPLAY_REJECTED, replay.reason)
+        assertEquals(1, replay.preservedChain.size)
+    }
 }
 
 private class CountingTriageWorkflow : TriageWorkflow {
@@ -238,6 +273,44 @@ private class CountingTriageWorkflow : TriageWorkflow {
             confirmedAtUnixMs = 1_800_000_000_000,
         )
     }
+}
+
+private class FakeProofOfDeliveryWorkflow : ProofOfDeliveryWorkflow {
+    var verifyCalls = 0
+    private val receipt = CustodyReceiptRecord(
+        eventId = "custody-event-1",
+        deliveryId = "DELTA-2026-0001",
+        senderIdentityId = "boat-operator-02",
+        recipientIdentityId = "hospital-operator-01",
+        previousReceiptSha256 = ByteArray(32) { 1 },
+        receiptHash = ByteArray(32) { 2 },
+        recordedAtUnixMs = 1_800_000_000_100,
+    )
+
+    override suspend fun prepare() = DeliveryOfferReady(
+        qrCode = "DIGITALDELTA:POD:test",
+        deliveryId = "DELTA-2026-0001",
+        senderIdentityId = "boat-operator-02",
+        recipientIdentityId = "hospital-operator-01",
+        senderSigningKeyId = "rsa-signing-key-1",
+        payloadSha256 = ByteArray(32) { 3 },
+        nonce = ByteArray(16) { 4 },
+        timestampUnixMs = 1_800_000_000_000,
+        previousReceiptSha256 = ByteArray(32) { 1 },
+        simulatedVehicle = true,
+    )
+
+    override suspend fun verify(code: String): DeliveryReceiptResult {
+        verifyCalls += 1
+        return if (verifyCalls == 1) {
+            DeliveryReceiptResult.Verified(receipt, listOf(receipt))
+        } else {
+            DeliveryReceiptResult.Rejected(DeliveryOfferRejection.REPLAY_REJECTED, listOf(receipt))
+        }
+    }
+
+    override suspend fun reconstructChain() = CustodyChain(listOf(receipt), valid = true)
+    override fun tamperForDemo(code: String): String = "$code-tampered"
 }
 
 private class FakeSettingsRepository : UserSettingsRepository {

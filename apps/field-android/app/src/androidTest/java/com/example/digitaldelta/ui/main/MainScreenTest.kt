@@ -26,6 +26,9 @@ import com.example.digitaldelta.domain.routing.RouteScenarioSnapshot
 import com.example.digitaldelta.domain.routing.VehicleType
 import com.example.digitaldelta.domain.triage.DefaultTriageWorkflow
 import com.example.digitaldelta.domain.triage.TriageWorkflowSnapshot
+import com.example.digitaldelta.domain.pod.CustodyReceiptRecord
+import com.example.digitaldelta.domain.pod.DeliveryOfferReady
+import com.example.digitaldelta.domain.pod.DeliveryOfferRejection
 import org.junit.Before
 import org.junit.Assert.assertTrue
 import org.junit.Rule
@@ -40,6 +43,7 @@ class MainScreenTest {
     private lateinit var conflictState: MutableState<MissionConflictSnapshot>
     private lateinit var routeState: MutableState<RouteScenarioSnapshot>
     private lateinit var triageState: MutableState<TriageWorkflowSnapshot>
+    private lateinit var proofState: MutableState<ProofOfDeliveryUiState>
     private var relayStartRequested = false
 
     @Before
@@ -49,6 +53,7 @@ class MainScreenTest {
         conflictState = mutableStateOf(MissionConflictSnapshot.Idle)
         routeState = mutableStateOf(routeSnapshot(flooded = false))
         triageState = mutableStateOf(DefaultTriageWorkflow().evaluate(65))
+        proofState = mutableStateOf(ProofOfDeliveryUiState.Ready(podOffer()))
         relayStartRequested = false
         composeTestRule.setContent {
             DigitalDeltaTheme(darkTheme = false) {
@@ -95,6 +100,30 @@ class MainScreenTest {
                             confirmedAtUnixMs = 1_800_000_000_000,
                         )
                     },
+                    proofOfDeliveryState = proofState.value,
+                    onVerifyHandoff = { tampered ->
+                        val offer = when (val current = proofState.value) {
+                            is ProofOfDeliveryUiState.Ready -> current.offer
+                            is ProofOfDeliveryUiState.Verified -> current.offer
+                            is ProofOfDeliveryUiState.Rejected -> current.offer
+                            else -> podOffer()
+                        }
+                        val receipt = podReceipt()
+                        proofState.value = when {
+                            tampered -> ProofOfDeliveryUiState.Rejected(
+                                offer,
+                                DeliveryOfferRejection.INVALID_SIGNATURE,
+                                if (proofState.value is ProofOfDeliveryUiState.Verified) listOf(receipt) else emptyList(),
+                            )
+                            proofState.value is ProofOfDeliveryUiState.Verified -> ProofOfDeliveryUiState.Rejected(
+                                offer,
+                                DeliveryOfferRejection.REPLAY_REJECTED,
+                                listOf(receipt),
+                            )
+                            else -> ProofOfDeliveryUiState.Verified(offer, receipt, listOf(receipt))
+                        }
+                    },
+                    onPrepareNextHandoff = { proofState.value = ProofOfDeliveryUiState.Ready(podOffer()) },
                 )
             }
         }
@@ -129,10 +158,16 @@ class MainScreenTest {
         composeTestRule.onNodeWithText("English").performClick()
         composeTestRule.onNodeWithText("Handoff").performClick()
         composeTestRule.onNode(hasScrollAction()).performTouchInput { swipeUp() }
-        composeTestRule.onNodeWithText("Verify signed handoff").performClick()
+        composeTestRule.onNode(hasScrollAction()).performTouchInput { swipeUp() }
+        composeTestRule.onNode(hasTestTag("verify-handoff")).performClick()
+        composeTestRule.onNodeWithText("Handoff verified").assertIsDisplayed()
+        composeTestRule.waitForIdle()
+        composeTestRule.onNodeWithText("Verify the same QR again").assertIsDisplayed()
+        composeTestRule.onNode(hasTestTag("verify-handoff")).performClick()
+        composeTestRule.waitForIdle()
 
         composeTestRule.onNodeWithText("Replay rejected").assertIsDisplayed()
-        composeTestRule.onNodeWithText("Handoff verified").assertExists()
+        composeTestRule.onNodeWithText("1 • linked chain valid").assertExists()
     }
 
     @Test
@@ -252,4 +287,27 @@ class MainScreenTest {
             ),
         )
     }
+
+    private fun podOffer() = DeliveryOfferReady(
+        qrCode = "DIGITALDELTA:POD:test",
+        deliveryId = "DELTA-2026-0001",
+        senderIdentityId = "boat-operator-02",
+        recipientIdentityId = "hospital-operator-01",
+        senderSigningKeyId = "rsa-signing-key-1",
+        payloadSha256 = ByteArray(32) { 1 },
+        nonce = ByteArray(16) { 2 },
+        timestampUnixMs = 1_800_000_000_000,
+        previousReceiptSha256 = ByteArray(32) { 3 },
+        simulatedVehicle = true,
+    )
+
+    private fun podReceipt() = CustodyReceiptRecord(
+        eventId = "custody-event-1",
+        deliveryId = "DELTA-2026-0001",
+        senderIdentityId = "boat-operator-02",
+        recipientIdentityId = "hospital-operator-01",
+        previousReceiptSha256 = ByteArray(32) { 3 },
+        receiptHash = ByteArray(32) { 4 },
+        recordedAtUnixMs = 1_800_000_000_100,
+    )
 }

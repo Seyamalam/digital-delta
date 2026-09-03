@@ -53,6 +53,7 @@ import androidx.compose.material.icons.filled.DirectionsBoat
 import androidx.compose.material.icons.filled.Handshake
 import androidx.compose.material.icons.filled.Hub
 import androidx.compose.material.icons.filled.Info
+import androidx.compose.material.icons.filled.Inventory2
 import androidx.compose.material.icons.filled.Language
 import androidx.compose.material.icons.filled.Layers
 import androidx.compose.material.icons.filled.Link
@@ -187,6 +188,9 @@ fun DigitalDeltaApp(
     onToggleRouteFailure: (() -> Unit)? = null,
     triageState: TriageWorkflowSnapshot? = null,
     onConfirmPreemption: (() -> Unit)? = null,
+    proofOfDeliveryState: ProofOfDeliveryUiState = ProofOfDeliveryUiState.Loading,
+    onVerifyHandoff: ((Boolean) -> Unit)? = null,
+    onPrepareNextHandoff: (() -> Unit)? = null,
 ) {
     var booting by rememberSaveable { mutableStateOf(showBootSequence) }
     LaunchedEffect(showBootSequence) {
@@ -224,6 +228,9 @@ fun DigitalDeltaApp(
                 onToggleRouteFailure = onToggleRouteFailure,
                 triageState = triageState,
                 onConfirmPreemption = onConfirmPreemption,
+                proofOfDeliveryState = proofOfDeliveryState,
+                onVerifyHandoff = onVerifyHandoff,
+                onPrepareNextHandoff = onPrepareNextHandoff,
             )
         }
     }
@@ -327,6 +334,9 @@ private fun DeltaShell(
     onToggleRouteFailure: (() -> Unit)?,
     triageState: TriageWorkflowSnapshot?,
     onConfirmPreemption: (() -> Unit)?,
+    proofOfDeliveryState: ProofOfDeliveryUiState,
+    onVerifyHandoff: ((Boolean) -> Unit)?,
+    onPrepareNextHandoff: (() -> Unit)?,
 ) {
     var destination by rememberSaveable { mutableStateOf(DeltaDestination.OPERATIONS) }
     var identityOpen by rememberSaveable { mutableStateOf(false) }
@@ -414,7 +424,12 @@ private fun DeltaShell(
                     triageState = triageState,
                     onConfirmPreemption = onConfirmPreemption,
                 )
-                DeltaDestination.HANDOFF -> HandoffScreen(language)
+                DeltaDestination.HANDOFF -> HandoffScreen(
+                    language = language,
+                    state = proofOfDeliveryState,
+                    onVerify = onVerifyHandoff,
+                    onPrepareNext = onPrepareNextHandoff,
+                )
             }
         }
     }
@@ -1459,17 +1474,33 @@ private fun MeshRelayCard(
     }
 }
 
-private enum class HandoffUiState { VERIFIED, REPLAY_REJECTED }
-
 @Composable
-private fun HandoffScreen(language: AppLanguage) {
-    var state by rememberSaveable { mutableStateOf(HandoffUiState.VERIFIED) }
+private fun HandoffScreen(
+    language: AppLanguage,
+    state: ProofOfDeliveryUiState,
+    onVerify: ((Boolean) -> Unit)?,
+    onPrepareNext: (() -> Unit)?,
+) {
+    val offer = when (state) {
+        is ProofOfDeliveryUiState.Ready -> state.offer
+        is ProofOfDeliveryUiState.Verifying -> state.offer
+        is ProofOfDeliveryUiState.Verified -> state.offer
+        is ProofOfDeliveryUiState.Rejected -> state.offer
+        ProofOfDeliveryUiState.Loading,
+        ProofOfDeliveryUiState.Failed,
+        -> null
+    }
+    val preservedChain = when (state) {
+        is ProofOfDeliveryUiState.Verified -> state.chain
+        is ProofOfDeliveryUiState.Rejected -> state.preservedChain
+        else -> emptyList()
+    }
     LazyColumn(
         modifier = Modifier.fillMaxSize(),
         contentPadding = PaddingValues(16.dp, 18.dp, 16.dp, 28.dp),
         verticalArrangement = Arrangement.spacedBy(14.dp),
     ) {
-        item { SectionLabel(text(R.string.qr_scan_step, language)) }
+        item { SectionLabel(text(R.string.signed_offer_step, language)) }
         item {
             Surface(
                 color = MaterialTheme.colorScheme.surface,
@@ -1478,12 +1509,32 @@ private fun HandoffScreen(language: AppLanguage) {
                 modifier = Modifier.fillMaxWidth(),
             ) {
                 Column(Modifier.padding(18.dp), horizontalAlignment = Alignment.CenterHorizontally) {
-                    QrCode(
-                        value = "DELTA-2026-0001|Boat-02|Hospital-01|nonce-0001",
-                        description = text(R.string.signed_delivery_qr_description, language),
-                    )
-                    Spacer(Modifier.height(12.dp))
-                    Text(text(R.string.scan_recipient_qr, language), textAlign = TextAlign.Center)
+                    when {
+                        offer != null -> {
+                            QrCode(
+                                value = offer.qrCode,
+                                description = text(R.string.signed_delivery_qr_description, language),
+                            )
+                            Spacer(Modifier.height(12.dp))
+                            Text(text(R.string.scan_recipient_qr, language), textAlign = TextAlign.Center)
+                            Spacer(Modifier.height(6.dp))
+                            Text(
+                                "Protobuf • RSA-PSS • ${offer.senderSigningKeyId.takeLast(10)}",
+                                style = MaterialTheme.typography.labelSmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            )
+                        }
+                        state is ProofOfDeliveryUiState.Failed -> {
+                            Icon(Icons.Default.Warning, null, tint = AlertCoral, modifier = Modifier.size(42.dp))
+                            Spacer(Modifier.height(10.dp))
+                            Text(text(R.string.handoff_prepare_failed, language), textAlign = TextAlign.Center)
+                        }
+                        else -> {
+                            LinearProgressIndicator(Modifier.fillMaxWidth())
+                            Spacer(Modifier.height(12.dp))
+                            Text(text(R.string.preparing_signed_offer, language), textAlign = TextAlign.Center)
+                        }
+                    }
                 }
             }
         }
@@ -1495,30 +1546,45 @@ private fun HandoffScreen(language: AppLanguage) {
                 border = CardDefaults.outlinedCardBorder(),
             ) {
                 Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                    val verified = state is ProofOfDeliveryUiState.Verified
+                    val rejected = state is ProofOfDeliveryUiState.Rejected
+                    val statusColor = when {
+                        verified -> VerifiedGreen
+                        rejected -> AlertCoral
+                        else -> DeltaTeal
+                    }
                     Surface(
-                        color = VerifiedGreen.copy(alpha = .10f),
-                        contentColor = VerifiedGreen,
+                        color = statusColor.copy(alpha = .10f),
+                        contentColor = statusColor,
                         shape = RoundedCornerShape(14.dp),
                     ) {
                         Row(Modifier.fillMaxWidth().padding(14.dp), verticalAlignment = Alignment.CenterVertically) {
-                            Icon(Icons.Default.Shield, null, modifier = Modifier.size(34.dp))
+                            Icon(
+                                if (rejected) Icons.Default.Warning else Icons.Default.Shield,
+                                null,
+                                modifier = Modifier.size(34.dp),
+                            )
                             Spacer(Modifier.width(12.dp))
                             Column {
-                                Text(text(R.string.handoff_verified, language), style = MaterialTheme.typography.titleLarge)
-                                Text(text(R.string.custody_verified, language))
+                                Text(
+                                    when (state) {
+                                        is ProofOfDeliveryUiState.Ready -> text(R.string.awaiting_verification, language)
+                                        is ProofOfDeliveryUiState.Verifying -> text(R.string.verifying_locally, language)
+                                        is ProofOfDeliveryUiState.Verified -> text(R.string.handoff_verified, language)
+                                        is ProofOfDeliveryUiState.Rejected -> text(R.string.handoff_rejected, language)
+                                        ProofOfDeliveryUiState.Loading -> text(R.string.preparing_signed_offer, language)
+                                        ProofOfDeliveryUiState.Failed -> text(R.string.handoff_prepare_failed, language)
+                                    },
+                                    style = MaterialTheme.typography.titleLarge,
+                                )
+                                Text(
+                                    if (verified) text(R.string.custody_verified, language)
+                                    else text(R.string.offline_local_verification, language),
+                                )
                             }
                         }
                     }
-                    DetailRow(text(R.string.sender, language), "Boat-02", Icons.Default.DirectionsBoat)
-                    DetailRow(text(R.string.recipient, language), "Drone-01 • SIMULATED", Icons.Default.AirplanemodeActive)
-                    DetailRow(text(R.string.nonce_check, language), text(R.string.nonce_ok, language), Icons.Default.Shield)
-                    DetailRow(text(R.string.chain_progress, language), text(R.string.chain_steps, language), Icons.Default.Link)
-                    OutlinedButton(onClick = {}, modifier = Modifier.fillMaxWidth().height(50.dp)) {
-                        Icon(Icons.Default.Shield, null)
-                        Spacer(Modifier.width(8.dp))
-                        Text(text(R.string.view_audit, language))
-                    }
-                    AnimatedVisibility(state == HandoffUiState.REPLAY_REJECTED) {
+                    AnimatedVisibility(state is ProofOfDeliveryUiState.Rejected) {
                         Surface(
                             color = AlertCoral.copy(alpha = .10f),
                             contentColor = AlertCoral,
@@ -1528,29 +1594,119 @@ private fun HandoffScreen(language: AppLanguage) {
                                 Icon(Icons.Default.Warning, null)
                                 Spacer(Modifier.width(10.dp))
                                 Column {
-                                    Text(text(R.string.replay_rejected, language), fontWeight = FontWeight.Bold)
-                                    Text(text(R.string.replay_explanation, language), style = MaterialTheme.typography.bodyMedium)
+                                    val rejection = (state as? ProofOfDeliveryUiState.Rejected)?.reason
+                                    Text(
+                                        rejectionTitle(rejection, language),
+                                        fontWeight = FontWeight.Bold,
+                                    )
+                                    Text(
+                                        rejectionExplanation(rejection, language),
+                                        style = MaterialTheme.typography.bodyMedium,
+                                    )
                                 }
                             }
                         }
                     }
+                    if (offer != null && state !is ProofOfDeliveryUiState.Verifying) {
+                        Button(
+                            onClick = { onVerify?.invoke(false) },
+                            modifier = Modifier.fillMaxWidth().height(52.dp).testTag("verify-handoff"),
+                        ) {
+                            Icon(
+                                if (state is ProofOfDeliveryUiState.Verified) Icons.Default.Replay
+                                else Icons.Default.CheckCircle,
+                                null,
+                            )
+                            Spacer(Modifier.width(8.dp))
+                            Text(
+                                text(
+                                    if (state is ProofOfDeliveryUiState.Verified) R.string.verify_same_qr
+                                    else R.string.verify_handoff,
+                                    language,
+                                ),
+                            )
+                        }
+                        OutlinedButton(
+                            onClick = { onVerify?.invoke(true) },
+                            modifier = Modifier.fillMaxWidth().height(50.dp).testTag("tamper-handoff"),
+                        ) {
+                            Icon(Icons.Default.Warning, null)
+                            Spacer(Modifier.width(8.dp))
+                            Text(text(R.string.test_tampered_qr, language))
+                        }
+                    }
+                    if (state is ProofOfDeliveryUiState.Rejected || state is ProofOfDeliveryUiState.Failed) {
+                        TextButton(
+                            onClick = { onPrepareNext?.invoke() },
+                            modifier = Modifier.fillMaxWidth().testTag("prepare-next-handoff"),
+                        ) {
+                            Text(text(R.string.prepare_next_handoff, language))
+                        }
+                    }
+                    if (offer != null) {
+                        DetailRow(text(R.string.delivery_id, language), offer.deliveryId, Icons.Default.Inventory2)
+                        DetailRow(text(R.string.sender, language), "Boat-02", Icons.Default.DirectionsBoat)
+                        DetailRow(text(R.string.recipient, language), "Hospital-01", Icons.Default.LocalHospital)
+                        DetailRow(
+                            text(R.string.payload_hash, language),
+                            offer.payloadSha256.toShortHex(),
+                            Icons.Default.Shield,
+                        )
+                        DetailRow(
+                            text(R.string.previous_receipt, language),
+                            offer.previousReceiptSha256.toShortHex(),
+                            Icons.Default.Link,
+                        )
+                    }
+                    if (state is ProofOfDeliveryUiState.Verifying) {
+                        LinearProgressIndicator(Modifier.fillMaxWidth())
+                    }
+                    if (preservedChain.isNotEmpty()) {
+                        DetailRow(
+                            text(R.string.chain_progress, language),
+                            "${preservedChain.size} • ${text(R.string.chain_valid, language)}",
+                            Icons.Default.Link,
+                        )
+                        Text(
+                            "${text(R.string.latest_receipt, language)} • ${preservedChain.last().receiptHash.toShortHex()}",
+                            style = MaterialTheme.typography.labelSmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        )
+                    }
                 }
-            }
-        }
-        item {
-            Button(
-                onClick = {
-                    state = if (state == HandoffUiState.VERIFIED) HandoffUiState.REPLAY_REJECTED else HandoffUiState.VERIFIED
-                },
-                modifier = Modifier.fillMaxWidth().height(52.dp),
-            ) {
-                Icon(if (state == HandoffUiState.VERIFIED) Icons.Default.Replay else Icons.Default.CheckCircle, null)
-                Spacer(Modifier.width(8.dp))
-                Text(text(R.string.verify_handoff, language))
             }
         }
     }
 }
+
+@Composable
+private fun rejectionTitle(reason: com.example.digitaldelta.domain.pod.DeliveryOfferRejection?, language: AppLanguage): String =
+    text(
+        when (reason) {
+            com.example.digitaldelta.domain.pod.DeliveryOfferRejection.REPLAY_REJECTED -> R.string.replay_rejected
+            com.example.digitaldelta.domain.pod.DeliveryOfferRejection.INVALID_SIGNATURE -> R.string.signature_rejected
+            else -> R.string.handoff_rejected
+        },
+        language,
+    )
+
+@Composable
+private fun rejectionExplanation(
+    reason: com.example.digitaldelta.domain.pod.DeliveryOfferRejection?,
+    language: AppLanguage,
+): String = text(
+    when (reason) {
+        com.example.digitaldelta.domain.pod.DeliveryOfferRejection.REPLAY_REJECTED -> R.string.replay_explanation
+        com.example.digitaldelta.domain.pod.DeliveryOfferRejection.INVALID_SIGNATURE -> R.string.signature_rejection_explanation
+        com.example.digitaldelta.domain.pod.DeliveryOfferRejection.CLOCK_SKEW -> R.string.clock_skew_explanation
+        com.example.digitaldelta.domain.pod.DeliveryOfferRejection.KEY_MISMATCH -> R.string.key_mismatch_explanation
+        else -> R.string.handoff_rejection_explanation
+    },
+    language,
+)
+
+private fun ByteArray.toShortHex(): String =
+    joinToString("") { "%02x".format(it) }.let { "${it.take(8)}…${it.takeLast(8)}" }
 
 @Composable
 private fun FloodMap(

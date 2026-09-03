@@ -32,6 +32,8 @@ import com.example.digitaldelta.domain.routing.RouteScenario
 import com.example.digitaldelta.domain.routing.SylhetMapParser
 import com.example.digitaldelta.domain.triage.RoomTriageWorkflow
 import com.example.digitaldelta.domain.triage.TriageWorkflow
+import com.example.digitaldelta.domain.pod.ProofOfDeliveryWorkflow
+import com.example.digitaldelta.domain.pod.RoomProofOfDeliveryWorkflow
 import com.example.digitaldelta.settings.v1.UserSettings
 import dagger.Module
 import dagger.Provides
@@ -137,4 +139,11 @@ object AppModule {
     @Provides
     @Singleton
     fun provideTriageWorkflow(database: DeltaDatabase): TriageWorkflow = RoomTriageWorkflow(database)
+
+    @Provides
+    @Singleton
+    fun provideProofOfDeliveryWorkflow(
+        database: DeltaDatabase,
+        deviceKeys: AndroidDeviceIdentityKeyStore,
+    ): ProofOfDeliveryWorkflow = RoomProofOfDeliveryWorkflow(database, deviceKeys)
 }

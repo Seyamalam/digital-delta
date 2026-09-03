@@ -219,6 +219,9 @@ interface SeenMessageDao {
 interface NonceDao {
     @Insert(onConflict = OnConflictStrategy.IGNORE)
     suspend fun claim(nonce: UsedNonceEntity): Long
+
+    @Query("SELECT COUNT(*) FROM used_nonces WHERE nonceSha256 = :nonceSha256")
+    suspend fun count(nonceSha256: String): Int
 }
 
 @Dao

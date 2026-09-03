@@ -15,7 +15,6 @@ import java.security.spec.MGF1ParameterSpec
 import java.security.spec.PSSParameterSpec
 import java.security.spec.X509EncodedKeySpec
 import java.util.Base64
-import kotlin.math.abs
 
 data class DeliveryOfferDraft(
     val deliveryId: String,
@@ -81,6 +80,8 @@ enum class DeliveryOfferRejection {
     WRONG_RECIPIENT,
     PAYLOAD_HASH_MISMATCH,
     CLOCK_SKEW,
+    PREVIOUS_RECEIPT_MISMATCH,
+    REPLAY_REJECTED,
 }
 
 sealed interface DeliveryOfferVerification {
@@ -126,7 +127,17 @@ class DeliveryOfferCodec {
         )
     }
 
+    /** Deterministic fault injection for the fair demo; never used on an accepted path. */
+    fun tamperRecipientForDemo(code: String, recipientIdentityId: String): String {
+        val signed = decodeCode(code)
+        val tampered = signed.toBuilder()
+            .setOffer(signed.offer.toBuilder().setRecipientIdentityId(recipientIdentityId))
+            .build()
+        return CODE_PREFIX + Base64.getUrlEncoder().withoutPadding().encodeToString(tampered.toByteArray())
+    }
+
     fun verifyCode(code: String, trusted: TrustedDeliveryContext): DeliveryOfferVerification {
+        require(trusted.allowedClockSkewMs >= 0) { "allowed clock skew cannot be negative" }
         val signed = runCatching { decodeCode(code) }.getOrElse {
             return DeliveryOfferVerification.Rejected(DeliveryOfferRejection.MALFORMED)
         }
@@ -166,9 +177,15 @@ class DeliveryOfferCodec {
         if (!MessageDigest.isEqual(offer.payloadSha256.toByteArray(), trusted.payloadSha256)) {
             return rejected(DeliveryOfferRejection.PAYLOAD_HASH_MISMATCH)
         }
-        if (offer.timestampUnixMs < 0 || trusted.nowUnixMs < 0 ||
-            abs(trusted.nowUnixMs - offer.timestampUnixMs) > trusted.allowedClockSkewMs
-        ) {
+        if (offer.timestampUnixMs < 0 || trusted.nowUnixMs < 0) {
+            return rejected(DeliveryOfferRejection.CLOCK_SKEW)
+        }
+        val clockDelta = if (trusted.nowUnixMs >= offer.timestampUnixMs) {
+            trusted.nowUnixMs - offer.timestampUnixMs
+        } else {
+            offer.timestampUnixMs - trusted.nowUnixMs
+        }
+        if (clockDelta > trusted.allowedClockSkewMs) {
             return rejected(DeliveryOfferRejection.CLOCK_SKEW)
         }
         return DeliveryOfferVerification.Verified(signed)
