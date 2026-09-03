@@ -69,6 +69,8 @@ These are real emulator captures from the working application, not final submiss
 | Reused nonce rejected with custody preserved | Captured | Captured | `artifacts/screenshots/field-bn/18-field-bn-pod-replay-rejected.png`, `artifacts/screenshots/field-en/18-field-en-pod-replay-rejected.png` |
 | Altered signed field rejected before nonce claim | Captured | Captured | `artifacts/screenshots/field-bn/19-field-bn-pod-tamper-rejected.png`, `artifacts/screenshots/field-en/19-field-en-pod-tamper-rejected.png` |
 | On-device ONNX risk prediction and proactive boat reroute | Captured | Captured | `artifacts/screenshots/field-bn/20-field-bn-onnx-risk-reroute.png`, `artifacts/screenshots/field-en/20-field-en-onnx-risk-reroute.png` |
+| Drone-required reachability, rendezvous, ETA, and battery reserve | Captured | Captured | `artifacts/screenshots/field-bn/21-field-bn-hybrid-ready.png`, `artifacts/screenshots/field-en/21-field-en-hybrid-ready.png` |
+| Signed boat-to-simulated-drone custody receipt | Captured | Captured | `artifacts/screenshots/field-bn/22-field-bn-hybrid-transferred.png`, `artifacts/screenshots/field-en/22-field-en-hybrid-transferred.png` |
 
 ## Field application shots
 
@@ -94,7 +96,7 @@ These are real emulator captures from the working application, not final submiss
 - [x] Simulated route-risk inputs, ONNX probability, threshold, overlay, and proactive reroute in both languages
 - [ ] Full chain-of-custody timeline; current UI shows the verified count and latest hash
 - [ ] Low-battery broadcast reduction
-- [ ] Simulated drone handoff
+- [x] Simulated drone-required plan and signed handoff in both languages; delayed-boat failure shot remains
 - [ ] Accessibility large-text state
 - [ ] Empty and error states
 

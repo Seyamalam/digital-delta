@@ -178,6 +178,18 @@ Use this log for choices that affect scope, claims, compatibility, or safety.
 
 **Evidence:** `MODEL_CARD.md`, `RouteRiskClassifierTest`, `RouteScenarioTest`, `OnnxRouteRiskPredictorTest`, `MainScreenViewModelTest`, `MainScreenTest`, checked model artifacts, and the local reproduction gate.
 
+## DD-017: minimize delivery completion while preserving drone reserve
+
+**Status:** Accepted
+
+**Decision:** Classify reachability with the same vehicle-constrained graph as M4. For an air-only destination, reject any rendezvous whose complete drone mission—base to handoff to destination—would finish below the configured reserve. Among feasible candidates, minimize final delivery arrival, then handoff readiness, then candidate ID. Persist the selected plan and each simulated arrival as Protobuf events, and reuse M5 unchanged for the signed boat-to-drone custody record.
+
+**Reason:** Minimizing only the later arrival at the handoff can select a point that delays the actual clinic delivery or strands the simulated drone. A reserve-first feasibility boundary is safer and makes the choice explainable from the three displayed ETAs.
+
+**Consequences:** The fair scenario chooses R3 with 33-minute boat, 19-minute drone, and 45-minute delivery estimates, leaving 25 percent projected battery against a 20 percent reserve. Vehicle movement is always visibly simulated; reachability, route math, Android Keystore signatures, Protobuf encoding, and Room writes are real. The current model uses great-circle travel at fixed scenario speeds and does not model wind, payload-dependent drain, launch constraints, or aviation approval. Delayed-boat replanning and physical-device evidence remain required.
+
+**Evidence:** `FleetOrchestratorTest`, `HybridFleetWorkflowTest`, `RoomHybridFleetEventRecorderTest`, the custom drone scenario in `RoomProofOfDeliveryWorkflowTest`, `MainScreenViewModelTest`, `MainScreenTest`, the 37-test connected gate, and paired M8 captures under `artifacts/screenshots/`.
+
 ## New decision template
 
 ```md

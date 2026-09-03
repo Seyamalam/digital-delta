@@ -99,11 +99,11 @@ Evidence: M6 and M7, explainability, human approval.
 
 ### 6:15 to 7:30, drone-required handoff
 
-- Fail the final road or water connection.
-- Show the destination become drone-required.
-- Compute the rendezvous point.
-- Display simulated boat and drone arrival times.
-- Transfer custody from the boat role to the simulated-drone role.
+- Open **Handoff / হস্তান্তর** and point to the visible `DRONE-REQUIRED` and `SIMULATED` badges for air-only N7.
+- Explain why R3 was selected: 33-minute boat ETA, 19-minute drone ETA, 45-minute final delivery ETA, and 25 percent projected battery above the 20 percent reserve.
+- Tap **Simulate boat arrival**, then generate the signed boat-to-drone Protobuf QR while the progress animation covers Android Keystore work.
+- Tap **Simulated drone signs and accepts** and show the two-party receipt, simulated-drone identity, receipt hash, and valid linked chain.
+- Switch language without resetting the completed transfer.
 
 Evidence: M8. State clearly that the vehicle movement is simulated and the coordination logic is real.
 
@@ -175,4 +175,3 @@ The reset command must:
 | QR camera fails | Enter the compact handoff code manually and show the same signature verification path |
 
 Do not hide a failure. State what failed, use the prepared fallback, and avoid claiming that the failed path ran live.
-

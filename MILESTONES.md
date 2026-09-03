@@ -197,7 +197,7 @@ Exit criteria:
 
 **Goal:** Coordinate boat, truck, and simulated drone ownership without physical vehicles.
 
-Module advanced: M8.
+Module status: Demoable on the Android emulator; verification still requires delayed-boat coverage, target phones, and three unchanged full passes.
 
 Deliverables:
 
@@ -215,6 +215,8 @@ Exit criteria:
 - The engine computes and explains a rendezvous coordinate.
 - Boat-to-drone custody appears in the receipt chain.
 - No screen or pitch implies that a physical drone was used.
+
+Current evidence: N7 is air-only in the bundled graph, the engine chooses R3 by delivery-completion time while preserving a 20 percent reserve, Room stores `RendezvousPlanned` and `VehicleStateChanged` Protobuf events, and the existing M5 cryptography records a two-party boat-to-simulated-drone receipt. The complete bilingual journey passes in the 37-test connected suite and has paired ready/transferred captures under `artifacts/screenshots/`.
 
 ## Milestone 9: command center and disaster control
 

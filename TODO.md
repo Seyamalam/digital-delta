@@ -165,16 +165,16 @@ This checklist tracks implementation. Milestone exit criteria live in [MILESTONE
 
 ## M8 hybrid fleet and simulated drone handoff
 
-- [ ] Classify destinations by road, water, and air reachability.
-- [ ] Mark destinations with no valid ground or water path as drone-required.
-- [ ] Define boat and simulated-drone speed and battery assumptions.
-- [ ] Compute candidate rendezvous points.
-- [ ] Minimize combined or maximum arrival time according to the documented objective.
-- [ ] Explain the chosen rendezvous.
-- [ ] Simulate boat and drone arrival events.
-- [ ] Reuse M5 for signed custody transfer.
-- [ ] Display simulated vehicle state clearly.
-- [ ] Test no feasible rendezvous, low battery, late boat, and changed destination.
+- [x] Classify destinations by road, water, and air reachability.
+- [x] Mark destinations with no valid ground or water path as drone-required.
+- [x] Define boat and simulated-drone speed and battery assumptions.
+- [x] Compute candidate rendezvous points.
+- [x] Minimize delivery-completion time while preserving the configured battery reserve.
+- [x] Explain the chosen rendezvous with coordinates, three ETAs, and projected battery.
+- [x] Simulate boat and drone arrival events as visibly labelled Protobuf ledger entries.
+- [x] Reuse M5 for a sender-and-recipient-signed boat-to-drone custody transfer.
+- [x] Display simulated vehicle state clearly in Bangla and English.
+- [ ] Complete fleet edge-case coverage. No feasible rendezvous, low battery, unreachable graph, and changed destination pass; delayed-boat replanning remains.
 
 ## Command dashboard and Disaster Control
 

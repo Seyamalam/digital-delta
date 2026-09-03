@@ -93,6 +93,8 @@ Example event families:
 - `RoutePlanned`
 - `EdgeStatusChanged`
 - `EdgeRiskPredicted`
+- `RendezvousPlanned`
+- `VehicleStateChanged`
 - `SlaBreachPredicted`
 - `PreemptionProposed`
 - `PreemptionConfirmed`
