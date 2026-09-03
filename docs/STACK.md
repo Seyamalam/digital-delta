@@ -61,7 +61,7 @@ The nearby path carries framed Protocol Buffer envelopes. It is not called gRPC.
 | Dashboard | React and TypeScript |
 | Build tool | Vite |
 | Package manager | pnpm |
-| Map | MapLibre GL JS |
+| Map | Bundled SVG topology for the deterministic fair scenario; optional offline MapLibre region later |
 | Styling | CSS variables and an accessible Digital Delta component system |
 | Local connection | gRPC-Web, Connect, or WebSocket gateway, final choice pending a spike |
 | Projector targets | 1366 by 768 and 1920 by 1080 |

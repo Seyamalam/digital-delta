@@ -102,6 +102,8 @@ These are real emulator captures from the working application, not final submiss
 
 ## Command dashboard shots
 
+The layout has been live-inspected at both target viewports in Bangla and English. Repository PNG capture remains unchecked until the evidence files are written under `artifacts/screenshots/command-bn/` and `artifacts/screenshots/command-en/`; a visual inspection alone is not treated as a stored screenshot.
+
 - [ ] Full network overview at 1920 by 1080
 - [ ] Full network overview at 1366 by 768
 - [ ] Offline map with road, water, and air legend

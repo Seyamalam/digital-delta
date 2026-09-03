@@ -178,15 +178,15 @@ This checklist tracks implementation. Milestone exit criteria live in [MILESTONE
 
 ## Command dashboard and Disaster Control
 
-- [ ] Build projector layout for 1366 by 768 and 1920 by 1080.
-- [ ] Add route map, inventory, node status, mesh queue, risk, and custody panels.
+- [x] Build projector layout for 1366 by 768 and 1920 by 1080.
+- [x] Add route map, inventory, node status, mesh queue, risk, and custody panels.
 - [ ] Add Offline, Syncing, Conflict, and Verified states.
-- [ ] Add Bangla and English dashboard modes.
+- [x] Add Bangla and English dashboard modes.
 - [ ] Add simulated rainfall, saturation, edge failure, node failure, delay, and battery controls.
 - [ ] Add duplicate-message and QR-tamper injection.
-- [ ] Add event narration and module evidence panel.
+- [x] Add deterministic event narration with module-labelled evidence rows.
 - [ ] Add scenario pause, resume, step, reset, and replay.
-- [ ] Make every control deterministic under a scenario seed.
+- [x] Make every implemented control deterministic under scenario seed `20260412`.
 - [ ] Prove field phones continue after dashboard disconnection.
 
 ## Testing, evidence, and submission
