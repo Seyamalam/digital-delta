@@ -16,6 +16,10 @@ import com.example.digitaldelta.theme.DigitalDeltaTheme
 import com.example.digitaldelta.domain.mesh.MeshRuntimeState
 import com.example.digitaldelta.domain.mesh.NearbyMeshState
 import com.example.digitaldelta.domain.mesh.NearbyPeerCandidate
+import com.example.digitaldelta.domain.sync.ConflictSide
+import com.example.digitaldelta.domain.sync.MissionConflictSnapshot
+import com.example.digitaldelta.domain.sync.MissionField
+import com.example.digitaldelta.domain.sync.VectorClock
 import org.junit.Before
 import org.junit.Assert.assertTrue
 import org.junit.Rule
@@ -27,12 +31,14 @@ class MainScreenTest {
 
     private lateinit var requestState: MutableState<RequestQueueUiState>
     private lateinit var meshState: MutableState<MeshRuntimeState>
+    private lateinit var conflictState: MutableState<MissionConflictSnapshot>
     private var relayStartRequested = false
 
     @Before
     fun setup() {
         requestState = mutableStateOf(RequestQueueUiState.Idle)
         meshState = mutableStateOf(MeshRuntimeState())
+        conflictState = mutableStateOf(MissionConflictSnapshot.Idle)
         relayStartRequested = false
         composeTestRule.setContent {
             DigitalDeltaTheme(darkTheme = false) {
@@ -41,6 +47,28 @@ class MainScreenTest {
                     requestQueueState = requestState.value,
                     meshRuntimeState = meshState.value,
                     onStartRelay = { relayStartRequested = true },
+                    conflictState = conflictState.value,
+                    onSimulateConflict = {
+                        conflictState.value = MissionConflictSnapshot.Open(
+                            conflictId = "conflict-1",
+                            missionId = "mission-sylhet-01",
+                            field = MissionField.DESTINATION,
+                            leftValue = "N3",
+                            rightValue = "N6",
+                            leftClock = VectorClock(mapOf("phone-a" to 2L, "phone-b" to 1L)),
+                            rightClock = VectorClock(mapOf("phone-a" to 1L, "phone-b" to 2L)),
+                        )
+                    },
+                    onResolveConflict = { _, side ->
+                        conflictState.value = MissionConflictSnapshot.Resolved(
+                            conflictId = "conflict-1",
+                            missionId = "mission-sylhet-01",
+                            field = MissionField.DESTINATION,
+                            selectedValue = if (side == ConflictSide.LEFT) "N3" else "N6",
+                            resolverIdentityId = "coordinator-sylhet-01",
+                            convergenceHash = "a4e96ff28c89d214d02a3c87f01778e7ad3f139307376afaacd1a10da45a9b22",
+                        )
+                    },
                 )
             }
         }
@@ -125,5 +153,22 @@ class MainScreenTest {
         composeTestRule.onNodeWithText("English").performClick()
         composeTestRule.onNodeWithText("Compare on both phones: 482 193").assertIsDisplayed()
         composeTestRule.onNodeWithText("Stop nearby relay").assertIsDisplayed()
+    }
+
+    @Test
+    fun concurrentSafetyEditRequiresHumanChoiceAndShowsConvergenceInBothLanguages() {
+        composeTestRule.onNode(hasScrollAction()).performTouchInput { swipeUp() }
+        composeTestRule.onNodeWithText("সমসাময়িক অফলাইন সম্পাদনা চালান").performClick()
+        composeTestRule.onNodeWithText("মানব সিদ্ধান্ত প্রয়োজন").assertIsDisplayed()
+        composeTestRule.onNodeWithText("সুনামগঞ্জ সদর ক্যাম্প").assertIsDisplayed()
+        composeTestRule.onNode(hasScrollAction()).performTouchInput { swipeUp() }
+        composeTestRule.onNodeWithText("হবিগঞ্জ মেডিকেল").assertIsDisplayed()
+
+        composeTestRule.onNodeWithText("English").performClick()
+        composeTestRule.onNodeWithText("Human decision required").assertExists()
+        composeTestRule.onNodeWithText("Use Habiganj Medical").performClick()
+
+        composeTestRule.onNodeWithText("Conflict resolved • devices converge").assertIsDisplayed()
+        composeTestRule.onNodeWithText("Hash • a4e96ff28c89").assertIsDisplayed()
     }
 }

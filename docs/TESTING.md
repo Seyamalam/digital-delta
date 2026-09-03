@@ -23,6 +23,8 @@ The local runner lints Protobuf schemas, rejects JSON references in mesh package
 
 The live Android 15 emulator check starts the real Nearby `CLUSTER` adapter in a `connectedDevice` foreground service, grants the app-requested nearby and notification permissions, verifies advertise/discover state and battery cadence in Bangla and English, and stops the service through the field UI. This proves the single-device lifecycle only. It does not replace the required A to B to C transfer on three physical phones.
 
+The M2 tests compare causal, equal, and concurrent vector clocks; prove deterministic safe-field convergence in both arrival orders; reject automatic resolution of destination, priority, and medical-quantity disagreement; and merge grow-only sets and per-replica PN-counters. A connected Room test raises a simulated destination conflict, closes and reopens the database, resolves the restored conflict, and verifies the operation count, selected projection, and 64-character convergence hash. The Compose journey proves both languages and the explicit human choice. Physical two-phone convergence and assignment tombstones remain release evidence.
+
 ## Test layers
 
 ### Unit tests

@@ -70,17 +70,17 @@ This checklist tracks implementation. Milestone exit criteria live in [MILESTONE
 
 ## M2 distributed data and CRDT sync
 
-- [ ] Implement an append-only operation log in SQLite.
-- [ ] Implement vector-clock comparison.
-- [ ] Select CRDT or merge behavior per field.
-- [ ] Use grow-only sets for receipt and audit identifiers.
+- [x] Implement an append-only Protobuf operation log in SQLite for the current request and conflict paths.
+- [x] Implement vector-clock comparison.
+- [x] Select and document CRDT or merge behavior per field.
+- [x] Use a grow-only set primitive for receipt and audit identifiers; production receipt projection wiring remains.
 - [ ] Use an observed-remove set or explicit tombstones for assignments.
-- [ ] Use counters that cannot lose concurrent stock changes.
-- [ ] Route safety-sensitive conflicts to human review.
-- [ ] Add sync queue and retry policy.
-- [ ] Add convergence hash per mission projection.
-- [ ] Build the conflict screen in Bangla and English.
-- [ ] Test concurrent update, deletion, duplicate, late arrival, and clock-skew cases.
+- [x] Implement a per-replica PN-counter that cannot lose concurrent stock changes; inventory projection wiring remains.
+- [x] Route concurrent destination, priority, and medical-quantity conflicts to human review.
+- [x] Add the persistent sync queue and bounded retry policy through the shared Room mesh outbox.
+- [x] Add a policy-versioned SHA-256 convergence hash per mission projection.
+- [x] Build the conflict screen in Bangla and English with vector clocks and explicit resolution.
+- [ ] Test concurrent update, deletion, duplicate, late arrival, and clock-skew cases. Concurrent, duplicate/equal-clock safety, causal late arrival, and wall-clock disagreement are covered; deletion tombstones remain.
 
 ## M3 nearby mesh
 

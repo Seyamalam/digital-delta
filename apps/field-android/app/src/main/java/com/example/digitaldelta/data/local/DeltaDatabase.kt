@@ -96,6 +96,44 @@ data class RecipientKeyEntity(
     val provisionedAtUnixMs: Long,
 )
 
+@Entity(
+    tableName = "mission_projections",
+    primaryKeys = ["missionId", "fieldCode"],
+    indices = [Index(value = ["missionId"])],
+)
+data class MissionProjectionEntity(
+    val missionId: String,
+    val fieldCode: String,
+    val value: String,
+    val vectorClockBytes: ByteArray,
+    val sourceEventId: String,
+    val updatedAtUnixMs: Long,
+    val convergenceHash: String,
+)
+
+@Entity(
+    tableName = "conflicts",
+    indices = [Index(value = ["missionId", "state", "createdAtUnixMs"])],
+)
+data class ConflictEntity(
+    @PrimaryKey val conflictId: String,
+    val missionId: String,
+    val fieldCode: String,
+    val leftEventId: String,
+    val leftValue: String,
+    val leftClockBytes: ByteArray,
+    val rightEventId: String,
+    val rightValue: String,
+    val rightClockBytes: ByteArray,
+    val mergedClockBytes: ByteArray,
+    val state: String,
+    val selectedValue: String?,
+    val resolverIdentityId: String?,
+    val reasonCode: String?,
+    val createdAtUnixMs: Long,
+    val resolvedAtUnixMs: Long?,
+)
+
 @Dao
 interface OutboxDao {
     @Insert(onConflict = OnConflictStrategy.IGNORE)
@@ -210,6 +248,55 @@ interface RecipientKeyDao {
     suspend fun mostRecentlyProvisioned(): RecipientKeyEntity?
 }
 
+@Dao
+interface MissionProjectionDao {
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    suspend fun upsert(projection: MissionProjectionEntity)
+
+    @Query("SELECT * FROM mission_projections WHERE missionId = :missionId AND fieldCode = :fieldCode LIMIT 1")
+    suspend fun find(missionId: String, fieldCode: String): MissionProjectionEntity?
+
+    @Query("SELECT * FROM mission_projections WHERE missionId = :missionId ORDER BY fieldCode ASC")
+    suspend fun forMission(missionId: String): List<MissionProjectionEntity>
+
+    @Query("UPDATE mission_projections SET convergenceHash = :hash WHERE missionId = :missionId")
+    suspend fun updateConvergenceHash(missionId: String, hash: String)
+}
+
+@Dao
+interface ConflictDao {
+    @Insert(onConflict = OnConflictStrategy.ABORT)
+    suspend fun insert(conflict: ConflictEntity)
+
+    @Query("SELECT * FROM conflicts WHERE conflictId = :conflictId LIMIT 1")
+    suspend fun find(conflictId: String): ConflictEntity?
+
+    @Query("SELECT * FROM conflicts ORDER BY createdAtUnixMs DESC, conflictId DESC LIMIT 1")
+    suspend fun latest(): ConflictEntity?
+
+    @Query(
+        "SELECT * FROM conflicts WHERE missionId = :missionId " +
+            "ORDER BY createdAtUnixMs DESC, conflictId DESC LIMIT 1",
+    )
+    suspend fun latestForMission(missionId: String): ConflictEntity?
+
+    @Query("SELECT COUNT(*) FROM conflicts WHERE missionId = :missionId")
+    suspend fun countForMission(missionId: String): Int
+
+    @Query(
+        "UPDATE conflicts SET state = 'RESOLVED', selectedValue = :selectedValue, " +
+            "resolverIdentityId = :resolverIdentityId, reasonCode = :reasonCode, " +
+            "resolvedAtUnixMs = :resolvedAtUnixMs WHERE conflictId = :conflictId AND state = 'OPEN'",
+    )
+    suspend fun resolve(
+        conflictId: String,
+        selectedValue: String,
+        resolverIdentityId: String,
+        reasonCode: String,
+        resolvedAtUnixMs: Long,
+    ): Int
+}
+
 @Database(
     entities = [
         MeshEnvelopeEntity::class,
@@ -218,8 +305,10 @@ interface RecipientKeyDao {
         RecipientKeyEntity::class,
         MeshInboxEntity::class,
         SeenMessageEntity::class,
+        MissionProjectionEntity::class,
+        ConflictEntity::class,
     ],
-    version = 3,
+    version = 4,
     exportSchema = true,
 )
 abstract class DeltaDatabase : RoomDatabase() {
@@ -229,6 +318,8 @@ abstract class DeltaDatabase : RoomDatabase() {
     abstract fun recipientKeyDao(): RecipientKeyDao
     abstract fun meshInboxDao(): MeshInboxDao
     abstract fun seenMessageDao(): SeenMessageDao
+    abstract fun missionProjectionDao(): MissionProjectionDao
+    abstract fun conflictDao(): ConflictDao
 }
 
 object DeltaMigrations {
@@ -300,6 +391,56 @@ object DeltaMigrations {
             db.execSQL(
                 "CREATE INDEX IF NOT EXISTS index_seen_messages_expiresAtUnixMs " +
                     "ON seen_messages (expiresAtUnixMs)",
+            )
+        }
+    }
+
+    val VERSION_3_TO_4 = object : Migration(3, 4) {
+        override fun migrate(db: SupportSQLiteDatabase) {
+            db.execSQL(
+                """
+                CREATE TABLE IF NOT EXISTS mission_projections (
+                    missionId TEXT NOT NULL,
+                    fieldCode TEXT NOT NULL,
+                    value TEXT NOT NULL,
+                    vectorClockBytes BLOB NOT NULL,
+                    sourceEventId TEXT NOT NULL,
+                    updatedAtUnixMs INTEGER NOT NULL,
+                    convergenceHash TEXT NOT NULL,
+                    PRIMARY KEY(missionId, fieldCode)
+                )
+                """.trimIndent(),
+            )
+            db.execSQL(
+                "CREATE INDEX IF NOT EXISTS index_mission_projections_missionId " +
+                    "ON mission_projections (missionId)",
+            )
+            db.execSQL(
+                """
+                CREATE TABLE IF NOT EXISTS conflicts (
+                    conflictId TEXT NOT NULL,
+                    missionId TEXT NOT NULL,
+                    fieldCode TEXT NOT NULL,
+                    leftEventId TEXT NOT NULL,
+                    leftValue TEXT NOT NULL,
+                    leftClockBytes BLOB NOT NULL,
+                    rightEventId TEXT NOT NULL,
+                    rightValue TEXT NOT NULL,
+                    rightClockBytes BLOB NOT NULL,
+                    mergedClockBytes BLOB NOT NULL,
+                    state TEXT NOT NULL,
+                    selectedValue TEXT,
+                    resolverIdentityId TEXT,
+                    reasonCode TEXT,
+                    createdAtUnixMs INTEGER NOT NULL,
+                    resolvedAtUnixMs INTEGER,
+                    PRIMARY KEY(conflictId)
+                )
+                """.trimIndent(),
+            )
+            db.execSQL(
+                "CREATE INDEX IF NOT EXISTS index_conflicts_missionId_state_createdAtUnixMs " +
+                    "ON conflicts (missionId, state, createdAtUnixMs)",
             )
         }
     }

@@ -25,6 +25,8 @@ import com.example.digitaldelta.domain.identity.TrustAnchorRepository
 import com.example.digitaldelta.domain.request.DefaultReliefRequestSubmission
 import com.example.digitaldelta.domain.request.ReliefRequestSubmission
 import com.example.digitaldelta.domain.request.RoomRequestPersistence
+import com.example.digitaldelta.domain.sync.ConflictCoordinator
+import com.example.digitaldelta.domain.sync.RoomConflictCoordinator
 import com.example.digitaldelta.settings.v1.UserSettings
 import dagger.Module
 import dagger.Provides
@@ -40,7 +42,11 @@ object AppModule {
     @Singleton
     fun provideDatabase(@ApplicationContext context: Context): DeltaDatabase =
         Room.databaseBuilder(context, DeltaDatabase::class.java, "digital-delta.db")
-            .addMigrations(DeltaMigrations.VERSION_1_TO_2, DeltaMigrations.VERSION_2_TO_3)
+            .addMigrations(
+                DeltaMigrations.VERSION_1_TO_2,
+                DeltaMigrations.VERSION_2_TO_3,
+                DeltaMigrations.VERSION_3_TO_4,
+            )
             .build()
 
     @Provides
@@ -110,4 +116,9 @@ object AppModule {
         persistence = RoomRequestPersistence(database),
         payloadProtector = payloadProtector,
     )
+
+    @Provides
+    @Singleton
+    fun provideConflictCoordinator(database: DeltaDatabase): ConflictCoordinator =
+        RoomConflictCoordinator(database)
 }

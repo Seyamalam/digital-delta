@@ -79,6 +79,28 @@ class DeltaMigrationTest {
         }
     }
 
+    @Test
+    fun migrationThreeToFourPreservesMeshStateAndAddsConflictProjectionTables() {
+        helper.createDatabase(TEST_DATABASE_V4, 3).apply {
+            execSQL(
+                "INSERT INTO seen_messages (messageId, expiresAtUnixMs, firstSeenAtUnixMs) " +
+                    "VALUES ('message-1', 200, 100)",
+            )
+            close()
+        }
+
+        helper.runMigrationsAndValidate(
+            TEST_DATABASE_V4,
+            4,
+            true,
+            DeltaMigrations.VERSION_3_TO_4,
+        ).use { migrated ->
+            assertEquals(1, migrated.count("SELECT COUNT(*) FROM seen_messages"))
+            assertEquals(0, migrated.count("SELECT COUNT(*) FROM mission_projections"))
+            assertEquals(0, migrated.count("SELECT COUNT(*) FROM conflicts"))
+        }
+    }
+
     private fun SupportSQLiteDatabase.count(query: String): Int =
         query(query).use { cursor ->
             check(cursor.moveToFirst())
@@ -88,5 +110,6 @@ class DeltaMigrationTest {
     companion object {
         private const val TEST_DATABASE = "delta-migration-test"
         private const val TEST_DATABASE_V3 = "delta-migration-v3-test"
+        private const val TEST_DATABASE_V4 = "delta-migration-v4-test"
     }
 }

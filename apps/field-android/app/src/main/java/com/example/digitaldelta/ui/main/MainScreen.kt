@@ -123,6 +123,8 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.digitaldelta.R
 import com.example.digitaldelta.domain.mesh.MeshRuntimeState
+import com.example.digitaldelta.domain.sync.ConflictSide
+import com.example.digitaldelta.domain.sync.MissionConflictSnapshot
 import com.example.digitaldelta.theme.AlertCoral
 import com.example.digitaldelta.theme.DeltaTeal
 import com.example.digitaldelta.theme.DigitalDeltaTheme
@@ -174,6 +176,9 @@ fun DigitalDeltaApp(
     onStopRelay: (() -> Unit)? = null,
     onAcceptPeer: ((String) -> Unit)? = null,
     onRejectPeer: ((String) -> Unit)? = null,
+    conflictState: MissionConflictSnapshot = MissionConflictSnapshot.Idle,
+    onSimulateConflict: (() -> Unit)? = null,
+    onResolveConflict: ((String, ConflictSide) -> Unit)? = null,
 ) {
     var booting by rememberSaveable { mutableStateOf(showBootSequence) }
     LaunchedEffect(showBootSequence) {
@@ -204,6 +209,9 @@ fun DigitalDeltaApp(
                 onStopRelay = onStopRelay,
                 onAcceptPeer = onAcceptPeer,
                 onRejectPeer = onRejectPeer,
+                conflictState = conflictState,
+                onSimulateConflict = onSimulateConflict,
+                onResolveConflict = onResolveConflict,
             )
         }
     }
@@ -300,6 +308,9 @@ private fun DeltaShell(
     onStopRelay: (() -> Unit)?,
     onAcceptPeer: ((String) -> Unit)?,
     onRejectPeer: ((String) -> Unit)?,
+    conflictState: MissionConflictSnapshot,
+    onSimulateConflict: (() -> Unit)?,
+    onResolveConflict: ((String, ConflictSide) -> Unit)?,
 ) {
     var destination by rememberSaveable { mutableStateOf(DeltaDestination.OPERATIONS) }
     var identityOpen by rememberSaveable { mutableStateOf(false) }
@@ -364,7 +375,12 @@ private fun DeltaShell(
                 return@AnimatedContent
             }
             when (selected) {
-                DeltaDestination.OPERATIONS -> OperationsScreen(language)
+                DeltaDestination.OPERATIONS -> OperationsScreen(
+                    language = language,
+                    conflictState = conflictState,
+                    onSimulateConflict = onSimulateConflict,
+                    onResolveConflict = onResolveConflict,
+                )
                 DeltaDestination.REQUEST -> RequestScreen(
                     language = language,
                     requestQueueState = requestQueueState,
@@ -672,14 +688,25 @@ private fun IdentityLoadingCard(language: AppLanguage) {
 }
 
 @Composable
-private fun OperationsScreen(language: AppLanguage) {
+private fun OperationsScreen(
+    language: AppLanguage,
+    conflictState: MissionConflictSnapshot,
+    onSimulateConflict: (() -> Unit)?,
+    onResolveConflict: ((String, ConflictSide) -> Unit)?,
+) {
     var missionExpanded by rememberSaveable { mutableStateOf(false) }
+    val conflictFocused = conflictState !is MissionConflictSnapshot.Idle
     LazyColumn(
         modifier = Modifier.fillMaxSize().background(MaterialTheme.colorScheme.surface),
         contentPadding = PaddingValues(bottom = 18.dp),
     ) {
         item {
-            Box(Modifier.fillMaxWidth().height(if (missionExpanded) 360.dp else 430.dp)) {
+            val mapHeight = when {
+                conflictFocused -> 240.dp
+                missionExpanded -> 330.dp
+                else -> 370.dp
+            }
+            Box(Modifier.fillMaxWidth().height(mapHeight)) {
                 FloodMap(routeProgress = 1f, showFailure = false, showRisk = false)
                 SimulationPill(language, Modifier.align(Alignment.TopStart).padding(14.dp))
                 FilledTonalIconButton(
@@ -690,10 +717,184 @@ private fun OperationsScreen(language: AppLanguage) {
                 }
             }
         }
+        if (!conflictFocused) {
+            item {
+                MissionSheet(language, missionExpanded) { missionExpanded = !missionExpanded }
+            }
+        }
         item {
-            MissionSheet(language, missionExpanded) { missionExpanded = !missionExpanded }
+            ConflictDemoCard(
+                language = language,
+                state = conflictState,
+                onSimulate = onSimulateConflict,
+                onResolve = onResolveConflict,
+                modifier = Modifier.padding(horizontal = 14.dp, vertical = 4.dp),
+            )
+        }
+        if (conflictFocused) {
+            item {
+                MissionSheet(language, missionExpanded) { missionExpanded = !missionExpanded }
+            }
         }
     }
+}
+
+@Composable
+private fun ConflictDemoCard(
+    language: AppLanguage,
+    state: MissionConflictSnapshot,
+    onSimulate: (() -> Unit)?,
+    onResolve: ((String, ConflictSide) -> Unit)?,
+    modifier: Modifier = Modifier,
+) {
+    val transition = rememberInfiniteTransition(label = "conflict-sync-pulse")
+    val pulse by transition.animateFloat(
+        initialValue = .15f,
+        targetValue = .95f,
+        animationSpec = infiniteRepeatable(tween(1_100), RepeatMode.Reverse),
+        label = "conflict-pulse-alpha",
+    )
+    val open = state as? MissionConflictSnapshot.Open
+    val resolved = state as? MissionConflictSnapshot.Resolved
+    val accent = when {
+        open != null -> AlertCoral
+        resolved != null -> VerifiedGreen
+        else -> RiverBlue
+    }
+    Surface(
+        color = accent.copy(alpha = .08f),
+        shape = RoundedCornerShape(20.dp),
+        border = CardDefaults.outlinedCardBorder(),
+        modifier = modifier.fillMaxWidth().testTag("conflict-card"),
+    ) {
+        Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Box(Modifier.size(34.dp), contentAlignment = Alignment.Center) {
+                    Canvas(Modifier.fillMaxSize()) {
+                        drawCircle(accent.copy(alpha = .12f + pulse * .18f))
+                    }
+                    Icon(
+                        if (resolved != null) Icons.Default.CheckCircle else Icons.Default.Hub,
+                        contentDescription = null,
+                        tint = accent,
+                        modifier = Modifier.size(21.dp),
+                    )
+                }
+                Spacer(Modifier.width(10.dp))
+                Column(Modifier.weight(1f)) {
+                    Text(text(R.string.conflict_demo_title, language), fontWeight = FontWeight.Bold)
+                    Text(
+                        when {
+                            open != null -> text(R.string.human_decision_required, language)
+                            resolved != null -> text(R.string.conflict_resolved, language)
+                            else -> text(R.string.conflict_demo_subtitle, language)
+                        },
+                        style = MaterialTheme.typography.bodySmall,
+                        color = if (open != null) AlertCoral else MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                }
+                SimulationPill(language)
+            }
+
+            AnimatedContent(
+                targetState = state,
+                transitionSpec = { fadeIn(tween(220)) togetherWith fadeOut(tween(120)) },
+                label = "conflict-state",
+            ) { current ->
+                when (current) {
+                    MissionConflictSnapshot.Idle -> Button(
+                        onClick = { onSimulate?.invoke() },
+                        modifier = Modifier.fillMaxWidth().height(50.dp).testTag("simulate-conflict"),
+                    ) {
+                        Icon(Icons.Default.Warning, null)
+                        Spacer(Modifier.width(8.dp))
+                        Text(text(R.string.run_concurrent_edits, language))
+                    }
+
+                    is MissionConflictSnapshot.Open -> Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                        Text(
+                            text(R.string.conflict_explanation, language),
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        )
+                        ConflictChoice(
+                            label = text(R.string.phone_a_version, language),
+                            location = locationName(current.leftValue, language),
+                            clock = current.leftClock,
+                            action = "${text(R.string.use_destination, language)} ${locationName(current.leftValue, language)}",
+                            onClick = { onResolve?.invoke(current.conflictId, ConflictSide.LEFT) },
+                        )
+                        ConflictChoice(
+                            label = text(R.string.phone_b_version, language),
+                            location = locationName(current.rightValue, language),
+                            clock = current.rightClock,
+                            action = "${text(R.string.use_destination, language)} ${locationName(current.rightValue, language)}",
+                            onClick = { onResolve?.invoke(current.conflictId, ConflictSide.RIGHT) },
+                        )
+                    }
+
+                    is MissionConflictSnapshot.Resolved -> Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                        InfoRow(Icons.Default.CheckCircle, locationName(current.selectedValue, language), VerifiedGreen)
+                        Text(
+                            "${text(R.string.projection_hash, language)} • ${current.convergenceHash.take(12)}",
+                            style = MaterialTheme.typography.labelMedium,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        )
+                        Text(
+                            text(R.string.convergence_explanation, language),
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        )
+                        OutlinedButton(
+                            onClick = { onSimulate?.invoke() },
+                            modifier = Modifier.fillMaxWidth(),
+                        ) {
+                            Icon(Icons.Default.Replay, null)
+                            Spacer(Modifier.width(8.dp))
+                            Text(text(R.string.run_conflict_again, language))
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun ConflictChoice(
+    label: String,
+    location: String,
+    clock: com.example.digitaldelta.domain.sync.VectorClock,
+    action: String,
+    onClick: () -> Unit,
+) {
+    Surface(
+        color = MaterialTheme.colorScheme.surface,
+        shape = RoundedCornerShape(14.dp),
+        border = CardDefaults.outlinedCardBorder(),
+    ) {
+        Column(Modifier.padding(12.dp), verticalArrangement = Arrangement.spacedBy(7.dp)) {
+            Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
+                Text(label, style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                Text(
+                    clock.counters.toSortedMap().entries.joinToString(" • ") { (node, count) ->
+                        "${node.removePrefix("phone-").uppercase()}:$count"
+                    },
+                    style = MaterialTheme.typography.labelSmall,
+                    color = DeltaTeal,
+                )
+            }
+            Text(location, fontWeight = FontWeight.SemiBold)
+            OutlinedButton(onClick = onClick, modifier = Modifier.fillMaxWidth()) { Text(action) }
+        }
+    }
+}
+
+@Composable
+private fun locationName(nodeId: String, language: AppLanguage): String = when (nodeId) {
+    "N3" -> text(R.string.sunamganj_camp, language)
+    "N6" -> text(R.string.habiganj_medical, language)
+    else -> nodeId
 }
 
 @Composable

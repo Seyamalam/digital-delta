@@ -27,6 +27,7 @@ fun MainNavigation(meshRuntimeStateStore: MeshRuntimeStateStore) {
   val language by viewModel.language.collectAsStateWithLifecycle()
   val requestQueueState by viewModel.requestQueueState.collectAsStateWithLifecycle()
   val identityState by viewModel.identityState.collectAsStateWithLifecycle()
+  val conflictState by viewModel.conflictState.collectAsStateWithLifecycle()
   val meshRuntimeState by meshRuntimeStateStore.state.collectAsStateWithLifecycle()
   var startAfterPermissions by remember { mutableStateOf(false) }
   val permissionLauncher = rememberLauncherForActivityResult(
@@ -80,5 +81,8 @@ fun MainNavigation(meshRuntimeStateStore: MeshRuntimeStateStore) {
     onRejectPeer = { endpointId ->
       context.startService(MeshRelayService.intent(context, MeshRelayService.ACTION_REJECT, endpointId))
     },
+    conflictState = conflictState,
+    onSimulateConflict = viewModel::simulateConflict,
+    onResolveConflict = viewModel::resolveConflict,
   )
 }

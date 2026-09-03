@@ -76,13 +76,15 @@ Use this log for choices that affect scope, claims, compatibility, or safety.
 
 ## DD-008: event log with selective CRDTs
 
-**Status:** Proposed
+**Status:** Accepted
 
 **Decision:** Store immutable signed operations and apply different merge rules by field. Do not use last-write-wins for custody, active priority, or safety-sensitive destination changes.
 
 **Reason:** Those fields need provenance and, in some cases, human resolution.
 
-**Before acceptance:** Build convergence property tests for the chosen types.
+**Consequences:** Concurrent destination, priority, or medical-quantity values create a durable `ConflictRaised` event and cannot update the projection until a coordinator records `ConflictResolved`. Description values may choose a deterministic winner while retaining merged causal history. Grow-only sets cover append-only identifiers and PN-counters preserve per-replica inventory deltas. Room schema version 4 adds conflict and mission-projection tables with a policy-versioned SHA-256 convergence hash.
+
+**Evidence:** `MissionMergeEngineTest`, `RoomConflictCoordinatorTest`, `DeltaMigrationTest`, `MainScreenTest`, and the paired conflict-review screenshots under `artifacts/screenshots/`.
 
 ## DD-009: Android transport and background execution
 

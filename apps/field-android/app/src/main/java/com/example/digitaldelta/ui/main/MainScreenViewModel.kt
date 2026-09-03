@@ -10,6 +10,9 @@ import com.example.digitaldelta.domain.request.ReliefRequestSubmission
 import com.example.digitaldelta.domain.identity.AcceptedRecipient
 import com.example.digitaldelta.domain.identity.IdentityProvisioningCoordinator
 import com.example.digitaldelta.domain.mesh.RecipientKeyUnavailableException
+import com.example.digitaldelta.domain.sync.ConflictCoordinator
+import com.example.digitaldelta.domain.sync.ConflictSide
+import com.example.digitaldelta.domain.sync.MissionConflictSnapshot
 import com.example.digitaldelta.proto.v1.PriorityClass
 import dagger.hilt.android.lifecycle.HiltViewModel
 import javax.inject.Inject
@@ -24,6 +27,7 @@ class MainScreenViewModel @Inject constructor(
     private val settingsRepository: UserSettingsRepository,
     private val requestSubmission: ReliefRequestSubmission,
     private val identityCoordinator: IdentityProvisioningCoordinator,
+    private val conflictCoordinator: ConflictCoordinator,
 ) : ViewModel() {
     val language: StateFlow<LanguagePreference> = settingsRepository.language.stateIn(
         scope = viewModelScope,
@@ -37,8 +41,12 @@ class MainScreenViewModel @Inject constructor(
     private val mutableIdentityState = MutableStateFlow<IdentityUiState>(IdentityUiState.Loading)
     val identityState: StateFlow<IdentityUiState> = mutableIdentityState.asStateFlow()
 
+    private val mutableConflictState = MutableStateFlow<MissionConflictSnapshot>(MissionConflictSnapshot.Idle)
+    val conflictState: StateFlow<MissionConflictSnapshot> = mutableConflictState.asStateFlow()
+
     init {
         viewModelScope.launch { loadIdentity() }
+        viewModelScope.launch { mutableConflictState.value = conflictCoordinator.snapshot() }
     }
 
     fun setBangla(useBangla: Boolean) {
@@ -103,6 +111,25 @@ class MainScreenViewModel @Inject constructor(
                     mutableIdentityState.value = snapshot.toUiState(recipient)
                 }
                 .onFailure { mutableIdentityState.value = IdentityUiState.Failed(previous, IdentityFailure.INVALID_CREDENTIAL) }
+        }
+    }
+
+    fun simulateConflict() {
+        viewModelScope.launch {
+            runCatching { conflictCoordinator.simulateDestinationConflict() }
+                .onSuccess { mutableConflictState.value = it }
+        }
+    }
+
+    fun resolveConflict(conflictId: String, selectedSide: ConflictSide) {
+        viewModelScope.launch {
+            runCatching {
+                conflictCoordinator.resolve(
+                    conflictId = conflictId,
+                    selectedSide = selectedSide,
+                    resolverIdentityId = "coordinator-sylhet-01",
+                )
+            }.onSuccess { mutableConflictState.value = it }
         }
     }
 

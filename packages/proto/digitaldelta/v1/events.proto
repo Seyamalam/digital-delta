@@ -54,6 +54,13 @@ message RoutePlanned {
   string explanation_code = 7;
 }
 
+message MissionFieldUpdated {
+  string mission_id = 1;
+  string field_code = 2;
+  bytes value = 3;
+  VectorClock vector_clock = 4;
+}
+
 message ConflictRaised {
   string conflict_id = 1;
   string mission_id = 2;
@@ -121,5 +128,6 @@ message DomainEvent {
     SlaBreachPredicted sla_breach_predicted = 26;
     PreemptionConfirmed preemption_confirmed = 27;
     CustodyTransfer custody_transfer = 28;
+    MissionFieldUpdated mission_field_updated = 29;
   }
 }

@@ -59,6 +59,8 @@ These are real emulator captures from the working application, not final submiss
 |---|---:|---:|---|
 | Offline device enrollment and pinned administrator | Captured | Captured | `artifacts/screenshots/field-bn/09-field-bn-offline-provisioning-trusted-1280x2856.png`, `artifacts/screenshots/field-en/09-field-en-offline-provisioning-trusted-1280x2856.png` |
 | Nearby foreground relay active on Android 15 | Captured | Captured | `artifacts/screenshots/field-bn/10-field-bn-nearby-relay-active-1280x2856.png`, `artifacts/screenshots/field-en/10-field-en-nearby-relay-active-1280x2856.png` |
+| Safety-sensitive concurrent edit awaiting review | Captured | Captured | `artifacts/screenshots/field-bn/11-field-bn-conflict-review-1280x2856.png`, `artifacts/screenshots/field-en/11-field-en-conflict-review-1280x2856.png` |
+| Conflict resolved with convergence hash | Pending final pair | Captured | `artifacts/screenshots/field-en/12-field-en-conflict-resolved-1280x2856.png` |
 
 ## Field application shots
 
@@ -72,8 +74,8 @@ These are real emulator captures from the working application, not final submiss
 - [ ] Local outbox with pending relay
 - [ ] Nearby-node list; the active zero-peer discovery state is captured, while a physical peer remains required.
 - [ ] Syncing state
-- [ ] Conflict-detected state
-- [ ] Human conflict resolution
+- [x] Conflict-detected state in the current Android emulator build
+- [x] Human conflict resolution in the current Android emulator build; final bilingual hero pair remains
 - [ ] Route and vehicle assignment
 - [ ] SLA breach warning
 - [ ] Drop-and-reroute confirmation

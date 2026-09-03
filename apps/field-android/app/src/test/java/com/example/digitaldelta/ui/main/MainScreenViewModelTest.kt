@@ -9,6 +9,9 @@ import com.example.digitaldelta.domain.identity.AcceptedRecipient
 import com.example.digitaldelta.domain.identity.IdentityProvisioningCoordinator
 import com.example.digitaldelta.domain.identity.IdentityProvisioningSnapshot
 import com.example.digitaldelta.domain.mesh.RecipientKeyUnavailableException
+import com.example.digitaldelta.domain.sync.ConflictCoordinator
+import com.example.digitaldelta.domain.sync.ConflictSide
+import com.example.digitaldelta.domain.sync.MissionConflictSnapshot
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.Flow
@@ -36,7 +39,12 @@ class MainScreenViewModelTest {
     @Test
     fun `language starts Bangla and persists English selection`() = runTest(dispatcher) {
         val repository = FakeSettingsRepository()
-        val viewModel = MainScreenViewModel(repository, FakeRequestSubmission(), FakeIdentityCoordinator())
+        val viewModel = MainScreenViewModel(
+            repository,
+            FakeRequestSubmission(),
+            FakeIdentityCoordinator(),
+            FakeConflictCoordinator(),
+        )
 
         assertEquals(LanguagePreference.BANGLA, viewModel.language.value)
         viewModel.setBangla(false)
@@ -49,7 +57,12 @@ class MainScreenViewModelTest {
     @Test
     fun `queue request exposes durable receipt to the interface`() = runTest(dispatcher) {
         val submission = FakeRequestSubmission()
-        val viewModel = MainScreenViewModel(FakeSettingsRepository(), submission, FakeIdentityCoordinator())
+        val viewModel = MainScreenViewModel(
+            FakeSettingsRepository(),
+            submission,
+            FakeIdentityCoordinator(),
+            FakeConflictCoordinator(),
+        )
 
         viewModel.queueRequest(medicine = 11, ors = 20, tarpaulin = 5, priorityCode = "P0")
         advanceUntilIdle()
@@ -64,6 +77,7 @@ class MainScreenViewModelTest {
             FakeSettingsRepository(),
             FakeRequestSubmission(RecipientKeyUnavailableException("N6")),
             FakeIdentityCoordinator(),
+            FakeConflictCoordinator(),
         )
 
         viewModel.queueRequest(medicine = 10, ors = 20, tarpaulin = 5, priorityCode = "P0")
@@ -78,7 +92,12 @@ class MainScreenViewModelTest {
     @Test
     fun `identity screen exposes enrollment then reflects trusted recipient import`() = runTest(dispatcher) {
         val coordinator = FakeIdentityCoordinator()
-        val viewModel = MainScreenViewModel(FakeSettingsRepository(), FakeRequestSubmission(), coordinator)
+        val viewModel = MainScreenViewModel(
+            FakeSettingsRepository(),
+            FakeRequestSubmission(),
+            coordinator,
+            FakeConflictCoordinator(),
+        )
         advanceUntilIdle()
 
         assertEquals("enrollment-code", (viewModel.identityState.value as IdentityUiState.Ready).enrollmentCode)
@@ -96,7 +115,12 @@ class MainScreenViewModelTest {
     @Test
     fun `failed trust code keeps identity available for a successful retry`() = runTest(dispatcher) {
         val coordinator = FakeIdentityCoordinator()
-        val viewModel = MainScreenViewModel(FakeSettingsRepository(), FakeRequestSubmission(), coordinator)
+        val viewModel = MainScreenViewModel(
+            FakeSettingsRepository(),
+            FakeRequestSubmission(),
+            coordinator,
+            FakeConflictCoordinator(),
+        )
         advanceUntilIdle()
 
         viewModel.pinAdministrator("invalid")
@@ -117,6 +141,26 @@ class MainScreenViewModelTest {
             "admin-abcd",
             (viewModel.identityState.value as IdentityUiState.Ready).trustedIssuerFingerprint,
         )
+    }
+
+    @Test
+    fun `conflict drill requires and persists an explicit human choice`() = runTest(dispatcher) {
+        val conflicts = FakeConflictCoordinator()
+        val viewModel = MainScreenViewModel(
+            FakeSettingsRepository(),
+            FakeRequestSubmission(),
+            FakeIdentityCoordinator(),
+            conflicts,
+        )
+        advanceUntilIdle()
+
+        viewModel.simulateConflict()
+        advanceUntilIdle()
+        assertEquals("conflict-1", (viewModel.conflictState.value as MissionConflictSnapshot.Open).conflictId)
+
+        viewModel.resolveConflict("conflict-1", ConflictSide.RIGHT)
+        advanceUntilIdle()
+        assertEquals("N6", (viewModel.conflictState.value as MissionConflictSnapshot.Resolved).selectedValue)
     }
 }
 
@@ -160,4 +204,34 @@ private class FakeIdentityCoordinator : IdentityProvisioningCoordinator {
         importedCode = code
         return AcceptedRecipient("N6", "Habiganj Medical", "rsa-recipient-1")
     }
+}
+
+private class FakeConflictCoordinator : ConflictCoordinator {
+    private var current: MissionConflictSnapshot = MissionConflictSnapshot.Idle
+
+    override suspend fun snapshot(): MissionConflictSnapshot = current
+
+    override suspend fun simulateDestinationConflict(): MissionConflictSnapshot =
+        MissionConflictSnapshot.Open(
+            conflictId = "conflict-1",
+            missionId = "mission-sylhet-01",
+            field = com.example.digitaldelta.domain.sync.MissionField.DESTINATION,
+            leftValue = "N3",
+            rightValue = "N6",
+            leftClock = com.example.digitaldelta.domain.sync.VectorClock(mapOf("phone-a" to 1L)),
+            rightClock = com.example.digitaldelta.domain.sync.VectorClock(mapOf("phone-b" to 1L)),
+        ).also { current = it }
+
+    override suspend fun resolve(
+        conflictId: String,
+        selectedSide: ConflictSide,
+        resolverIdentityId: String,
+    ): MissionConflictSnapshot = MissionConflictSnapshot.Resolved(
+        conflictId = conflictId,
+        missionId = "mission-sylhet-01",
+        field = com.example.digitaldelta.domain.sync.MissionField.DESTINATION,
+        selectedValue = if (selectedSide == ConflictSide.RIGHT) "N6" else "N3",
+        resolverIdentityId = resolverIdentityId,
+        convergenceHash = "a4e96ff28c89d214d02a3c87f01778e7ad3f139307376afaacd1a10da45a9b22",
+    ).also { current = it }
 }
