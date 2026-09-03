@@ -65,6 +65,9 @@ These are real emulator captures from the working application, not final submiss
 | Confirmed simulated E3 failure and measured boat reroute | Captured | Captured | `artifacts/screenshots/field-bn/14-field-bn-route-rerouted-1280x2856.png`, `artifacts/screenshots/field-en/14-field-en-route-rerouted-1280x2856.png` |
 | Route-driven P0 SLA breach and safe P2 deposit proposal | Captured | Captured | `artifacts/screenshots/field-bn/15-field-bn-triage-preemption-1280x2856.png`, `artifacts/screenshots/field-en/15-field-en-triage-preemption-1280x2856.png` |
 | Coordinator-confirmed local preemption decision | Captured | Captured | `artifacts/screenshots/field-bn/16-field-bn-triage-confirmed-1280x2856.png`, `artifacts/screenshots/field-en/16-field-en-triage-confirmed-1280x2856.png` |
+| Signed Protobuf handoff accepted offline | Captured | Captured | `artifacts/screenshots/field-bn/17-field-bn-pod-verified.png`, `artifacts/screenshots/field-en/17-field-en-pod-verified.png` |
+| Reused nonce rejected with custody preserved | Captured | Captured | `artifacts/screenshots/field-bn/18-field-bn-pod-replay-rejected.png`, `artifacts/screenshots/field-en/18-field-en-pod-replay-rejected.png` |
+| Altered signed field rejected before nonce claim | Captured | Captured | `artifacts/screenshots/field-bn/19-field-bn-pod-tamper-rejected.png`, `artifacts/screenshots/field-en/19-field-en-pod-tamper-rejected.png` |
 
 ## Field application shots
 
@@ -83,11 +86,11 @@ These are real emulator captures from the working application, not final submiss
 - [x] Route and vehicle assignment in the current Android emulator build; MapLibre final map remains
 - [x] SLA breach warning in the current Android emulator build
 - [x] Drop-and-reroute confirmation in the current Android emulator build; physical cargo movement is simulated
-- [ ] QR handoff generation
-- [ ] Valid receipt verification
-- [ ] Tampered receipt rejection
-- [ ] Replay rejection
-- [ ] Chain-of-custody timeline
+- [x] QR handoff generation in the current Android emulator build
+- [x] Valid local receipt verification in both languages
+- [x] Tampered receipt rejection in both languages
+- [x] Replay rejection with unchanged chain in both languages
+- [ ] Full chain-of-custody timeline; current UI shows the verified count and latest hash
 - [ ] Low-battery broadcast reduction
 - [ ] Simulated drone handoff
 - [ ] Accessibility large-text state

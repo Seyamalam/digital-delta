@@ -122,17 +122,17 @@ This checklist tracks implementation. Milestone exit criteria live in [MILESTONE
 
 ## M5 proof of delivery
 
-- [ ] Generate QR images with ZXing Core.
+- [x] Generate QR images with ZXing Core.
 - [ ] Scan with the bundled ML Kit barcode model and verify airplane-mode behavior.
-- [ ] Build the signed QR payload.
-- [ ] Verify sender identity, signature, payload hash, nonce, timestamp, and delivery state.
-- [ ] Add nonce persistence and replay rejection.
-- [ ] Add bounded clock-skew handling.
-- [ ] Add expiry and manual override policy.
-- [ ] Link each receipt to the previous custody event.
-- [ ] Display verifier result and exact rejection reason.
-- [ ] Reconstruct the complete receipt chain.
-- [ ] Test altered QR fields, reused QR, unknown key, expired key, and wrong delivery.
+- [x] Build the signed Protobuf QR payload with the required delivery, identity, hash, nonce, timestamp, and previous-receipt fields.
+- [x] Verify the seeded sender key, signature, payload hash, nonce, timestamp, delivery, mission, and recipient offline. Cross-phone credential binding remains.
+- [x] Add atomic Room nonce persistence and replay rejection.
+- [x] Add bounded ten-minute field clock-skew handling with boundary tests.
+- [ ] Add credential expiry and manual override policy. QR timestamp expiry is enforced; credential override is not.
+- [x] Link each receipt to the previous custody receipt hash.
+- [x] Display verifier result and exact rejection reason in Bangla and English.
+- [x] Reconstruct and cryptographically verify the complete local receipt chain.
+- [ ] Test altered QR fields, reused QR, unknown key, expired key, and wrong delivery. Altered fields, reuse, clock expiry, and wrong delivery pass; unknown and expired credential cases remain.
 
 ## M6 triage and priority preemption
 

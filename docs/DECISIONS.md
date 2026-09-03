@@ -154,6 +154,18 @@ Use this log for choices that affect scope, claims, compatibility, or safety.
 
 **Evidence:** `TriageEngineTest`, `TriageWorkflowTest`, `MainScreenViewModelTest`, `RoomTriageWorkflowTest`, `MainScreenTest`, and paired proposal/confirmation screenshots under `artifacts/screenshots/`.
 
+## DD-015: atomic signed custody and bounded field time
+
+**Status:** Accepted
+
+**Decision:** Encode delivery offers as prefixed URL-safe Base64 Protobuf, sign the canonical offer bytes with RSA-2048-PSS/SHA-256 in Android Keystore, and compare every operational field with trusted local mission state. On acceptance, claim the nonce and append the custody event in one Room transaction. Sign the resulting receipt with both seeded sender and recipient identities, link it to the previous receipt hash, and permit at most ten minutes of disconnected clock drift.
+
+**Reason:** A relay-readable JSON token would violate the mesh contract, and a UI-only success state would not prove custody. Atomic nonce use prevents two concurrent scans from recording the same handoff. A two-minute window proved too fragile during the live projector rehearsal; ten minutes remains bounded while tolerating realistic offline phone drift and demonstration pacing.
+
+**Consequences:** Altered fields, wrong delivery state, stale timestamps, and reused nonces fail before custody changes. The chain can be rebuilt and signature-checked from local Protobuf events after restart. Current sender and recipient are protected demo identities on one phone; physical camera scanning, signed cross-phone credential binding, credential revocation/expiry, and an explicit override policy remain required before field deployment.
+
+**Evidence:** `DeliveryOfferCodecTest`, `AndroidDeviceIdentityKeyStoreTest`, `RoomProofOfDeliveryWorkflowTest`, `MainScreenViewModelTest`, `MainScreenTest`, and paired acceptance/replay/tamper screenshots under `artifacts/screenshots/`.
+
 ## New decision template
 
 ```md
