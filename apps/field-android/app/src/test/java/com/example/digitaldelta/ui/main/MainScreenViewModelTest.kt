@@ -34,6 +34,14 @@ import com.example.digitaldelta.domain.pod.ProofOfDeliveryWorkflow
 import com.example.digitaldelta.domain.prediction.RouteRiskPrediction
 import com.example.digitaldelta.domain.prediction.RouteRiskPredictor
 import com.example.digitaldelta.domain.prediction.RouteRiskRuntime
+import com.example.digitaldelta.domain.fleet.DefaultHybridFleetWorkflow
+import com.example.digitaldelta.domain.fleet.FleetOrchestrator
+import com.example.digitaldelta.domain.fleet.GeoPoint
+import com.example.digitaldelta.domain.fleet.HybridFleetInputs
+import com.example.digitaldelta.domain.fleet.HybridFleetMission
+import com.example.digitaldelta.domain.fleet.HybridFleetState
+import com.example.digitaldelta.domain.fleet.HybridFleetWorkflow
+import com.example.digitaldelta.domain.fleet.NamedPoint
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.Flow
@@ -298,6 +306,77 @@ class MainScreenViewModelTest {
         assertEquals(DeliveryOfferRejection.REPLAY_REJECTED, replay.reason)
         assertEquals(1, replay.preservedChain.size)
     }
+
+    @Test
+    fun `hybrid handoff exposes animated phases and advances workflow once per action`() = runTest(dispatcher) {
+        val hybrid = CountingHybridFleetWorkflow()
+        val viewModel = MainScreenViewModel(
+            FakeSettingsRepository(),
+            FakeRequestSubmission(),
+            FakeIdentityCoordinator(),
+            FakeConflictCoordinator(),
+            FakeRouteScenario(),
+            hybridFleetWorkflow = hybrid,
+        )
+
+        assertEquals(true, viewModel.hybridFleetState.value is HybridFleetState.Ready)
+        viewModel.advanceHybridFleet()
+        advanceUntilIdle()
+        assertEquals(true, viewModel.hybridFleetState.value is HybridFleetState.BoatArrived)
+
+        viewModel.advanceHybridFleet()
+        assertEquals(true, viewModel.hybridFleetState.value is HybridFleetState.PreparingDroneOffer)
+        viewModel.advanceHybridFleet()
+        advanceUntilIdle()
+        assertEquals(true, viewModel.hybridFleetState.value is HybridFleetState.DroneArrived)
+
+        viewModel.advanceHybridFleet()
+        assertEquals(true, viewModel.hybridFleetState.value is HybridFleetState.VerifyingTransfer)
+        advanceUntilIdle()
+        assertEquals(true, viewModel.hybridFleetState.value is HybridFleetState.Transferred)
+        assertEquals(3, hybrid.advanceCalls)
+    }
+}
+
+private class CountingHybridFleetWorkflow : HybridFleetWorkflow {
+    private val delegate = DefaultHybridFleetWorkflow(
+        mission = HybridFleetMission(
+            missionId = "mission-drone-demo-01",
+            originNodeId = "N1",
+            destinationNodeId = "N7",
+            boatVehicleId = "boat-02",
+            droneVehicleId = "drone-07",
+            graph = TransportGraph(
+                nodes = listOf(
+                    MapNode("N1", "Sylhet Hub", 24.8949, 91.8687),
+                    MapNode("N7", "Haor Clinic", 25.12, 91.68),
+                ),
+                edges = listOf(MapEdge("A2", "N1", "N7", EdgeMode.AIRWAY, 28, simulated = true)),
+            ),
+            rendezvousInputs = HybridFleetInputs(
+                boatPosition = GeoPoint(25.04, 91.57),
+                droneBase = GeoPoint(24.9632, 91.8668),
+                droneDestination = GeoPoint(25.12, 91.68),
+                candidates = listOf(NamedPoint("R2", GeoPoint(25.0715, 91.7554))),
+                boatSpeedKph = 24.0,
+                droneSpeedKph = 55.0,
+                droneBatteryPercent = 74,
+                droneRangeAtFullChargeKm = 60.0,
+                reserveBatteryPercent = 20,
+            ),
+            simulated = true,
+        ),
+        orchestrator = FleetOrchestrator(),
+        proofOfDelivery = FakeProofOfDeliveryWorkflow(),
+    )
+    var advanceCalls = 0
+
+    override fun snapshot(): HybridFleetState = delegate.snapshot()
+    override suspend fun advance(): HybridFleetState {
+        advanceCalls += 1
+        return delegate.advance()
+    }
+    override fun reset(): HybridFleetState = delegate.reset()
 }
 
 private class CountingTriageWorkflow : TriageWorkflow {

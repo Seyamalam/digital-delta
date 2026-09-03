@@ -96,6 +96,41 @@ class RoomProofOfDeliveryWorkflowTest {
         assertEquals(1, expired.preservedChain.size)
     }
 
+    @Test
+    fun customDroneScenarioSignsAndStoresBoatToDroneCustody() = runTest {
+        val scenario = DeliveryScenario(
+            missionId = "mission-drone-demo-01",
+            deliveryId = "DELTA-DRONE-0001",
+            senderNodeId = "pod-demo-boat-02",
+            recipientNodeId = "pod-demo-drone-07",
+            senderIdentityId = "boat-operator-02",
+            recipientIdentityId = "simulated-drone-07",
+            payloadDescription = "p0-medicine:4|blood-cooler:1",
+            scenarioSeed = "m8-drone-handoff-v1",
+            simulatedVehicle = true,
+        )
+        val workflow = RoomProofOfDeliveryWorkflow(
+            database = database,
+            deviceKeys = AndroidDeviceIdentityKeyStore(),
+            scenario = scenario,
+            nowUnixMs = { now },
+            nonceBytes = { ByteArray(16) { index -> (sequence + index).toByte() }.also { sequence += 32 } },
+            eventId = { "custody-drone-${++sequence}" },
+        )
+
+        val offer = workflow.prepare()
+        val result = workflow.verify(offer.qrCode) as DeliveryReceiptResult.Verified
+        val event = DomainEvent.parseFrom(
+            database.operationLogDao().forMission(scenario.missionId).single().payloadBytes,
+        )
+
+        assertEquals("simulated-drone-07", offer.recipientIdentityId)
+        assertEquals("simulated-drone-07", result.receipt.recipientIdentityId)
+        assertEquals("simulated-drone-07", event.custodyTransfer.recipientIdentityId)
+        assertTrue(event.custodyTransfer.recipientSignature.rsa2048PssSha256.size() > 0)
+        assertEquals("m8-drone-handoff-v1", event.scenarioSeed)
+    }
+
     private fun workflow() = RoomProofOfDeliveryWorkflow(
         database = database,
         deviceKeys = AndroidDeviceIdentityKeyStore(),

@@ -132,6 +132,7 @@ import com.example.digitaldelta.domain.routing.RouteDecisionCause
 import com.example.digitaldelta.domain.routing.VehicleType
 import com.example.digitaldelta.domain.prediction.RouteRiskRuntime
 import com.example.digitaldelta.domain.triage.TriageWorkflowSnapshot
+import com.example.digitaldelta.domain.fleet.HybridFleetState
 import com.example.digitaldelta.theme.AlertCoral
 import com.example.digitaldelta.theme.DeltaTeal
 import com.example.digitaldelta.theme.DigitalDeltaTheme
@@ -195,6 +196,9 @@ fun DigitalDeltaApp(
     proofOfDeliveryState: ProofOfDeliveryUiState = ProofOfDeliveryUiState.Loading,
     onVerifyHandoff: ((Boolean) -> Unit)? = null,
     onPrepareNextHandoff: (() -> Unit)? = null,
+    hybridFleetState: HybridFleetState = HybridFleetState.Unavailable,
+    onAdvanceHybridFleet: (() -> Unit)? = null,
+    onResetHybridFleet: (() -> Unit)? = null,
 ) {
     var booting by rememberSaveable { mutableStateOf(showBootSequence) }
     LaunchedEffect(showBootSequence) {
@@ -237,6 +241,9 @@ fun DigitalDeltaApp(
                 proofOfDeliveryState = proofOfDeliveryState,
                 onVerifyHandoff = onVerifyHandoff,
                 onPrepareNextHandoff = onPrepareNextHandoff,
+                hybridFleetState = hybridFleetState,
+                onAdvanceHybridFleet = onAdvanceHybridFleet,
+                onResetHybridFleet = onResetHybridFleet,
             )
         }
     }
@@ -345,6 +352,9 @@ private fun DeltaShell(
     proofOfDeliveryState: ProofOfDeliveryUiState,
     onVerifyHandoff: ((Boolean) -> Unit)?,
     onPrepareNextHandoff: (() -> Unit)?,
+    hybridFleetState: HybridFleetState,
+    onAdvanceHybridFleet: (() -> Unit)?,
+    onResetHybridFleet: (() -> Unit)?,
 ) {
     var destination by rememberSaveable { mutableStateOf(DeltaDestination.OPERATIONS) }
     var identityOpen by rememberSaveable { mutableStateOf(false) }
@@ -436,6 +446,9 @@ private fun DeltaShell(
                 )
                 DeltaDestination.HANDOFF -> HandoffScreen(
                     language = language,
+                    hybridFleetState = hybridFleetState,
+                    onAdvanceHybridFleet = onAdvanceHybridFleet,
+                    onResetHybridFleet = onResetHybridFleet,
                     state = proofOfDeliveryState,
                     onVerify = onVerifyHandoff,
                     onPrepareNext = onPrepareNextHandoff,
@@ -1636,8 +1649,302 @@ private fun MeshRelayCard(
 }
 
 @Composable
+private fun HybridFleetCard(
+    language: AppLanguage,
+    state: HybridFleetState,
+    onAdvance: (() -> Unit)?,
+    onReset: (() -> Unit)?,
+) {
+    val plan = when (state) {
+        is HybridFleetState.Ready -> state.plan
+        is HybridFleetState.BoatArrived -> state.plan
+        is HybridFleetState.PreparingDroneOffer -> state.plan
+        is HybridFleetState.DroneArrived -> state.plan
+        is HybridFleetState.VerifyingTransfer -> state.plan
+        is HybridFleetState.Transferred -> state.plan
+        is HybridFleetState.Blocked,
+        HybridFleetState.Unavailable,
+        -> null
+    }
+    val phase = when (state) {
+        is HybridFleetState.Ready -> 0
+        is HybridFleetState.BoatArrived,
+        is HybridFleetState.PreparingDroneOffer,
+        -> 1
+        is HybridFleetState.DroneArrived,
+        is HybridFleetState.VerifyingTransfer,
+        -> 2
+        is HybridFleetState.Transferred -> 3
+        is HybridFleetState.Blocked,
+        HybridFleetState.Unavailable,
+        -> -1
+    }
+    val statusText = when (state) {
+        is HybridFleetState.Ready -> text(R.string.hybrid_phase_ready, language)
+        is HybridFleetState.BoatArrived -> text(R.string.hybrid_phase_boat_arrived, language)
+        is HybridFleetState.PreparingDroneOffer -> text(R.string.hybrid_phase_preparing_offer, language)
+        is HybridFleetState.DroneArrived -> text(R.string.hybrid_phase_drone_arrived, language)
+        is HybridFleetState.VerifyingTransfer -> text(R.string.hybrid_phase_verifying, language)
+        is HybridFleetState.Transferred -> text(R.string.hybrid_phase_transferred, language)
+        is HybridFleetState.Blocked -> text(R.string.hybrid_phase_blocked, language)
+        HybridFleetState.Unavailable -> text(R.string.hybrid_phase_loading, language)
+    }
+    val actionText = when (state) {
+        is HybridFleetState.Ready -> text(R.string.hybrid_start_boat, language)
+        is HybridFleetState.BoatArrived -> text(R.string.hybrid_generate_qr, language)
+        is HybridFleetState.DroneArrived -> text(R.string.hybrid_accept_custody, language)
+        is HybridFleetState.Transferred,
+        is HybridFleetState.Blocked,
+        -> text(R.string.hybrid_reset, language)
+        is HybridFleetState.PreparingDroneOffer,
+        is HybridFleetState.VerifyingTransfer,
+        HybridFleetState.Unavailable,
+        -> statusText
+    }
+    val loading = state is HybridFleetState.PreparingDroneOffer ||
+        state is HybridFleetState.VerifyingTransfer ||
+        state is HybridFleetState.Unavailable
+    val transition = rememberInfiniteTransition(label = "hybrid-fleet-motion")
+    val motion by transition.animateFloat(
+        initialValue = 0f,
+        targetValue = 1f,
+        animationSpec = infiniteRepeatable(tween(1_600), RepeatMode.Restart),
+        label = "rendezvous-motion",
+    )
+
+    Surface(
+        modifier = Modifier.fillMaxWidth().testTag("hybrid-fleet-card"),
+        color = MaterialTheme.colorScheme.surface,
+        shape = RoundedCornerShape(22.dp),
+        border = CardDefaults.outlinedCardBorder(),
+    ) {
+        Column(Modifier.padding(18.dp), verticalArrangement = Arrangement.spacedBy(13.dp)) {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Surface(
+                    color = AlertCoral.copy(alpha = .12f),
+                    contentColor = AlertCoral,
+                    shape = RoundedCornerShape(9.dp),
+                ) {
+                    Text(
+                        text(R.string.hybrid_drone_required, language),
+                        modifier = Modifier.padding(horizontal = 9.dp, vertical = 5.dp),
+                        style = MaterialTheme.typography.labelLarge,
+                        fontWeight = FontWeight.Bold,
+                    )
+                }
+                Spacer(Modifier.width(8.dp))
+                Surface(
+                    color = RiskAmber.copy(alpha = .16f),
+                    contentColor = Color(0xFF7B4B00),
+                    shape = RoundedCornerShape(9.dp),
+                ) {
+                    Text(
+                        text(R.string.simulated, language),
+                        modifier = Modifier.padding(horizontal = 9.dp, vertical = 5.dp),
+                        style = MaterialTheme.typography.labelMedium,
+                        fontWeight = FontWeight.Bold,
+                    )
+                }
+            }
+            Text(
+                text(R.string.hybrid_fleet_title, language),
+                style = MaterialTheme.typography.headlineSmall,
+                fontWeight = FontWeight.Bold,
+            )
+            Text(
+                text(R.string.hybrid_fleet_subtitle, language),
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+            HybridRendezvousAnimation(progress = motion, phase = phase)
+            Surface(
+                modifier = Modifier.fillMaxWidth().testTag("hybrid-fleet-status"),
+                color = when (state) {
+                    is HybridFleetState.Transferred -> VerifiedGreen.copy(alpha = .11f)
+                    is HybridFleetState.Blocked -> AlertCoral.copy(alpha = .10f)
+                    else -> DeltaTeal.copy(alpha = .09f)
+                },
+                shape = RoundedCornerShape(14.dp),
+            ) {
+                Row(Modifier.padding(13.dp), verticalAlignment = Alignment.CenterVertically) {
+                    Icon(
+                        when (state) {
+                            is HybridFleetState.Transferred -> Icons.Default.CheckCircle
+                            is HybridFleetState.Blocked -> Icons.Default.Warning
+                            else -> Icons.Default.Hub
+                        },
+                        contentDescription = null,
+                        tint = when (state) {
+                            is HybridFleetState.Transferred -> VerifiedGreen
+                            is HybridFleetState.Blocked -> AlertCoral
+                            else -> DeltaTeal
+                        },
+                    )
+                    Spacer(Modifier.width(10.dp))
+                    Column {
+                        AnimatedContent(
+                            targetState = statusText,
+                            transitionSpec = { fadeIn(tween(180)) togetherWith fadeOut(tween(100)) },
+                            label = "hybrid-phase-status",
+                        ) { label ->
+                            Text(label, style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
+                        }
+                        Text(
+                            text(R.string.hybrid_offline_ledger, language),
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        )
+                    }
+                }
+            }
+            if (plan != null) {
+                DetailRow(
+                    text(R.string.hybrid_destination, language),
+                    "N7 • ${text(R.string.hybrid_destination_name, language)}",
+                    Icons.Default.LocalHospital,
+                )
+                DetailRow(
+                    text(R.string.hybrid_rendezvous, language),
+                    "${plan.rendezvous.point.id} • " + String.format(
+                        Locale.US,
+                        "%.4f, %.4f",
+                        plan.rendezvous.point.coordinate.latitude,
+                        plan.rendezvous.point.coordinate.longitude,
+                    ),
+                    Icons.Default.LocationOn,
+                )
+                Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    HybridMetric(
+                        Modifier.weight(1f),
+                        text(R.string.hybrid_boat_eta, language),
+                        "${plan.rendezvous.boatArrivalMinutes.toInt()} ${text(R.string.minutes_short, language)}",
+                    )
+                    HybridMetric(
+                        Modifier.weight(1f),
+                        text(R.string.hybrid_drone_eta, language),
+                        "${plan.rendezvous.droneArrivalMinutes.toInt()} ${text(R.string.minutes_short, language)}",
+                    )
+                    HybridMetric(
+                        Modifier.weight(1f),
+                        text(R.string.hybrid_delivery_eta, language),
+                        "${plan.rendezvous.deliveryArrivalMinutes.toInt()} ${text(R.string.minutes_short, language)}",
+                    )
+                }
+                val reserve = plan.mission.rendezvousInputs.reserveBatteryPercent
+                val projected = plan.rendezvous.projectedDroneBatteryPercent.toInt()
+                Column(verticalArrangement = Arrangement.spacedBy(5.dp)) {
+                    Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
+                        Text(text(R.string.hybrid_projected_battery, language), style = MaterialTheme.typography.labelMedium)
+                        Text("$projected% • ${text(R.string.hybrid_reserve, language)} $reserve%", style = MaterialTheme.typography.labelMedium)
+                    }
+                    LinearProgressIndicator(
+                        progress = { projected / 100f },
+                        modifier = Modifier.fillMaxWidth().height(8.dp),
+                        color = VerifiedGreen,
+                        trackColor = MaterialTheme.colorScheme.surfaceVariant,
+                    )
+                }
+                HybridPhaseRow(Icons.Default.DirectionsBoat, text(R.string.hybrid_boat_step, language), phase >= 1, phase == 0)
+                HybridPhaseRow(Icons.Default.Shield, text(R.string.hybrid_signed_qr_step, language), phase >= 2, phase == 1)
+                HybridPhaseRow(Icons.Default.AirplanemodeActive, text(R.string.hybrid_drone_step, language), phase >= 3, phase == 2)
+            }
+            if (state is HybridFleetState.Transferred) {
+                Surface(
+                    modifier = Modifier.fillMaxWidth().testTag("hybrid-fleet-receipt"),
+                    color = VerifiedGreen.copy(alpha = .10f),
+                    contentColor = VerifiedGreen,
+                    shape = RoundedCornerShape(13.dp),
+                ) {
+                    Column(Modifier.padding(13.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                        Text(text(R.string.hybrid_receipt_verified, language), fontWeight = FontWeight.Bold)
+                        Text("${state.receipt.recipientIdentityId} • ${state.receipt.receiptHash.toShortHex()}", style = MaterialTheme.typography.labelSmall)
+                        Text("${state.chain.size} • ${text(R.string.chain_valid, language)}", style = MaterialTheme.typography.bodySmall)
+                    }
+                }
+            }
+            if (loading) LinearProgressIndicator(Modifier.fillMaxWidth().testTag("hybrid-fleet-loading"))
+            Button(
+                onClick = {
+                    if (state is HybridFleetState.Transferred || state is HybridFleetState.Blocked) onReset?.invoke()
+                    else onAdvance?.invoke()
+                },
+                enabled = !loading,
+                modifier = Modifier.fillMaxWidth().height(52.dp).testTag("hybrid-fleet-action"),
+            ) {
+                Icon(if (state is HybridFleetState.Transferred) Icons.Default.Replay else Icons.Default.Handshake, null)
+                Spacer(Modifier.width(8.dp))
+                Text(actionText)
+            }
+        }
+    }
+}
+
+@Composable
+private fun HybridRendezvousAnimation(progress: Float, phase: Int) {
+    Canvas(Modifier.fillMaxWidth().height(82.dp)) {
+        val center = Offset(size.width * .52f, size.height * .57f)
+        val boatStart = Offset(size.width * .06f, size.height * .72f)
+        val droneStart = Offset(size.width * .94f, size.height * .18f)
+        drawLine(RiverBlue.copy(alpha = .28f), boatStart, center, 8f, cap = StrokeCap.Round)
+        drawLine(
+            DeltaTeal.copy(alpha = .30f),
+            droneStart,
+            center,
+            5f,
+            pathEffect = PathEffect.dashPathEffect(floatArrayOf(13f, 10f)),
+        )
+        val boatProgress = if (phase >= 1) 1f else progress
+        val droneProgress = if (phase >= 2) 1f else if (phase == 1) progress else 0f
+        val boat = Offset(boatStart.x + (center.x - boatStart.x) * boatProgress, boatStart.y + (center.y - boatStart.y) * boatProgress)
+        val drone = Offset(droneStart.x + (center.x - droneStart.x) * droneProgress, droneStart.y + (center.y - droneStart.y) * droneProgress)
+        drawCircle(RiverBlue.copy(alpha = .20f), 20f, boat)
+        drawCircle(RiverBlue, 10f, boat)
+        drawCircle(DeltaTeal.copy(alpha = .20f), 20f, drone)
+        drawCircle(DeltaTeal, 9f, drone)
+        drawCircle(if (phase >= 3) VerifiedGreen else RiskAmber, 12f, center)
+        drawCircle(Color.White, 5f, center)
+    }
+}
+
+@Composable
+private fun HybridMetric(modifier: Modifier, label: String, value: String) {
+    Surface(modifier = modifier, color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = .62f), shape = RoundedCornerShape(12.dp)) {
+        Column(Modifier.padding(horizontal = 8.dp, vertical = 9.dp), horizontalAlignment = Alignment.CenterHorizontally) {
+            Text(value, style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.Bold, maxLines = 1)
+            Text(label, style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant, textAlign = TextAlign.Center)
+        }
+    }
+}
+
+@Composable
+private fun HybridPhaseRow(icon: ImageVector, label: String, complete: Boolean, active: Boolean) {
+    Row(verticalAlignment = Alignment.CenterVertically) {
+        Surface(
+            shape = CircleShape,
+            color = when {
+                complete -> VerifiedGreen.copy(alpha = .14f)
+                active -> DeltaTeal.copy(alpha = .12f)
+                else -> MaterialTheme.colorScheme.surfaceVariant
+            },
+            contentColor = when {
+                complete -> VerifiedGreen
+                active -> DeltaTeal
+                else -> MaterialTheme.colorScheme.onSurfaceVariant
+            },
+        ) {
+            Icon(if (complete) Icons.Default.CheckCircle else icon, null, Modifier.padding(7.dp).size(18.dp))
+        }
+        Spacer(Modifier.width(10.dp))
+        Text(label, style = MaterialTheme.typography.bodyMedium, fontWeight = if (active) FontWeight.Bold else FontWeight.Normal)
+    }
+}
+
+@Composable
 private fun HandoffScreen(
     language: AppLanguage,
+    hybridFleetState: HybridFleetState,
+    onAdvanceHybridFleet: (() -> Unit)?,
+    onResetHybridFleet: (() -> Unit)?,
     state: ProofOfDeliveryUiState,
     onVerify: ((Boolean) -> Unit)?,
     onPrepareNext: (() -> Unit)?,
@@ -1661,6 +1968,14 @@ private fun HandoffScreen(
         contentPadding = PaddingValues(16.dp, 18.dp, 16.dp, 28.dp),
         verticalArrangement = Arrangement.spacedBy(14.dp),
     ) {
+        item {
+            HybridFleetCard(
+                language = language,
+                state = hybridFleetState,
+                onAdvance = onAdvanceHybridFleet,
+                onReset = onResetHybridFleet,
+            )
+        }
         item { SectionLabel(text(R.string.signed_offer_step, language)) }
         item {
             Surface(

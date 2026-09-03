@@ -9,6 +9,7 @@ import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performScrollTo
+import androidx.compose.ui.test.performScrollToNode
 import androidx.compose.ui.test.performTouchInput
 import androidx.compose.ui.test.swipeUp
 import androidx.compose.runtime.MutableState
@@ -34,6 +35,18 @@ import com.example.digitaldelta.domain.triage.TriageWorkflowSnapshot
 import com.example.digitaldelta.domain.pod.CustodyReceiptRecord
 import com.example.digitaldelta.domain.pod.DeliveryOfferReady
 import com.example.digitaldelta.domain.pod.DeliveryOfferRejection
+import com.example.digitaldelta.domain.fleet.FleetOrchestrator
+import com.example.digitaldelta.domain.fleet.GeoPoint
+import com.example.digitaldelta.domain.fleet.HybridFleetInputs
+import com.example.digitaldelta.domain.fleet.HybridFleetMission
+import com.example.digitaldelta.domain.fleet.HybridFleetPlan
+import com.example.digitaldelta.domain.fleet.HybridFleetState
+import com.example.digitaldelta.domain.fleet.NamedPoint
+import com.example.digitaldelta.domain.fleet.Reachability
+import com.example.digitaldelta.domain.routing.EdgeMode
+import com.example.digitaldelta.domain.routing.MapEdge
+import com.example.digitaldelta.domain.routing.MapNode
+import com.example.digitaldelta.domain.routing.TransportGraph
 import org.junit.Before
 import org.junit.Assert.assertTrue
 import org.junit.Rule
@@ -50,6 +63,7 @@ class MainScreenTest {
     private lateinit var triageState: MutableState<TriageWorkflowSnapshot>
     private lateinit var proofState: MutableState<ProofOfDeliveryUiState>
     private lateinit var riskState: MutableState<RouteRiskUiState>
+    private lateinit var hybridState: MutableState<HybridFleetState>
     private var relayStartRequested = false
 
     @Before
@@ -61,6 +75,7 @@ class MainScreenTest {
         triageState = mutableStateOf(DefaultTriageWorkflow().evaluate(65))
         proofState = mutableStateOf(ProofOfDeliveryUiState.Ready(podOffer()))
         riskState = mutableStateOf(RouteRiskUiState.Idle)
+        hybridState = mutableStateOf(HybridFleetState.Ready(hybridPlan()))
         relayStartRequested = false
         composeTestRule.setContent {
             DigitalDeltaTheme(darkTheme = false) {
@@ -158,6 +173,28 @@ class MainScreenTest {
                         }
                     },
                     onPrepareNextHandoff = { proofState.value = ProofOfDeliveryUiState.Ready(podOffer()) },
+                    hybridFleetState = hybridState.value,
+                    onAdvanceHybridFleet = {
+                        hybridState.value = when (val current = hybridState.value) {
+                            is HybridFleetState.Ready -> HybridFleetState.BoatArrived(current.plan)
+                            is HybridFleetState.BoatArrived -> HybridFleetState.DroneArrived(
+                                current.plan,
+                                podOffer().copy(
+                                    deliveryId = "DELTA-DRONE-0001",
+                                    recipientIdentityId = "simulated-drone-07",
+                                ),
+                            )
+                            is HybridFleetState.DroneArrived -> {
+                                val receipt = podReceipt().copy(
+                                    deliveryId = "DELTA-DRONE-0001",
+                                    recipientIdentityId = "simulated-drone-07",
+                                )
+                                HybridFleetState.Transferred(current.plan, receipt, listOf(receipt))
+                            }
+                            else -> current
+                        }
+                    },
+                    onResetHybridFleet = { hybridState.value = HybridFleetState.Ready(hybridPlan()) },
                 )
             }
         }
@@ -191,8 +228,7 @@ class MainScreenTest {
     fun replayAttempt_isRejectedWithoutChangingVerifiedCustody() {
         composeTestRule.onNodeWithText("English").performClick()
         composeTestRule.onNodeWithText("Handoff").performClick()
-        composeTestRule.onNode(hasScrollAction()).performTouchInput { swipeUp() }
-        composeTestRule.onNode(hasScrollAction()).performTouchInput { swipeUp() }
+        composeTestRule.onNode(hasScrollAction()).performScrollToNode(hasTestTag("verify-handoff"))
         composeTestRule.onNode(hasTestTag("verify-handoff")).performClick()
         composeTestRule.onNodeWithText("Handoff verified").assertIsDisplayed()
         composeTestRule.waitForIdle()
@@ -202,6 +238,30 @@ class MainScreenTest {
 
         composeTestRule.onNodeWithText("Replay rejected").assertIsDisplayed()
         composeTestRule.onNodeWithText("1 • linked chain valid").assertExists()
+    }
+
+    @Test
+    fun hybridFleetJourneyIsDroneRequiredSimulatedAndBilingual() {
+        composeTestRule.onNodeWithText("English").performClick()
+        composeTestRule.onNodeWithText("Handoff").performClick()
+        composeTestRule.onNodeWithText("DRONE-REQUIRED").assertIsDisplayed()
+        composeTestRule.onNodeWithText("SIMULATED • Simulated").assertIsDisplayed()
+        composeTestRule.onNodeWithText("Boat → drone last-mile handoff").assertIsDisplayed()
+        composeTestRule.onNodeWithText("N7 • Tanguar Haor Clinic").assertExists()
+
+        composeTestRule.onNode(hasTestTag("hybrid-fleet-action")).performScrollTo().performClick()
+        composeTestRule.onNodeWithText("Boat arrived at rendezvous").assertExists()
+        composeTestRule.onNode(hasTestTag("hybrid-fleet-action")).performScrollTo().performClick()
+        composeTestRule.onNodeWithText("Simulated drone arrived").assertExists()
+        composeTestRule.onNode(hasTestTag("hybrid-fleet-action")).performScrollTo().performClick()
+        composeTestRule.onNodeWithText("Drone custody transferred").assertExists()
+        composeTestRule.onNode(hasTestTag("hybrid-fleet-receipt")).performScrollTo().assertIsDisplayed()
+        composeTestRule.onNodeWithText("simulated-drone-07 • 04040404…04040404").assertExists()
+
+        composeTestRule.onNodeWithText("বাংলা").performClick()
+        composeTestRule.onNodeWithText("ড্রোনের কাছে হেফাজত হস্তান্তরিত").assertExists()
+        composeTestRule.onNodeWithText("দুই পক্ষের রসিদ হেফাজত ধারায় সংযুক্ত").assertExists()
+        composeTestRule.onNodeWithText("SIMULATED • সিমুলেটেড").assertExists()
     }
 
     @Test
@@ -366,4 +426,38 @@ class MainScreenTest {
         receiptHash = ByteArray(32) { 4 },
         recordedAtUnixMs = 1_800_000_000_100,
     )
+
+    private fun hybridPlan(): HybridFleetPlan {
+        val mission = HybridFleetMission(
+            missionId = "mission-drone-demo-01",
+            originNodeId = "N1",
+            destinationNodeId = "N7",
+            boatVehicleId = "boat-02",
+            droneVehicleId = "drone-07",
+            graph = TransportGraph(
+                nodes = listOf(
+                    MapNode("N1", "Sylhet Hub", 24.8949, 91.8687),
+                    MapNode("N7", "Tanguar Haor Clinic", 25.12, 91.68),
+                ),
+                edges = listOf(MapEdge("A2", "N1", "N7", EdgeMode.AIRWAY, 28, simulated = true)),
+            ),
+            rendezvousInputs = HybridFleetInputs(
+                boatPosition = GeoPoint(25.04, 91.57),
+                droneBase = GeoPoint(24.9632, 91.8668),
+                droneDestination = GeoPoint(25.12, 91.68),
+                candidates = listOf(NamedPoint("R2", GeoPoint(25.0715, 91.7554))),
+                boatSpeedKph = 24.0,
+                droneSpeedKph = 55.0,
+                droneBatteryPercent = 74,
+                droneRangeAtFullChargeKm = 60.0,
+                reserveBatteryPercent = 20,
+            ),
+            simulated = true,
+        )
+        return HybridFleetPlan(
+            mission,
+            Reachability.DRONE_REQUIRED,
+            FleetOrchestrator().computeRendezvous(mission.rendezvousInputs),
+        )
+    }
 }

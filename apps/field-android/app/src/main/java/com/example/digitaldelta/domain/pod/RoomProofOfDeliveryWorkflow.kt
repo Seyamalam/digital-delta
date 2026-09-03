@@ -65,9 +65,22 @@ interface ProofOfDeliveryWorkflow {
     fun tamperForDemo(code: String): String
 }
 
+data class DeliveryScenario(
+    val missionId: String,
+    val deliveryId: String,
+    val senderNodeId: String,
+    val recipientNodeId: String,
+    val senderIdentityId: String,
+    val recipientIdentityId: String,
+    val payloadDescription: String,
+    val scenarioSeed: String,
+    val simulatedVehicle: Boolean,
+)
+
 class RoomProofOfDeliveryWorkflow(
     private val database: DeltaDatabase,
     private val deviceKeys: AndroidDeviceIdentityKeyStore,
+    private val scenario: DeliveryScenario = DEFAULT_SCENARIO,
     private val codec: DeliveryOfferCodec = DeliveryOfferCodec(),
     private val nowUnixMs: () -> Long = System::currentTimeMillis,
     private val nonceBytes: () -> ByteArray = {
@@ -75,40 +88,42 @@ class RoomProofOfDeliveryWorkflow(
     },
     private val eventId: () -> String = { "custody-${UUID.randomUUID()}" },
 ) : ProofOfDeliveryWorkflow {
+    private val payloadHash = sha256(scenario.payloadDescription.encodeToByteArray())
+
     override suspend fun prepare(): DeliveryOfferReady = withContext(Dispatchers.IO) {
         prepareInternal()
     }
 
     private suspend fun prepareInternal(): DeliveryOfferReady {
-        val sender = AndroidKeystoreDeliverySigner(SENDER_NODE_ID, deviceKeys)
+        val sender = AndroidKeystoreDeliverySigner(scenario.senderNodeId, deviceKeys)
         val previous = reconstructChainInternal().receipts.lastOrNull()?.receiptHash ?: GENESIS_HASH
         val nonce = nonceBytes()
         val now = nowUnixMs()
         val code = codec.createCode(
             DeliveryOfferDraft(
-                deliveryId = DELIVERY_ID,
-                missionId = MISSION_ID,
-                senderIdentityId = SENDER_IDENTITY_ID,
-                recipientIdentityId = RECIPIENT_IDENTITY_ID,
-                payloadSha256 = PAYLOAD_HASH,
+                deliveryId = scenario.deliveryId,
+                missionId = scenario.missionId,
+                senderIdentityId = scenario.senderIdentityId,
+                recipientIdentityId = scenario.recipientIdentityId,
+                payloadSha256 = payloadHash,
                 nonce = nonce,
                 timestampUnixMs = now,
                 previousReceiptSha256 = previous,
-                simulatedVehicle = true,
+                simulatedVehicle = scenario.simulatedVehicle,
             ),
             sender,
         )
         return DeliveryOfferReady(
             qrCode = code,
-            deliveryId = DELIVERY_ID,
-            senderIdentityId = SENDER_IDENTITY_ID,
-            recipientIdentityId = RECIPIENT_IDENTITY_ID,
+            deliveryId = scenario.deliveryId,
+            senderIdentityId = scenario.senderIdentityId,
+            recipientIdentityId = scenario.recipientIdentityId,
             senderSigningKeyId = sender.keyId,
-            payloadSha256 = PAYLOAD_HASH.copyOf(),
+            payloadSha256 = payloadHash.copyOf(),
             nonce = nonce.copyOf(),
             timestampUnixMs = now,
             previousReceiptSha256 = previous.copyOf(),
-            simulatedVehicle = true,
+            simulatedVehicle = scenario.simulatedVehicle,
         )
     }
 
@@ -118,15 +133,15 @@ class RoomProofOfDeliveryWorkflow(
 
     private suspend fun verifyInternal(code: String): DeliveryReceiptResult {
         val chainBefore = reconstructChainInternal().receipts
-        val senderIdentity = deviceKeys.createOrGet(SENDER_NODE_ID)
+        val senderIdentity = deviceKeys.createOrGet(scenario.senderNodeId)
         val verification = codec.verifyCode(
             code,
             TrustedDeliveryContext(
-                deliveryId = DELIVERY_ID,
-                missionId = MISSION_ID,
-                senderIdentityId = SENDER_IDENTITY_ID,
-                recipientIdentityId = RECIPIENT_IDENTITY_ID,
-                payloadSha256 = PAYLOAD_HASH,
+                deliveryId = scenario.deliveryId,
+                missionId = scenario.missionId,
+                senderIdentityId = scenario.senderIdentityId,
+                recipientIdentityId = scenario.recipientIdentityId,
+                payloadSha256 = payloadHash,
                 senderSigningKeyId = senderIdentity.signingKeyId,
                 senderSigningPublicKeyDer = senderIdentity.signingPublicKeyDer,
                 nowUnixMs = nowUnixMs(),
@@ -174,7 +189,7 @@ class RoomProofOfDeliveryWorkflow(
                 database.operationLogDao().append(
                     OperationEntity(
                         eventId = event.eventId,
-                        missionId = MISSION_ID,
+                        missionId = scenario.missionId,
                         eventType = EVENT_TYPE,
                         payloadBytes = event.toByteArray(),
                         createdAtUnixMs = now,
@@ -196,7 +211,7 @@ class RoomProofOfDeliveryWorkflow(
     }
 
     private suspend fun reconstructChainInternal(): CustodyChain {
-        val operations = database.operationLogDao().forMission(MISSION_ID)
+        val operations = database.operationLogDao().forMission(scenario.missionId)
             .filter { it.eventType == EVENT_TYPE }
         val receipts = mutableListOf<CustodyReceiptRecord>()
         var expectedPrevious = GENESIS_HASH
@@ -246,22 +261,22 @@ class RoomProofOfDeliveryWorkflow(
             .setSenderSignature(senderSignature)
             .setSimulatedVehicle(offer.simulatedVehicle)
             .build()
-        val recipient = deviceKeys.createOrGet(RECIPIENT_NODE_ID)
+        val recipient = deviceKeys.createOrGet(scenario.recipientNodeId)
         val recipientSignature = ProtoSignature.newBuilder()
             .setKeyId(recipient.signingKeyId)
             .setAlgorithm(DeliveryOfferCodec.SIGNATURE_ALGORITHM)
             .setRsa2048PssSha256(
-                ByteString.copyFrom(deviceKeys.sign(RECIPIENT_NODE_ID, unsignedReceipt.toByteArray())),
+                ByteString.copyFrom(deviceKeys.sign(scenario.recipientNodeId, unsignedReceipt.toByteArray())),
             )
             .build()
         val transfer = unsignedReceipt.toBuilder().setRecipientSignature(recipientSignature).build()
         return DomainEvent.newBuilder()
             .setEventId(eventId())
             .setSchemaVersion(1)
-            .setActorIdentityId(RECIPIENT_IDENTITY_ID)
+            .setActorIdentityId(scenario.recipientIdentityId)
             .setOccurredAtUnixMs(now)
-            .setSimulated(true)
-            .setScenarioSeed(SCENARIO_SEED)
+            .setSimulated(scenario.simulatedVehicle)
+            .setScenarioSeed(scenario.scenarioSeed)
             .setCustodyTransfer(transfer)
             .build()
     }
@@ -269,7 +284,7 @@ class RoomProofOfDeliveryWorkflow(
     private fun verifyTransferSignatures(transfer: CustodyTransfer): Boolean {
         val offer = DeliveryOffer.newBuilder()
             .setDeliveryId(transfer.deliveryId)
-            .setMissionId(MISSION_ID)
+            .setMissionId(scenario.missionId)
             .setSenderIdentityId(transfer.senderIdentityId)
             .setRecipientIdentityId(transfer.recipientIdentityId)
             .setPayloadSha256(transfer.payloadSha256)
@@ -278,7 +293,7 @@ class RoomProofOfDeliveryWorkflow(
             .setPreviousReceiptSha256(transfer.previousReceiptSha256)
             .setSimulatedVehicle(transfer.simulatedVehicle)
             .build()
-        val sender = deviceKeys.createOrGet(SENDER_NODE_ID)
+        val sender = deviceKeys.createOrGet(scenario.senderNodeId)
         val senderValid = verifySignature(
             sender.signingPublicKeyDer,
             sender.signingKeyId,
@@ -286,7 +301,7 @@ class RoomProofOfDeliveryWorkflow(
             transfer.senderSignature,
         )
         val unsignedReceipt = transfer.toBuilder().clearRecipientSignature().build()
-        val recipient = deviceKeys.createOrGet(RECIPIENT_NODE_ID)
+        val recipient = deviceKeys.createOrGet(scenario.recipientNodeId)
         val recipientValid = verifySignature(
             recipient.signingPublicKeyDer,
             recipient.signingKeyId,
@@ -316,17 +331,20 @@ class RoomProofOfDeliveryWorkflow(
     private fun ByteArray.toHex(): String = joinToString("") { "%02x".format(it) }
 
     companion object {
-        private const val MISSION_ID = "mission-pod-demo-01"
-        private const val DELIVERY_ID = "DELTA-2026-0001"
-        private const val SENDER_NODE_ID = "pod-demo-boat-02"
-        private const val RECIPIENT_NODE_ID = "pod-demo-hospital-01"
-        private const val SENDER_IDENTITY_ID = "boat-operator-02"
-        private const val RECIPIENT_IDENTITY_ID = "hospital-operator-01"
+        val DEFAULT_SCENARIO = DeliveryScenario(
+            missionId = "mission-pod-demo-01",
+            deliveryId = "DELTA-2026-0001",
+            senderNodeId = "pod-demo-boat-02",
+            recipientNodeId = "pod-demo-hospital-01",
+            senderIdentityId = "boat-operator-02",
+            recipientIdentityId = "hospital-operator-01",
+            payloadDescription = "medicine:10|ors:20",
+            scenarioSeed = "m5-pod-demo-v1",
+            simulatedVehicle = true,
+        )
         private const val EVENT_TYPE = "CUSTODY_TRANSFER"
-        private const val SCENARIO_SEED = "m5-pod-demo-v1"
         // Field phones can drift while disconnected; keep the window bounded but demo-operable.
         private const val ALLOWED_CLOCK_SKEW_MS = 10 * 60_000L
-        private val PAYLOAD_HASH = sha256("medicine:10|ors:20".encodeToByteArray())
         private val GENESIS_HASH = sha256("digital-delta-custody-genesis-v1".encodeToByteArray())
     }
 }

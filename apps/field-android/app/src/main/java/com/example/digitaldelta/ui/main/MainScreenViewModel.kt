@@ -28,6 +28,8 @@ import com.example.digitaldelta.domain.prediction.RouteRiskFeatures
 import com.example.digitaldelta.domain.prediction.RouteRiskPrediction
 import com.example.digitaldelta.domain.prediction.RouteRiskPredictor
 import com.example.digitaldelta.domain.routing.DynamicRouteDecision
+import com.example.digitaldelta.domain.fleet.HybridFleetState
+import com.example.digitaldelta.domain.fleet.HybridFleetWorkflow
 import com.example.digitaldelta.proto.v1.PriorityClass
 import dagger.hilt.android.lifecycle.HiltViewModel
 import javax.inject.Inject
@@ -39,6 +41,7 @@ import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+import kotlinx.coroutines.delay
 @HiltViewModel
 class MainScreenViewModel @Inject constructor(
     private val settingsRepository: UserSettingsRepository,
@@ -49,6 +52,7 @@ class MainScreenViewModel @Inject constructor(
     private val triageWorkflow: TriageWorkflow = DefaultTriageWorkflow(),
     private val proofOfDeliveryWorkflow: ProofOfDeliveryWorkflow = UnavailableProofOfDeliveryWorkflow,
     private val routeRiskPredictor: RouteRiskPredictor = RouteRiskClassifier(threshold = 0.65),
+    private val hybridFleetWorkflow: HybridFleetWorkflow = UnavailableHybridFleetWorkflow,
 ) : ViewModel() {
     val language: StateFlow<LanguagePreference> = settingsRepository.language.stateIn(
         scope = viewModelScope,
@@ -78,6 +82,9 @@ class MainScreenViewModel @Inject constructor(
 
     private val mutableRouteRiskState = MutableStateFlow<RouteRiskUiState>(RouteRiskUiState.Idle)
     val routeRiskState: StateFlow<RouteRiskUiState> = mutableRouteRiskState.asStateFlow()
+
+    private val mutableHybridFleetState = MutableStateFlow(hybridFleetWorkflow.snapshot())
+    val hybridFleetState: StateFlow<HybridFleetState> = mutableHybridFleetState.asStateFlow()
 
     init {
         viewModelScope.launch { loadIdentity() }
@@ -275,6 +282,27 @@ class MainScreenViewModel @Inject constructor(
         viewModelScope.launch { prepareHandoffInternal() }
     }
 
+    fun advanceHybridFleet() {
+        val current = mutableHybridFleetState.value
+        if (current is HybridFleetState.PreparingDroneOffer || current is HybridFleetState.VerifyingTransfer) return
+        val intermediate = when (current) {
+            is HybridFleetState.BoatArrived -> HybridFleetState.PreparingDroneOffer(current.plan)
+            is HybridFleetState.DroneArrived -> HybridFleetState.VerifyingTransfer(current.plan, current.offer)
+            else -> null
+        }
+        if (intermediate != null) mutableHybridFleetState.value = intermediate
+        viewModelScope.launch {
+            if (intermediate != null) delay(650)
+            runCatching { hybridFleetWorkflow.advance() }
+                .onSuccess { mutableHybridFleetState.value = it }
+                .onFailure { mutableHybridFleetState.value = current }
+        }
+    }
+
+    fun resetHybridFleet() {
+        mutableHybridFleetState.value = hybridFleetWorkflow.reset()
+    }
+
     private suspend fun prepareHandoffInternal() {
         mutableProofOfDeliveryState.value = runCatching { proofOfDeliveryWorkflow.prepare() }
             .fold(
@@ -342,6 +370,12 @@ private object UnavailableProofOfDeliveryWorkflow : ProofOfDeliveryWorkflow {
     override suspend fun verify(code: String): DeliveryReceiptResult = error("proof-of-delivery workflow is unavailable")
     override suspend fun reconstructChain() = error("proof-of-delivery workflow is unavailable")
     override fun tamperForDemo(code: String): String = error("proof-of-delivery workflow is unavailable")
+}
+
+private object UnavailableHybridFleetWorkflow : HybridFleetWorkflow {
+    override fun snapshot(): HybridFleetState = HybridFleetState.Unavailable
+    override suspend fun advance(): HybridFleetState = HybridFleetState.Unavailable
+    override fun reset(): HybridFleetState = HybridFleetState.Unavailable
 }
 
 private fun com.example.digitaldelta.domain.identity.IdentityProvisioningSnapshot.toUiState(

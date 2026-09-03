@@ -39,6 +39,15 @@ import com.example.digitaldelta.domain.pod.RoomProofOfDeliveryWorkflow
 import com.example.digitaldelta.domain.prediction.AssetOnnxRouteRiskPredictor
 import com.example.digitaldelta.domain.prediction.ResilientRouteRiskPredictor
 import com.example.digitaldelta.domain.prediction.RouteRiskPredictor
+import com.example.digitaldelta.domain.fleet.DefaultHybridFleetWorkflow
+import com.example.digitaldelta.domain.fleet.FleetOrchestrator
+import com.example.digitaldelta.domain.fleet.GeoPoint
+import com.example.digitaldelta.domain.fleet.HybridFleetInputs
+import com.example.digitaldelta.domain.fleet.HybridFleetMission
+import com.example.digitaldelta.domain.fleet.HybridFleetWorkflow
+import com.example.digitaldelta.domain.fleet.NamedPoint
+import com.example.digitaldelta.domain.fleet.RoomHybridFleetEventRecorder
+import com.example.digitaldelta.domain.pod.DeliveryScenario
 import com.example.digitaldelta.settings.v1.UserSettings
 import dagger.Module
 import dagger.Provides
@@ -162,4 +171,60 @@ object AppModule {
         database: DeltaDatabase,
         deviceKeys: AndroidDeviceIdentityKeyStore,
     ): ProofOfDeliveryWorkflow = RoomProofOfDeliveryWorkflow(database, deviceKeys)
+
+    @Provides
+    @Singleton
+    fun provideHybridFleetWorkflow(
+        @ApplicationContext context: Context,
+        database: DeltaDatabase,
+        deviceKeys: AndroidDeviceIdentityKeyStore,
+    ): HybridFleetWorkflow {
+        val fixture = context.assets.open("sylhet_map.json").bufferedReader().use { it.readText() }
+        val graph = SylhetMapParser().parse(fixture).graph
+        val mission = HybridFleetMission(
+            missionId = "mission-drone-demo-01",
+            originNodeId = "N1",
+            destinationNodeId = "N7",
+            boatVehicleId = "boat-02",
+            droneVehicleId = "drone-07",
+            graph = graph,
+            rendezvousInputs = HybridFleetInputs(
+                boatPosition = GeoPoint(25.0400, 91.5700),
+                droneBase = GeoPoint(24.9632, 91.8668),
+                droneDestination = GeoPoint(25.1200, 91.6800),
+                candidates = listOf(
+                    NamedPoint("R1", GeoPoint(25.0658, 91.6073)),
+                    NamedPoint("R2", GeoPoint(25.0715, 91.7554)),
+                    NamedPoint("R3", GeoPoint(25.0200, 91.7000)),
+                ),
+                boatSpeedKph = 24.0,
+                droneSpeedKph = 55.0,
+                droneBatteryPercent = 74,
+                droneRangeAtFullChargeKm = 60.0,
+                reserveBatteryPercent = 20,
+            ),
+            simulated = true,
+        )
+        val droneCustody = RoomProofOfDeliveryWorkflow(
+            database = database,
+            deviceKeys = deviceKeys,
+            scenario = DeliveryScenario(
+                missionId = mission.missionId,
+                deliveryId = "DELTA-DRONE-0001",
+                senderNodeId = "pod-demo-boat-02",
+                recipientNodeId = "pod-demo-drone-07",
+                senderIdentityId = "boat-operator-02",
+                recipientIdentityId = "simulated-drone-07",
+                payloadDescription = "p0-medicine:4|blood-cooler:1",
+                scenarioSeed = "m8-drone-handoff-v1",
+                simulatedVehicle = true,
+            ),
+        )
+        return DefaultHybridFleetWorkflow(
+            mission = mission,
+            orchestrator = FleetOrchestrator(),
+            proofOfDelivery = droneCustody,
+            eventRecorder = RoomHybridFleetEventRecorder(database),
+        )
+    }
 }
