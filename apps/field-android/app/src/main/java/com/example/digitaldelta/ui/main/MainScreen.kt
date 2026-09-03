@@ -105,6 +105,7 @@ import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.semantics.heading
 import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
@@ -154,6 +155,8 @@ fun DigitalDeltaApp(
     showBootSequence: Boolean = true,
     useBangla: Boolean = true,
     onLanguageChange: ((Boolean) -> Unit)? = null,
+    requestQueueState: RequestQueueUiState = RequestQueueUiState.Idle,
+    onQueueRequest: ((Int, Int, Int, String) -> Unit)? = null,
 ) {
     var booting by rememberSaveable { mutableStateOf(showBootSequence) }
     LaunchedEffect(showBootSequence) {
@@ -171,7 +174,12 @@ fun DigitalDeltaApp(
         if (isBooting) {
             DeltaBootScreen()
         } else {
-            DeltaShell(useBangla = useBangla, onLanguageChange = onLanguageChange)
+            DeltaShell(
+                useBangla = useBangla,
+                onLanguageChange = onLanguageChange,
+                requestQueueState = requestQueueState,
+                onQueueRequest = onQueueRequest,
+            )
         }
     }
 }
@@ -254,7 +262,12 @@ private fun DeltaBootScreen() {
 }
 
 @Composable
-private fun DeltaShell(useBangla: Boolean, onLanguageChange: ((Boolean) -> Unit)?) {
+private fun DeltaShell(
+    useBangla: Boolean,
+    onLanguageChange: ((Boolean) -> Unit)?,
+    requestQueueState: RequestQueueUiState,
+    onQueueRequest: ((Int, Int, Int, String) -> Unit)?,
+) {
     var destination by rememberSaveable { mutableStateOf(DeltaDestination.OPERATIONS) }
     var localUseBangla by rememberSaveable { mutableStateOf(useBangla) }
     LaunchedEffect(useBangla) {
@@ -274,6 +287,7 @@ private fun DeltaShell(useBangla: Boolean, onLanguageChange: ((Boolean) -> Unit)
             NavigationBar(containerColor = MaterialTheme.colorScheme.surface, tonalElevation = 0.dp) {
                 DeltaDestination.entries.forEach { item ->
                     NavigationBarItem(
+                        modifier = Modifier.testTag("nav-${item.name.lowercase()}"),
                         selected = destination == item,
                         onClick = { destination = item },
                         icon = { Icon(item.icon, contentDescription = null) },
@@ -303,7 +317,11 @@ private fun DeltaShell(useBangla: Boolean, onLanguageChange: ((Boolean) -> Unit)
         ) { selected ->
             when (selected) {
                 DeltaDestination.OPERATIONS -> OperationsScreen(language)
-                DeltaDestination.REQUEST -> RequestScreen(language)
+                DeltaDestination.REQUEST -> RequestScreen(
+                    language = language,
+                    requestQueueState = requestQueueState,
+                    onQueueRequest = onQueueRequest,
+                )
                 DeltaDestination.ROUTE -> RouteAndMeshScreen(language)
                 DeltaDestination.HANDOFF -> HandoffScreen(language)
             }
@@ -415,7 +433,11 @@ private fun MissionSheet(language: AppLanguage, expanded: Boolean, onExpand: () 
 }
 
 @Composable
-private fun RequestScreen(language: AppLanguage) {
+private fun RequestScreen(
+    language: AppLanguage,
+    requestQueueState: RequestQueueUiState,
+    onQueueRequest: ((Int, Int, Int, String) -> Unit)?,
+) {
     var medicine by rememberSaveable { mutableIntStateOf(10) }
     var ors by rememberSaveable { mutableIntStateOf(20) }
     var tarpaulin by rememberSaveable { mutableIntStateOf(5) }
@@ -505,20 +527,58 @@ private fun RequestScreen(language: AppLanguage) {
             )
         }
         item {
-            Button(onClick = { queued = true }, modifier = Modifier.fillMaxWidth().height(54.dp)) {
+            Button(
+                onClick = {
+                    if (onQueueRequest == null) {
+                        queued = true
+                    } else {
+                        onQueueRequest(medicine, ors, tarpaulin, priority)
+                    }
+                },
+                enabled = requestQueueState != RequestQueueUiState.Submitting,
+                modifier = Modifier.fillMaxWidth().height(54.dp).testTag("send-request"),
+            ) {
                 Icon(Icons.AutoMirrored.Filled.Send, null)
                 Spacer(Modifier.width(8.dp))
-                Text(text(R.string.send_request, language))
+                Text(
+                    text(
+                        if (requestQueueState == RequestQueueUiState.Submitting) {
+                            R.string.queueing_request
+                        } else {
+                            R.string.send_request
+                        },
+                        language,
+                    ),
+                )
             }
-            AnimatedVisibility(queued) {
+            AnimatedVisibility(queued || requestQueueState is RequestQueueUiState.Queued) {
+                Column(
+                    Modifier.fillMaxWidth().padding(top = 12.dp).testTag("request-queued"),
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                ) {
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Icon(Icons.Default.CheckCircle, null, tint = VerifiedGreen)
+                        Spacer(Modifier.width(8.dp))
+                        Text(text(R.string.request_queued, language), color = VerifiedGreen)
+                    }
+                    (requestQueueState as? RequestQueueUiState.Queued)?.let { receipt ->
+                        Text(
+                            text = "ID ${receipt.requestId.take(8)} • ${receipt.messageId.take(8)}",
+                            style = MaterialTheme.typography.labelSmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        )
+                    }
+                }
+            }
+            AnimatedVisibility(requestQueueState == RequestQueueUiState.Failed) {
                 Row(
                     Modifier.fillMaxWidth().padding(top = 12.dp),
                     verticalAlignment = Alignment.CenterVertically,
                     horizontalArrangement = Arrangement.Center,
                 ) {
-                    Icon(Icons.Default.CheckCircle, null, tint = VerifiedGreen)
+                    Icon(Icons.Default.Warning, null, tint = MaterialTheme.colorScheme.error)
                     Spacer(Modifier.width(8.dp))
-                    Text(text(R.string.request_queued, language), color = VerifiedGreen)
+                    Text(text(R.string.request_queue_failed, language), color = MaterialTheme.colorScheme.error)
                 }
             }
         }

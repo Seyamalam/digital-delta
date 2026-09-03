@@ -2,6 +2,9 @@ package com.example.digitaldelta.ui.main
 
 import com.example.digitaldelta.data.settings.LanguagePreference
 import com.example.digitaldelta.data.settings.UserSettingsRepository
+import com.example.digitaldelta.domain.request.QueueReceipt
+import com.example.digitaldelta.domain.request.ReliefRequestDraft
+import com.example.digitaldelta.domain.request.ReliefRequestSubmission
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.Flow
@@ -29,7 +32,7 @@ class MainScreenViewModelTest {
     @Test
     fun `language starts Bangla and persists English selection`() = runTest(dispatcher) {
         val repository = FakeSettingsRepository()
-        val viewModel = MainScreenViewModel(repository)
+        val viewModel = MainScreenViewModel(repository, FakeRequestSubmission())
 
         assertEquals(LanguagePreference.BANGLA, viewModel.language.value)
         viewModel.setBangla(false)
@@ -37,6 +40,18 @@ class MainScreenViewModelTest {
 
         assertEquals(LanguagePreference.ENGLISH, repository.languageState.value)
         assertEquals(LanguagePreference.ENGLISH, viewModel.language.value)
+    }
+
+    @Test
+    fun `queue request exposes durable receipt to the interface`() = runTest(dispatcher) {
+        val submission = FakeRequestSubmission()
+        val viewModel = MainScreenViewModel(FakeSettingsRepository(), submission)
+
+        viewModel.queueRequest(medicine = 11, ors = 20, tarpaulin = 5, priorityCode = "P0")
+        advanceUntilIdle()
+
+        assertEquals(11, submission.received?.cargo?.first { it.itemCode == "medicine" }?.quantity)
+        assertEquals(RequestQueueUiState.Queued("request-9", "message-9"), viewModel.requestQueueState.value)
     }
 }
 
@@ -46,5 +61,14 @@ private class FakeSettingsRepository : UserSettingsRepository {
 
     override suspend fun setLanguage(language: LanguagePreference) {
         languageState.value = language
+    }
+}
+
+private class FakeRequestSubmission : ReliefRequestSubmission {
+    var received: ReliefRequestDraft? = null
+
+    override suspend fun submit(draft: ReliefRequestDraft): QueueReceipt {
+        received = draft
+        return QueueReceipt("request-9", "message-9")
     }
 }

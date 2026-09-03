@@ -29,7 +29,9 @@
     <string name="note_optional">Note (optional)</string>
     <string name="note_hint">Add field instructions…</string>
     <string name="send_request">Send request</string>
-    <string name="request_queued">Request signed and queued offline</string>
+    <string name="request_queued">Request encrypted and queued offline</string>
+    <string name="queueing_request">Encrypting and saving…</string>
+    <string name="request_queue_failed">Could not save locally. Try again.</string>
     <string name="road_flooded">Road flooded • rerouted by boat</string>
     <string name="predicted">PREDICTED</string>
     <string name="route_selected">Selected path • Boat route A → B → C</string>

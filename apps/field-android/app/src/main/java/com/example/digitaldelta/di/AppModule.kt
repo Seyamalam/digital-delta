@@ -10,6 +10,11 @@ import com.example.digitaldelta.data.local.OutboxDao
 import com.example.digitaldelta.data.settings.ProtoUserSettingsRepository
 import com.example.digitaldelta.data.settings.UserSettingsRepository
 import com.example.digitaldelta.data.settings.userSettingsDataStore
+import com.example.digitaldelta.domain.mesh.AndroidKeystorePayloadProtector
+import com.example.digitaldelta.domain.mesh.MeshPayloadProtector
+import com.example.digitaldelta.domain.request.DefaultReliefRequestSubmission
+import com.example.digitaldelta.domain.request.ReliefRequestSubmission
+import com.example.digitaldelta.domain.request.RoomRequestPersistence
 import com.example.digitaldelta.settings.v1.UserSettings
 import dagger.Module
 import dagger.Provides
@@ -44,4 +49,18 @@ object AppModule {
     @Singleton
     fun provideSettingsRepository(dataStore: DataStore<UserSettings>): UserSettingsRepository =
         ProtoUserSettingsRepository(dataStore)
+
+    @Provides
+    @Singleton
+    fun providePayloadProtector(): MeshPayloadProtector = AndroidKeystorePayloadProtector()
+
+    @Provides
+    @Singleton
+    fun provideRequestSubmission(
+        database: DeltaDatabase,
+        payloadProtector: MeshPayloadProtector,
+    ): ReliefRequestSubmission = DefaultReliefRequestSubmission(
+        persistence = RoomRequestPersistence(database),
+        payloadProtector = payloadProtector,
+    )
 }

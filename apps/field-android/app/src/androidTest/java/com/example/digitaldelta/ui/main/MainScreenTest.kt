@@ -44,11 +44,11 @@ class MainScreenTest {
         composeTestRule.onNodeWithText("11").assertIsDisplayed()
         composeTestRule.onNode(hasScrollAction()).performTouchInput { swipeUp() }
         composeTestRule.onNodeWithText("Send request").performClick()
-        composeTestRule.onNodeWithText("Request signed and queued offline").assertIsDisplayed()
+        composeTestRule.onNodeWithText("Request encrypted and queued offline").assertIsDisplayed()
 
         composeTestRule.onNodeWithText("বাংলা").performClick()
         composeTestRule.onNodeWithText("11").assertIsDisplayed()
-        composeTestRule.onNodeWithText("অনুরোধ স্বাক্ষরিত এবং অফলাইনে সারিবদ্ধ").assertIsDisplayed()
+        composeTestRule.onNodeWithText("অনুরোধ এনক্রিপ্ট করে অফলাইনে সারিবদ্ধ হয়েছে").assertIsDisplayed()
     }
 
     @Test

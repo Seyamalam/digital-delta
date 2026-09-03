@@ -12,9 +12,12 @@ import com.example.digitaldelta.ui.main.MainScreenViewModel
 fun MainNavigation() {
   val viewModel: MainScreenViewModel = viewModel()
   val language by viewModel.language.collectAsStateWithLifecycle()
+  val requestQueueState by viewModel.requestQueueState.collectAsStateWithLifecycle()
 
   DigitalDeltaApp(
     useBangla = language == LanguagePreference.BANGLA,
     onLanguageChange = viewModel::setBangla,
+    requestQueueState = requestQueueState,
+    onQueueRequest = viewModel::queueRequest,
   )
 }

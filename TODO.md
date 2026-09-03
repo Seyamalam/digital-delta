@@ -91,7 +91,7 @@ This checklist tracks implementation. Milestone exit criteria live in [MILESTONE
 - [ ] Use WorkManager only for deferred retries, queue cleanup, and maintenance.
 - [ ] Implement neighbor advertising and discovery.
 - [ ] Authenticate peers before accepting payloads.
-- [ ] Build persistent inbox, outbox, retry, and dead-letter queues.
+- [ ] Build persistent inbox, outbox, retry, and dead-letter queues. Android has an atomic Room operation/outbox write and Go has a durable inbox; retry and dead-letter behavior remain.
 - [ ] Implement store-and-forward relay.
 - [ ] Implement TTL and hop-limit enforcement. The Go durable relay enforces both; Android queue enforcement remains.
 - [ ] Implement deduplication before domain-event application. The Go durable relay rejects duplicate message IDs; Android persistence remains.
