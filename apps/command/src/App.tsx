@@ -1,6 +1,7 @@
-import { useMemo, useReducer, useState } from "react";
+import { useEffect, useMemo, useReducer, useState } from "react";
 
 type Language = "bn" | "en";
+type ControlMode = "core" | "faults";
 type ScenarioState = {
   step: number;
   observerConnected: boolean;
@@ -9,6 +10,11 @@ type ScenarioState = {
   conflict: boolean;
   custodyVerified: boolean;
   droneBattery: number;
+  syncing: boolean;
+  nodeOffline: boolean;
+  vehicleDelayed: boolean;
+  duplicateRejected: boolean;
+  tamperRejected: boolean;
 };
 
 const initialScenario: ScenarioState = {
@@ -19,6 +25,11 @@ const initialScenario: ScenarioState = {
   conflict: false,
   custodyVerified: false,
   droneBattery: 74,
+  syncing: false,
+  nodeOffline: false,
+  vehicleDelayed: false,
+  duplicateRejected: false,
+  tamperRejected: false,
 };
 
 type Action =
@@ -29,6 +40,11 @@ type Action =
   | { type: "CONFLICT" }
   | { type: "BATTERY" }
   | { type: "VERIFY" }
+  | { type: "SYNC" }
+  | { type: "NODE" }
+  | { type: "DELAY" }
+  | { type: "DUPLICATE" }
+  | { type: "TAMPER" }
   | { type: "RESET" };
 
 export function scenarioReducer(state: ScenarioState, action: Action): ScenarioState {
@@ -52,6 +68,11 @@ export function scenarioReducer(state: ScenarioState, action: Action): ScenarioS
     case "CONFLICT": return { ...state, conflict: !state.conflict };
     case "BATTERY": return { ...state, droneBattery: state.droneBattery < 30 ? 74 : 25 };
     case "VERIFY": return { ...state, custodyVerified: !state.custodyVerified };
+    case "SYNC": return { ...state, syncing: !state.syncing };
+    case "NODE": return { ...state, nodeOffline: !state.nodeOffline };
+    case "DELAY": return { ...state, vehicleDelayed: !state.vehicleDelayed };
+    case "DUPLICATE": return { ...state, duplicateRejected: !state.duplicateRejected };
+    case "TAMPER": return { ...state, tamperRejected: !state.tamperRejected };
     case "RESET": return { ...initialScenario, observerConnected: state.observerConnected };
   }
 }
@@ -63,6 +84,7 @@ const copy = {
     offline: "বাণিজ্যিক ইন্টারনেট নেই",
     observer: "পর্যবেক্ষক সংযুক্ত",
     observerLost: "পর্যবেক্ষক বিচ্ছিন্ন",
+    syncing: "স্থানীয় পর্যবেক্ষণ সিঙ্ক হচ্ছে",
     fieldSafe: "ফিল্ড কাজ চালু আছে",
     simulated: "সিমুলেটেড মহড়া",
     mission: "P0 রক্ত ও ওষুধ • টাঙ্গুয়ার হাওর ক্লিনিক",
@@ -83,11 +105,32 @@ const copy = {
     verify: "হেফাজত যাচাই",
     disconnect: "ড্যাশবোর্ড বিচ্ছিন্ন করুন",
     reconnect: "ড্যাশবোর্ড পুনঃসংযোগ",
+    core: "মূল মহড়া",
+    faults: "ফল্ট ল্যাব",
+    showSync: "সিঙ্ক দেখান",
+    nodeOffline: "নোড B অফলাইন",
+    delayBoat: "নৌযান বিলম্ব",
+    rejectDuplicate: "ডুপ্লিকেট প্রত্যাখ্যান",
+    rejectTamper: "বদলানো QR প্রত্যাখ্যান",
+    autoReplay: "স্বয়ংক্রিয় রিপ্লে",
+    pauseReplay: "রিপ্লে থামান",
     proof: "হেফাজত",
     verified: "দুই পক্ষের স্বাক্ষর যাচাইকৃত",
     awaiting: "স্বাক্ষরের অপেক্ষায়",
     mesh: "মেশ কিউ",
     warning: "P0 SLA ভঙ্গের ঝুঁকি",
+    truckRoute: "ট্রাক • N1 → N2 → N4",
+    clinic: "ক্লিনিক",
+    boatRelay: "নৌযান রিলে",
+    droneOperator: "ড্রোন অপারেটর",
+    p0Ready: "P0 প্রস্তুত",
+    queued: "৪টি কিউতে",
+    ready: "প্রস্তুত",
+    throttled: "৬০% কম সম্প্রচার",
+    offlineQueued: "অফলাইন • কিউ সুরক্ষিত",
+    bloodCooler: "রক্তের কুলার",
+    medicine: "ওষুধ",
+    tarpaulin: "ত্রিপল",
   },
   en: {
     command: "Delta Command",
@@ -95,6 +138,7 @@ const copy = {
     offline: "Commercial internet unavailable",
     observer: "Observer connected",
     observerLost: "Observer disconnected",
+    syncing: "Syncing local observer",
     fieldSafe: "Field work continues",
     simulated: "SIMULATED EXERCISE",
     mission: "P0 blood & medicine • Tanguar Haor Clinic",
@@ -115,19 +159,53 @@ const copy = {
     verify: "Verify custody",
     disconnect: "Disconnect dashboard",
     reconnect: "Reconnect dashboard",
+    core: "Core drill",
+    faults: "Fault lab",
+    showSync: "Show syncing",
+    nodeOffline: "Node B offline",
+    delayBoat: "Delay boat",
+    rejectDuplicate: "Reject duplicate",
+    rejectTamper: "Reject tampered QR",
+    autoReplay: "Auto replay",
+    pauseReplay: "Pause replay",
     proof: "Custody",
     verified: "Two-party signature verified",
     awaiting: "Awaiting signatures",
     mesh: "Mesh queue",
     warning: "P0 SLA breach at risk",
+    truckRoute: "Truck • N1 → N2 → N4",
+    clinic: "Clinic",
+    boatRelay: "Boat relay",
+    droneOperator: "Drone operator",
+    p0Ready: "P0 ready",
+    queued: "4 queued",
+    ready: "ready",
+    throttled: "60% throttle",
+    offlineQueued: "offline • queue retained",
+    bloodCooler: "Blood cooler",
+    medicine: "Medicine",
+    tarpaulin: "Tarpaulin",
   },
 } as const;
 
 export function App() {
   const [language, setLanguage] = useState<Language>("bn");
+  const [controlMode, setControlMode] = useState<ControlMode>("core");
+  const [isReplaying, setIsReplaying] = useState(false);
   const [state, dispatch] = useReducer(scenarioReducer, initialScenario);
   const t = copy[language];
   const events = useMemo(() => buildEvents(state, language), [state, language]);
+
+  useEffect(() => {
+    if (!isReplaying) return;
+    const timer = window.setInterval(() => dispatch({ type: "STEP" }), 1_700);
+    return () => window.clearInterval(timer);
+  }, [isReplaying]);
+
+  const reset = () => {
+    setIsReplaying(false);
+    dispatch({ type: "RESET" });
+  };
 
   return (
     <main className="command-shell" data-language={language}>
@@ -138,8 +216,8 @@ export function App() {
         </div>
         <div className="top-status">
           <span className="pill offline"><i />{t.offline}</span>
-          <span className={`pill ${state.observerConnected ? "connected" : "lost"}`}>
-            <i />{state.observerConnected ? t.observer : t.observerLost}
+          <span className={`pill ${state.observerConnected ? (state.syncing ? "syncing" : "connected") : "lost"}`}>
+            <i />{state.observerConnected ? (state.syncing ? t.syncing : t.observer) : t.observerLost}
           </span>
           <button className="language" onClick={() => setLanguage(language === "bn" ? "en" : "bn")}>
             {language === "bn" ? "English" : "বাংলা"}
@@ -150,7 +228,7 @@ export function App() {
       <section className="mission-strip" aria-label={t.mission}>
         <div className="priority">P0</div>
         <div className="mission-title"><span>{t.simulated}</span><strong>{t.mission}</strong></div>
-        <div className="mission-metric"><small>{t.eta}</small><strong>{state.failedRoad ? "45" : "65"}<em> min</em></strong></div>
+        <div className="mission-metric"><small>{t.eta}</small><strong>{(state.failedRoad ? 45 : 65) + (state.vehicleDelayed ? 18 : 0)}<em> min</em></strong></div>
         <div className="mission-alert"><small>{t.droneRequired}</small><strong>{state.failedRoad ? t.warning : t.fieldSafe}</strong></div>
       </section>
 
@@ -159,7 +237,7 @@ export function App() {
           <PanelHeading eyebrow="M4 + M7 + M8" title={t.route} meta="24.8949°N / 91.8687°E" />
           <DeltaMap state={state} language={language} />
           <div className="route-caption">
-            <div><span>{t.route}</span><strong>{state.failedRoad ? t.routeValue : "Truck • N1 → N2 → N4"}</strong></div>
+            <div><span>{t.route}</span><strong>{state.failedRoad ? t.routeValue : t.truckRoute}</strong></div>
             <div className="route-proof"><span>R3 RENDEZVOUS</span><strong>25.0200, 91.7000</strong></div>
           </div>
         </section>
@@ -167,9 +245,9 @@ export function App() {
         <aside className="right-rail">
           <section className="panel nodes-panel">
             <PanelHeading eyebrow="M3" title={t.network} meta="3 / 3" />
-            <Node id="A" role="Clinic" battery={82} status="P0 ready" />
-            <Node id="B" role="Boat relay" battery={58} status="4 queued" />
-            <Node id="C" role="Drone operator" battery={state.droneBattery} status={state.droneBattery < 30 ? "60% throttle" : "ready"} />
+            <Node id="A" role={t.clinic} battery={82} status={t.p0Ready} />
+            <Node id="B" role={t.boatRelay} battery={58} status={state.nodeOffline ? t.offlineQueued : t.queued} offline={state.nodeOffline} />
+            <Node id="C" role={t.droneOperator} battery={state.droneBattery} status={state.droneBattery < 30 ? t.throttled : t.ready} />
             <div className="mesh-line"><span>A</span><b /><span>B</span><b /><span>C</span></div>
           </section>
           <section className={`panel custody-panel ${state.custodyVerified ? "is-verified" : ""}`}>
@@ -182,10 +260,10 @@ export function App() {
 
         <section className="panel inventory-panel">
           <PanelHeading eyebrow="M6" title={t.inventory} meta="P0 FIRST" />
-          <Inventory label="Blood cooler" amount="1 / 1" level={100} critical />
-          <Inventory label="Medicine" amount="4 / 6" level={66} critical />
+          <Inventory label={t.bloodCooler} amount="1 / 1" level={100} critical />
+          <Inventory label={t.medicine} amount="4 / 6" level={66} critical />
           <Inventory label="ORS" amount="120 / 200" level={60} />
-          <Inventory label="Tarpaulin" amount="P2 • N3" level={35} />
+          <Inventory label={t.tarpaulin} amount="P2 • N3" level={35} />
         </section>
 
         <section className="panel event-panel" aria-live="polite">
@@ -195,17 +273,31 @@ export function App() {
 
         <section className="panel control-panel">
           <PanelHeading eyebrow="LOCAL ONLY" title={t.controls} meta="SIMULATION" />
+          <div className="control-tabs" role="tablist" aria-label={t.controls}>
+            <button role="tab" aria-selected={controlMode === "core"} onClick={() => setControlMode("core")}>{t.core}</button>
+            <button role="tab" aria-selected={controlMode === "faults"} onClick={() => setControlMode("faults")}>{t.faults}</button>
+          </div>
           <div className="control-grid">
-            <Control active={state.predictedRisk} onClick={() => dispatch({ type: "RISK" })} label={t.risk} code="M7" />
-            <Control active={state.failedRoad} onClick={() => dispatch({ type: "FLOOD" })} label={t.road} code="M4" />
-            <Control active={state.conflict} onClick={() => dispatch({ type: "CONFLICT" })} label={t.conflict} code="M2" />
-            <Control active={state.droneBattery < 30} onClick={() => dispatch({ type: "BATTERY" })} label={t.battery} code="M3" />
-            <Control active={state.custodyVerified} onClick={() => dispatch({ type: "VERIFY" })} label={t.verify} code="M5" />
-            <Control active={!state.observerConnected} onClick={() => dispatch({ type: "TOGGLE_OBSERVER" })} label={state.observerConnected ? t.disconnect : t.reconnect} code="SYS" />
+            {controlMode === "core" ? <>
+              <Control active={state.predictedRisk} onClick={() => dispatch({ type: "RISK" })} label={t.risk} code="M7" />
+              <Control active={state.failedRoad} onClick={() => dispatch({ type: "FLOOD" })} label={t.road} code="M4" />
+              <Control active={state.conflict} onClick={() => dispatch({ type: "CONFLICT" })} label={t.conflict} code="M2" />
+              <Control active={state.droneBattery < 30} onClick={() => dispatch({ type: "BATTERY" })} label={t.battery} code="M3" />
+              <Control active={state.custodyVerified} onClick={() => dispatch({ type: "VERIFY" })} label={t.verify} code="M5" />
+              <Control active={!state.observerConnected} onClick={() => dispatch({ type: "TOGGLE_OBSERVER" })} label={state.observerConnected ? t.disconnect : t.reconnect} code="SYS" />
+            </> : <>
+              <Control active={state.syncing} onClick={() => dispatch({ type: "SYNC" })} label={t.showSync} code="SYNC" />
+              <Control active={state.nodeOffline} onClick={() => dispatch({ type: "NODE" })} label={t.nodeOffline} code="M3" />
+              <Control active={state.vehicleDelayed} onClick={() => dispatch({ type: "DELAY" })} label={t.delayBoat} code="M8" />
+              <Control active={state.duplicateRejected} onClick={() => dispatch({ type: "DUPLICATE" })} label={t.rejectDuplicate} code="M3" />
+              <Control active={state.tamperRejected} onClick={() => dispatch({ type: "TAMPER" })} label={t.rejectTamper} code="M5" />
+              <Control active={!state.observerConnected} onClick={() => dispatch({ type: "TOGGLE_OBSERVER" })} label={state.observerConnected ? t.disconnect : t.reconnect} code="SYS" />
+            </>}
           </div>
           <div className="primary-controls">
             <button className="advance" onClick={() => dispatch({ type: "STEP" })}>{t.step}<span>0{state.step + 1} / 06</span></button>
-            <button className="reset" onClick={() => dispatch({ type: "RESET" })}>{t.reset}</button>
+            <button className={`replay ${isReplaying ? "active" : ""}`} aria-pressed={isReplaying} onClick={() => setIsReplaying(!isReplaying)}>{isReplaying ? t.pauseReplay : t.autoReplay}</button>
+            <button className="reset" onClick={reset}>{t.reset}</button>
           </div>
         </section>
       </div>
@@ -221,6 +313,9 @@ function PanelHeading({ eyebrow, title, meta }: { eyebrow: string; title: string
 function DeltaMark() { return <svg className="delta-mark" viewBox="0 0 58 58" aria-hidden="true"><path d="M29 5 52 50H6L29 5Z" /><path d="M29 17v27M18 29l11 8 11-8" /></svg>; }
 
 function DeltaMap({ state, language }: { state: ScenarioState; language: Language }) {
+  const labels = language === "bn"
+    ? { road: "সড়ক", water: "নৌপথ", air: "সিমুলেটেড আকাশপথ", sylhet: "সিলেট হাব", airport: "বিমানবন্দর", companyganj: "কোম্পানীগঞ্জ", rendezvous: "মিলনস্থল", clinic: "হাওর ক্লিনিক" }
+    : { road: "Road", water: "Waterway", air: "Simulated airway", sylhet: "Sylhet hub", airport: "Airport", companyganj: "Companyganj", rendezvous: "Rendezvous", clinic: "Haor clinic" };
   return <div className="delta-map"><svg viewBox="0 0 900 410" role="img" aria-label={language === "bn" ? "সিলেটের সিমুলেটেড পথ মানচিত্র" : "Simulated Sylhet route map"}>
     <defs><filter id="glow"><feGaussianBlur stdDeviation="5" result="blur" /><feMerge><feMergeNode in="blur" /><feMergeNode in="SourceGraphic" /></feMerge></filter></defs>
     <path className="land" d="M36 48C170 8 320 32 414 72c92 39 188 5 294 35 126 36 171 140 120 218-50 77-169 55-281 54-152-2-255 29-376-8C42 331-30 218 36 48Z" />
@@ -230,22 +325,22 @@ function DeltaMap({ state, language }: { state: ScenarioState; language: Languag
     <path className={`boat ${state.failedRoad ? "active" : ""}`} d="M146 275C270 339 405 328 512 246" />
     <path className={`air ${state.failedRoad ? "active" : ""}`} d="M512 246Q653 104 795 119" />
     {state.predictedRisk && <circle className="risk-ring" cx="435" cy="150" r="54" />}
-    <MapNode x={146} y={275} id="N1" label="Sylhet hub" />
-    <MapNode x={322} y={125} id="N2" label="Airport" />
-    <MapNode x={536} y={175} id="N4" label="Companyganj" />
-    <MapNode x={512} y={246} id="R3" label="Rendezvous" active={state.failedRoad} />
-    <MapNode x={795} y={119} id="N7" label="Haor clinic" active={state.failedRoad} />
+    <MapNode x={146} y={275} id="N1" label={labels.sylhet} />
+    <MapNode x={322} y={125} id="N2" label={labels.airport} />
+    <MapNode x={536} y={175} id="N4" label={labels.companyganj} />
+    <MapNode x={512} y={246} id="R3" label={labels.rendezvous} active={state.failedRoad} />
+    <MapNode x={795} y={119} id="N7" label={labels.clinic} active={state.failedRoad} />
     {state.failedRoad && <g className="vehicle boat-icon" transform="translate(360 309)"><circle r="20" /><text y="6">◒</text></g>}
     {state.failedRoad && <g className="vehicle drone-icon" transform="translate(650 160)"><circle r="20" /><text y="6">✦</text></g>}
-  </svg><div className="map-legend"><span><i className="road-key" />Road</span><span><i className="water-key" />Waterway</span><span><i className="air-key" />Simulated airway</span></div></div>;
+  </svg><div className="map-legend"><span><i className="road-key" />{labels.road}</span><span><i className="water-key" />{labels.water}</span><span><i className="air-key" />{labels.air}</span></div></div>;
 }
 
 function MapNode({ x, y, id, label, active = false }: { x: number; y: number; id: string; label: string; active?: boolean }) {
   return <g className={`map-node ${active ? "active" : ""}`} transform={`translate(${x} ${y})`}><circle r="10" /><circle className="halo" r="20" /><text x="16" y="-4">{id}</text><text className="node-label" x="16" y="14">{label}</text></g>;
 }
 
-function Node({ id, role, battery, status }: { id: string; role: string; battery: number; status: string }) {
-  return <div className="node-row"><span className="node-id">{id}</span><div><strong>{role}</strong><small>{status}</small></div><div className="battery"><span style={{ width: `${battery}%` }} /><em>{battery}%</em></div></div>;
+function Node({ id, role, battery, status, offline = false }: { id: string; role: string; battery: number; status: string; offline?: boolean }) {
+  return <div className={`node-row ${offline ? "is-offline" : ""}`}><span className="node-id">{id}</span><div><strong>{role}</strong><small>{status}</small></div><div className="battery"><span style={{ width: `${battery}%` }} /><em>{battery}%</em></div></div>;
 }
 
 function Inventory({ label, amount, level, critical = false }: { label: string; amount: string; level: number; critical?: boolean }) {
@@ -267,5 +362,10 @@ function buildEvents(state: ScenarioState, language: Language) {
   if (state.conflict) events.push({ id: "CRDT…91B0", time: "08:01:25", tone: "amber", title: en ? "Destination conflict needs review" : "গন্তব্য দ্বন্দ্বে মানব সিদ্ধান্ত প্রয়োজন", detail: "VECTOR CLOCKS CONCURRENT" });
   if (state.droneBattery < 30) events.push({ id: "MESH…0A7C", time: "08:01:31", tone: "blue", title: en ? "Broadcast reduced by 60%" : "সম্প্রচার ৬০% কমানো হয়েছে", detail: "DRONE-07 • 25%" });
   if (state.custodyVerified) events.push({ id: "POD…4120", time: "08:01:44", tone: "green", title: en ? "Drone custody verified" : "ড্রোন হেফাজত যাচাইকৃত", detail: "RSA-PSS • CHAIN VALID" });
+  if (state.syncing) events.push({ id: "SYNC…882A", time: "08:01:48", tone: "blue", title: en ? "Observer projection rebuilding" : "পর্যবেক্ষণ প্রক্ষেপণ পুনর্গঠিত হচ্ছে", detail: "LOCAL LINK • FIELD INDEPENDENT" });
+  if (state.nodeOffline) events.push({ id: "NODE…B300", time: "08:01:52", tone: "coral", title: en ? "Relay B offline; queue retained" : "রিলে B অফলাইন; কিউ সুরক্ষিত", detail: "STORE-AND-FORWARD • 4 QUEUED" });
+  if (state.vehicleDelayed) events.push({ id: "DELAY…18M", time: "08:01:56", tone: "amber", title: en ? "Boat delayed by 18 min" : "নৌযান ১৮ মিনিট বিলম্বিত", detail: "SIMULATED VEHICLE INPUT" });
+  if (state.duplicateRejected) events.push({ id: "DEDUP…44A1", time: "08:02:01", tone: "green", title: en ? "Duplicate envelope rejected" : "ডুপ্লিকেট এনভেলপ প্রত্যাখ্যাত", detail: "MESSAGE ID ALREADY CLAIMED" });
+  if (state.tamperRejected) events.push({ id: "POD…BAD5", time: "08:02:06", tone: "green", title: en ? "Signature mismatch rejected" : "স্বাক্ষর অমিল প্রত্যাখ্যাত", detail: "CUSTODY CHAIN UNCHANGED" });
   return events;
 }
