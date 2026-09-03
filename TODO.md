@@ -180,12 +180,12 @@ This checklist tracks implementation. Milestone exit criteria live in [MILESTONE
 
 - [x] Build projector layout for 1366 by 768 and 1920 by 1080.
 - [x] Add route map, inventory, node status, mesh queue, risk, and custody panels.
-- [ ] Add Offline, Syncing, Conflict, and Verified states.
+- [x] Add Offline, Syncing, Conflict, and Verified states.
 - [x] Add Bangla and English dashboard modes.
 - [ ] Add simulated rainfall, saturation, edge failure, node failure, delay, and battery controls.
-- [ ] Add duplicate-message and QR-tamper injection.
+- [x] Add duplicate-message and QR-tamper injection with unchanged-chain narration.
 - [x] Add deterministic event narration with module-labelled evidence rows.
-- [ ] Add scenario pause, resume, step, reset, and replay.
+- [x] Add scenario pause, resume, step, reset, and automatic replay.
 - [x] Make every implemented control deterministic under scenario seed `20260412`.
 - [ ] Prove field phones continue after dashboard disconnection.
 
