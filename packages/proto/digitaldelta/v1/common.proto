@@ -41,6 +41,9 @@ message EncryptedPayload {
   bytes aes_256_gcm_ciphertext = 2;
   bytes nonce = 3;
   bytes associated_data_sha256 = 4;
+  bytes wrapped_aes_256_key = 5;
+  string key_wrap_algorithm = 6;
+  string content_algorithm = 7;
 }
 
 message Envelope {

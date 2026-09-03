@@ -45,6 +45,9 @@ object MeshWireCodec {
                 .setAes256GcmCiphertext(ByteString.copyFrom(protected.ciphertext))
                 .setNonce(ByteString.copyFrom(protected.nonce))
                 .setAssociatedDataSha256(ByteString.copyFrom(protected.associatedDataSha256))
+                .setWrappedAes256Key(ByteString.copyFrom(protected.wrappedAes256Key))
+                .setKeyWrapAlgorithm(protected.keyWrapAlgorithm)
+                .setContentAlgorithm(protected.contentAlgorithm)
                 .build()
         }
         return builder.build()

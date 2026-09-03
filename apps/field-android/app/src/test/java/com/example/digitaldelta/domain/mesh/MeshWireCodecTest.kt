@@ -59,4 +59,39 @@ class MeshWireCodecTest {
         assertEquals(2, TransportMode.TRANSPORT_MODE_WATERWAY.number)
         assertEquals(3, TransportMode.TRANSPORT_MODE_AIRWAY.number)
     }
+
+    @Test
+    fun `preserves hybrid encryption metadata in the protobuf envelope`() {
+        val encrypted = ProtectedPayload(
+            recipientKeyId = "hospital-key-1",
+            ciphertext = byteArrayOf(1, 2, 3),
+            nonce = ByteArray(12) { 4 },
+            associatedDataSha256 = ByteArray(32) { 5 },
+            wrappedAes256Key = ByteArray(256) { 6 },
+            keyWrapAlgorithm = HybridPayloadCipher.KEY_WRAP_ALGORITHM,
+            contentAlgorithm = HybridPayloadCipher.CONTENT_ALGORITHM,
+        )
+
+        val decoded = MeshWireCodec.decode(
+            MeshWireCodec.encode(
+                MeshWireCodec.createEnvelope(
+                    messageId = "message-1",
+                    senderNodeId = "clinic-1",
+                    recipientNodeId = "hospital-1",
+                    createdAtUnixMs = 100,
+                    expiresAtUnixMs = 200,
+                    hopLimit = 8,
+                    priority = PriorityClass.PRIORITY_CLASS_P0,
+                    payloadHash = ByteArray(32),
+                    simulated = false,
+                    scenarioSeed = "",
+                    protectedPayload = encrypted,
+                ),
+            ),
+        )
+
+        assertArrayEquals(encrypted.wrappedAes256Key, decoded.encryptedPayload.wrappedAes256Key.toByteArray())
+        assertEquals(encrypted.keyWrapAlgorithm, decoded.encryptedPayload.keyWrapAlgorithm)
+        assertEquals(encrypted.contentAlgorithm, decoded.encryptedPayload.contentAlgorithm)
+    }
 }

@@ -71,7 +71,7 @@ private class RecordingRequestPersistence : RequestPersistence {
 }
 
 private object ReversingPayloadProtector : MeshPayloadProtector {
-    override fun protect(recipientNodeId: String, plaintext: ByteArray, associatedData: ByteArray): ProtectedPayload =
+    override suspend fun protect(recipientNodeId: String, plaintext: ByteArray, associatedData: ByteArray): ProtectedPayload =
         ProtectedPayload(
             recipientKeyId = "$recipientNodeId-key",
             ciphertext = plaintext.reversedArray() + byteArrayOf(9),

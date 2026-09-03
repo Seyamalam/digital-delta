@@ -334,6 +334,9 @@ type EncryptedPayload struct {
 	Aes_256GcmCiphertext []byte                 `protobuf:"bytes,2,opt,name=aes_256_gcm_ciphertext,json=aes256GcmCiphertext,proto3" json:"aes_256_gcm_ciphertext,omitempty"`
 	Nonce                []byte                 `protobuf:"bytes,3,opt,name=nonce,proto3" json:"nonce,omitempty"`
 	AssociatedDataSha256 []byte                 `protobuf:"bytes,4,opt,name=associated_data_sha256,json=associatedDataSha256,proto3" json:"associated_data_sha256,omitempty"`
+	WrappedAes_256Key    []byte                 `protobuf:"bytes,5,opt,name=wrapped_aes_256_key,json=wrappedAes256Key,proto3" json:"wrapped_aes_256_key,omitempty"`
+	KeyWrapAlgorithm     string                 `protobuf:"bytes,6,opt,name=key_wrap_algorithm,json=keyWrapAlgorithm,proto3" json:"key_wrap_algorithm,omitempty"`
+	ContentAlgorithm     string                 `protobuf:"bytes,7,opt,name=content_algorithm,json=contentAlgorithm,proto3" json:"content_algorithm,omitempty"`
 	unknownFields        protoimpl.UnknownFields
 	sizeCache            protoimpl.SizeCache
 }
@@ -394,6 +397,27 @@ func (x *EncryptedPayload) GetAssociatedDataSha256() []byte {
 		return x.AssociatedDataSha256
 	}
 	return nil
+}
+
+func (x *EncryptedPayload) GetWrappedAes_256Key() []byte {
+	if x != nil {
+		return x.WrappedAes_256Key
+	}
+	return nil
+}
+
+func (x *EncryptedPayload) GetKeyWrapAlgorithm() string {
+	if x != nil {
+		return x.KeyWrapAlgorithm
+	}
+	return ""
+}
+
+func (x *EncryptedPayload) GetContentAlgorithm() string {
+	if x != nil {
+		return x.ContentAlgorithm
+	}
+	return ""
 }
 
 type Envelope struct {
@@ -665,12 +689,15 @@ const file_digitaldelta_v1_common_proto_rawDesc = "" +
 	"\aentries\x18\x01 \x03(\v2!.digitaldelta.v1.VectorClockEntryR\aentries\"<\n" +
 	"\tSignature\x12\x15\n" +
 	"\x06key_id\x18\x01 \x01(\tR\x05keyId\x12\x18\n" +
-	"\aed25519\x18\x02 \x01(\fR\aed25519\"\xbd\x01\n" +
+	"\aed25519\x18\x02 \x01(\fR\aed25519\"\xc7\x02\n" +
 	"\x10EncryptedPayload\x12(\n" +
 	"\x10recipient_key_id\x18\x01 \x01(\tR\x0erecipientKeyId\x123\n" +
 	"\x16aes_256_gcm_ciphertext\x18\x02 \x01(\fR\x13aes256GcmCiphertext\x12\x14\n" +
 	"\x05nonce\x18\x03 \x01(\fR\x05nonce\x124\n" +
-	"\x16associated_data_sha256\x18\x04 \x01(\fR\x14associatedDataSha256\"\x91\x06\n" +
+	"\x16associated_data_sha256\x18\x04 \x01(\fR\x14associatedDataSha256\x12-\n" +
+	"\x13wrapped_aes_256_key\x18\x05 \x01(\fR\x10wrappedAes256Key\x12,\n" +
+	"\x12key_wrap_algorithm\x18\x06 \x01(\tR\x10keyWrapAlgorithm\x12+\n" +
+	"\x11content_algorithm\x18\a \x01(\tR\x10contentAlgorithm\"\x91\x06\n" +
 	"\bEnvelope\x12\x1d\n" +
 	"\n" +
 	"message_id\x18\x01 \x01(\tR\tmessageId\x12%\n" +
