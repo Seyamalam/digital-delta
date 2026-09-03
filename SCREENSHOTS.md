@@ -68,6 +68,7 @@ These are real emulator captures from the working application, not final submiss
 | Signed Protobuf handoff accepted offline | Captured | Captured | `artifacts/screenshots/field-bn/17-field-bn-pod-verified.png`, `artifacts/screenshots/field-en/17-field-en-pod-verified.png` |
 | Reused nonce rejected with custody preserved | Captured | Captured | `artifacts/screenshots/field-bn/18-field-bn-pod-replay-rejected.png`, `artifacts/screenshots/field-en/18-field-en-pod-replay-rejected.png` |
 | Altered signed field rejected before nonce claim | Captured | Captured | `artifacts/screenshots/field-bn/19-field-bn-pod-tamper-rejected.png`, `artifacts/screenshots/field-en/19-field-en-pod-tamper-rejected.png` |
+| On-device ONNX risk prediction and proactive boat reroute | Captured | Captured | `artifacts/screenshots/field-bn/20-field-bn-onnx-risk-reroute.png`, `artifacts/screenshots/field-en/20-field-en-onnx-risk-reroute.png` |
 
 ## Field application shots
 
@@ -90,6 +91,7 @@ These are real emulator captures from the working application, not final submiss
 - [x] Valid local receipt verification in both languages
 - [x] Tampered receipt rejection in both languages
 - [x] Replay rejection with unchanged chain in both languages
+- [x] Simulated route-risk inputs, ONNX probability, threshold, overlay, and proactive reroute in both languages
 - [ ] Full chain-of-custody timeline; current UI shows the verified count and latest hash
 - [ ] Low-battery broadcast reduction
 - [ ] Simulated drone handoff

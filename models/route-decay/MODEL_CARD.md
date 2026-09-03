@@ -54,4 +54,4 @@ The maximum absolute probability difference across the 128-sample export parity 
 
 ## Verification
 
-`scripts/verify-local.sh` regenerates and byte-compares the dataset, metrics, config, and model, then runs Android unit tests. Connected verification additionally loads the bundled ONNX asset on an Android emulator, compares high- and low-risk examples, and runs the bilingual proactive-reroute journey.
+`scripts/verify-local.sh` regenerates and byte-compares the dataset, metrics, config, and model, runs Android unit tests, and builds the minified release. Connected verification additionally loads the bundled ONNX asset on an Android emulator, compares high- and low-risk examples, and runs the bilingual proactive-reroute journey. The API 36 ARM64 release rehearsal peaked at 67,504 KB PSS across three post-inference readings; see `artifacts/reports/mobile-memory/m7-api36-arm64.md` for the complete conditions and limitations.
