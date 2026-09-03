@@ -28,6 +28,7 @@ data class MapEdge(
     val baseMinutes: Int,
     val state: EdgeState = EdgeState.OPEN,
     val riskProbability: Double = 0.0,
+    val simulated: Boolean = false,
 ) {
     init {
         require(baseMinutes >= 0) { "Edge travel time cannot be negative" }

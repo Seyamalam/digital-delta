@@ -61,6 +61,8 @@ These are real emulator captures from the working application, not final submiss
 | Nearby foreground relay active on Android 15 | Captured | Captured | `artifacts/screenshots/field-bn/10-field-bn-nearby-relay-active-1280x2856.png`, `artifacts/screenshots/field-en/10-field-en-nearby-relay-active-1280x2856.png` |
 | Safety-sensitive concurrent edit awaiting review | Captured | Captured | `artifacts/screenshots/field-bn/11-field-bn-conflict-review-1280x2856.png`, `artifacts/screenshots/field-en/11-field-en-conflict-review-1280x2856.png` |
 | Conflict resolved with convergence hash | Pending final pair | Captured | `artifacts/screenshots/field-en/12-field-en-conflict-resolved-1280x2856.png` |
+| Offline truck route from bundled Sylhet graph | Captured | Pending final pair | `artifacts/screenshots/field-bn/13-field-bn-route-initial-1280x2856.png` |
+| Confirmed simulated E3 failure and measured boat reroute | Captured | Captured | `artifacts/screenshots/field-bn/14-field-bn-route-rerouted-1280x2856.png`, `artifacts/screenshots/field-en/14-field-en-route-rerouted-1280x2856.png` |
 
 ## Field application shots
 
@@ -76,7 +78,7 @@ These are real emulator captures from the working application, not final submiss
 - [ ] Syncing state
 - [x] Conflict-detected state in the current Android emulator build
 - [x] Human conflict resolution in the current Android emulator build; final bilingual hero pair remains
-- [ ] Route and vehicle assignment
+- [x] Route and vehicle assignment in the current Android emulator build; MapLibre final map remains
 - [ ] SLA breach warning
 - [ ] Drop-and-reroute confirmation
 - [ ] QR handoff generation

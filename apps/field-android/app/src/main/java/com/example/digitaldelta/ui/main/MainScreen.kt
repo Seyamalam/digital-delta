@@ -7,8 +7,8 @@ import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.Crossfade
 import androidx.compose.animation.core.RepeatMode
+import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.animateFloat
-import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.infiniteRepeatable
 import androidx.compose.animation.core.rememberInfiniteTransition
 import androidx.compose.animation.core.tween
@@ -125,6 +125,8 @@ import com.example.digitaldelta.R
 import com.example.digitaldelta.domain.mesh.MeshRuntimeState
 import com.example.digitaldelta.domain.sync.ConflictSide
 import com.example.digitaldelta.domain.sync.MissionConflictSnapshot
+import com.example.digitaldelta.domain.routing.RouteScenarioSnapshot
+import com.example.digitaldelta.domain.routing.VehicleType
 import com.example.digitaldelta.theme.AlertCoral
 import com.example.digitaldelta.theme.DeltaTeal
 import com.example.digitaldelta.theme.DigitalDeltaTheme
@@ -179,6 +181,8 @@ fun DigitalDeltaApp(
     conflictState: MissionConflictSnapshot = MissionConflictSnapshot.Idle,
     onSimulateConflict: (() -> Unit)? = null,
     onResolveConflict: ((String, ConflictSide) -> Unit)? = null,
+    routeState: RouteScenarioSnapshot? = null,
+    onToggleRouteFailure: (() -> Unit)? = null,
 ) {
     var booting by rememberSaveable { mutableStateOf(showBootSequence) }
     LaunchedEffect(showBootSequence) {
@@ -212,6 +216,8 @@ fun DigitalDeltaApp(
                 conflictState = conflictState,
                 onSimulateConflict = onSimulateConflict,
                 onResolveConflict = onResolveConflict,
+                routeState = routeState,
+                onToggleRouteFailure = onToggleRouteFailure,
             )
         }
     }
@@ -311,6 +317,8 @@ private fun DeltaShell(
     conflictState: MissionConflictSnapshot,
     onSimulateConflict: (() -> Unit)?,
     onResolveConflict: ((String, ConflictSide) -> Unit)?,
+    routeState: RouteScenarioSnapshot?,
+    onToggleRouteFailure: (() -> Unit)?,
 ) {
     var destination by rememberSaveable { mutableStateOf(DeltaDestination.OPERATIONS) }
     var identityOpen by rememberSaveable { mutableStateOf(false) }
@@ -393,6 +401,8 @@ private fun DeltaShell(
                     onStopRelay = onStopRelay,
                     onAcceptPeer = onAcceptPeer,
                     onRejectPeer = onRejectPeer,
+                    routeState = routeState,
+                    onToggleRouteFailure = onToggleRouteFailure,
                 )
                 DeltaDestination.HANDOFF -> HandoffScreen(language)
             }
@@ -1113,18 +1123,32 @@ private fun RouteAndMeshScreen(
     onStopRelay: (() -> Unit)?,
     onAcceptPeer: ((String) -> Unit)?,
     onRejectPeer: ((String) -> Unit)?,
+    routeState: RouteScenarioSnapshot?,
+    onToggleRouteFailure: (() -> Unit)?,
 ) {
-    var flooded by rememberSaveable { mutableStateOf(true) }
-    val progress by animateFloatAsState(
-        targetValue = if (flooded) 1f else .42f,
-        animationSpec = tween(900),
-        label = "reroute-progress",
-    )
+    val flooded = routeState?.failedEdgeIds?.contains("E3") == true
+    val decision = routeState?.decision
+    val progress = remember { Animatable(0f) }
+    LaunchedEffect(decision?.routeVehicle, flooded) {
+        progress.snapTo(0f)
+        progress.animateTo(1f, tween(900))
+    }
     LazyColumn(Modifier.fillMaxSize(), contentPadding = PaddingValues(bottom = 20.dp)) {
         item {
             Box(Modifier.fillMaxWidth().height(470.dp)) {
-                FloodMap(routeProgress = progress, showFailure = flooded, showRisk = true, detailed = true)
-                MapLegend(Modifier.align(Alignment.TopEnd).padding(12.dp))
+                FloodMap(
+                    routeProgress = progress.value,
+                    showFailure = flooded,
+                    showRisk = false,
+                    detailed = true,
+                    routeVehicle = decision?.routeVehicle ?: VehicleType.TRUCK,
+                )
+                MapLegend(
+                    language = language,
+                    routeVehicle = decision?.routeVehicle ?: VehicleType.TRUCK,
+                    showFailure = flooded,
+                    modifier = Modifier.align(Alignment.TopEnd).padding(12.dp),
+                )
             }
         }
         item {
@@ -1143,31 +1167,79 @@ private fun RouteAndMeshScreen(
                         onRejectPeer = onRejectPeer,
                     )
                     Text(
-                        text(R.string.road_flooded, language),
+                        text(if (flooded) R.string.road_flooded else R.string.truck_route_ready, language),
                         style = MaterialTheme.typography.titleLarge,
                         modifier = Modifier.semantics { heading() },
                     )
                     Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                        ElevatedAssistChip(
-                            onClick = {},
-                            label = { Text(text(R.string.predicted, language)) },
-                            leadingIcon = { Icon(Icons.Default.Warning, null, tint = RiskAmber) },
-                        )
+                        if (flooded) {
+                            ElevatedAssistChip(
+                                onClick = {},
+                                label = { Text(text(R.string.confirmed_failure, language)) },
+                                leadingIcon = { Icon(Icons.Default.Warning, null, tint = AlertCoral) },
+                            )
+                        }
                         AssistChip(onClick = {}, label = { Text(text(R.string.simulated, language)) })
                     }
-                    InfoRow(Icons.Default.DirectionsBoat, text(R.string.route_selected, language))
-                    InfoRow(Icons.Default.Warning, text(R.string.risk_notice, language), RiskAmber)
-                    InfoRow(Icons.Default.Info, text(R.string.weather_simulated, language))
-                    Button(onClick = { flooded = !flooded }, modifier = Modifier.fillMaxWidth().height(52.dp)) {
+                    Button(
+                        onClick = { onToggleRouteFailure?.invoke() },
+                        modifier = Modifier.fillMaxWidth().height(52.dp).testTag("toggle-route-failure"),
+                    ) {
                         Icon(if (flooded) Icons.Default.Replay else Icons.Default.Warning, null)
                         Spacer(Modifier.width(8.dp))
-                        Text(text(R.string.trigger_flood, language))
+                        Text(text(if (flooded) R.string.reset_route else R.string.trigger_flood, language))
                     }
+                    InfoRow(
+                        if (decision?.routeVehicle == VehicleType.BOAT) Icons.Default.DirectionsBoat else Icons.Default.Map,
+                        routeSummary(decision, language),
+                    )
+                    InfoRow(Icons.Default.AccessTime, etaSummary(decision, language))
+                    InfoRow(Icons.Default.Info, routeReason(flooded, language))
+                    decision?.let {
+                        Text(
+                            "${text(R.string.recompute_time, language)} • ${"%.3f".format(Locale.US, it.computationNanos / 1_000_000.0)} ms",
+                            style = MaterialTheme.typography.labelMedium,
+                            color = DeltaTeal,
+                            modifier = Modifier.testTag("route-latency"),
+                        )
+                    }
+                    InfoRow(Icons.Default.Info, text(R.string.weather_simulated, language))
                 }
             }
         }
     }
 }
+
+@Composable
+private fun routeSummary(
+    decision: com.example.digitaldelta.domain.routing.DynamicRouteDecision?,
+    language: AppLanguage,
+): String {
+    if (decision == null) return text(R.string.route_loading, language)
+    val vehicle = text(
+        when (decision.routeVehicle) {
+            VehicleType.TRUCK -> R.string.vehicle_truck_name
+            VehicleType.BOAT -> R.string.vehicle_boat_name
+            VehicleType.DRONE -> R.string.vehicle_drone_name
+        },
+        language,
+    )
+    return "$vehicle • ${decision.route.nodeIds.joinToString(" → ")} • ${decision.route.edgeIds.joinToString(" + ")}"
+}
+
+@Composable
+private fun etaSummary(
+    decision: com.example.digitaldelta.domain.routing.DynamicRouteDecision?,
+    language: AppLanguage,
+): String = if (decision == null) {
+    text(R.string.route_loading, language)
+} else {
+    "${text(R.string.route_eta, language)} • ${decision.route.totalMinutes} ${text(R.string.minutes_short, language)}"
+}
+
+@Composable
+private fun routeReason(flooded: Boolean, language: AppLanguage): String =
+    text(if (flooded) R.string.boat_fallback_reason else R.string.truck_route_reason, language)
 
 @Composable
 private fun MeshRelayCard(
@@ -1351,7 +1423,13 @@ private fun HandoffScreen(language: AppLanguage) {
 }
 
 @Composable
-private fun FloodMap(routeProgress: Float, showFailure: Boolean, showRisk: Boolean, detailed: Boolean = false) {
+private fun FloodMap(
+    routeProgress: Float,
+    showFailure: Boolean,
+    showRisk: Boolean,
+    detailed: Boolean = false,
+    routeVehicle: VehicleType = VehicleType.BOAT,
+) {
     BoxWithConstraints(modifier = Modifier.fillMaxSize().background(Color(0xFFEFF5F3))) {
         Canvas(Modifier.fillMaxSize()) {
             val river = Path().apply {
@@ -1368,17 +1446,35 @@ private fun FloodMap(routeProgress: Float, showFailure: Boolean, showRisk: Boole
             }
             val activeRoute = Path().apply {
                 moveTo(size.width * .16f, size.height * .25f)
-                cubicTo(size.width * .24f, size.height * .42f, size.width * .44f, size.height * .33f, size.width * .52f, size.height * .55f)
-                cubicTo(size.width * .64f, size.height * .77f, size.width * .72f, size.height * .58f, size.width * .84f, size.height * .80f)
+                when (routeVehicle) {
+                    VehicleType.TRUCK -> cubicTo(
+                        size.width * .34f,
+                        size.height * .17f,
+                        size.width * .56f,
+                        size.height * .38f,
+                        size.width * .84f,
+                        size.height * .80f,
+                    )
+                    VehicleType.BOAT -> {
+                        cubicTo(size.width * .24f, size.height * .42f, size.width * .44f, size.height * .33f, size.width * .52f, size.height * .55f)
+                        cubicTo(size.width * .64f, size.height * .77f, size.width * .72f, size.height * .58f, size.width * .84f, size.height * .80f)
+                    }
+                    VehicleType.DRONE -> lineTo(size.width * .84f, size.height * .80f)
+                }
             }
-            drawPath(activeRoute, RiverBlue.copy(alpha = .20f), style = Stroke(18f, cap = StrokeCap.Round))
+            val routeColor = when (routeVehicle) {
+                VehicleType.TRUCK -> DeltaTeal
+                VehicleType.BOAT -> RiverBlue
+                VehicleType.DRONE -> RiskAmber
+            }
+            drawPath(activeRoute, routeColor.copy(alpha = .20f), style = Stroke(18f, cap = StrokeCap.Round))
             val measure = PathMeasure().apply { setPath(activeRoute, false) }
             val visible = Path()
             measure.getSegment(0f, measure.length * routeProgress.coerceIn(0f, 1f), visible, true)
-            drawPath(visible, RiverBlue, style = Stroke(10f, cap = StrokeCap.Round))
+            drawPath(visible, routeColor, style = Stroke(10f, cap = StrokeCap.Round))
             val vehicle = measure.getPosition(measure.length * routeProgress.coerceIn(0f, 1f))
             drawCircle(Color.White, 19f, vehicle)
-            drawCircle(RiverBlue, 12f, vehicle)
+            drawCircle(routeColor, 12f, vehicle)
             if (showFailure) {
                 drawLine(
                     AlertCoral,
@@ -1445,13 +1541,30 @@ private fun MiniLocationMap() {
 }
 
 @Composable
-private fun MapLegend(modifier: Modifier = Modifier) {
+private fun MapLegend(
+    language: AppLanguage,
+    routeVehicle: VehicleType,
+    showFailure: Boolean,
+    modifier: Modifier = Modifier,
+) {
     Surface(color = MaterialTheme.colorScheme.surface.copy(alpha = .94f), shape = RoundedCornerShape(12.dp), modifier = modifier) {
         Column(Modifier.padding(10.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
-            LegendLine(RiverBlue, "Boat")
-            LegendLine(AlertCoral, "Failed", dashed = true)
-            LegendLine(RiskAmber, "Predicted", dashed = true)
-            LegendLine(DeltaTeal, "Mesh", dashed = true)
+            val routeColor = when (routeVehicle) {
+                VehicleType.TRUCK -> DeltaTeal
+                VehicleType.BOAT -> RiverBlue
+                VehicleType.DRONE -> RiskAmber
+            }
+            val vehicleLabel = text(
+                when (routeVehicle) {
+                    VehicleType.TRUCK -> R.string.vehicle_truck_name
+                    VehicleType.BOAT -> R.string.vehicle_boat_name
+                    VehicleType.DRONE -> R.string.vehicle_drone_name
+                },
+                language,
+            )
+            LegendLine(routeColor, vehicleLabel)
+            if (showFailure) LegendLine(AlertCoral, text(R.string.failed_edge, language), dashed = true)
+            LegendLine(DeltaTeal, text(R.string.mesh_legend, language), dashed = true)
         }
     }
 }

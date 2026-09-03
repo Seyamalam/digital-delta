@@ -25,6 +25,8 @@ The live Android 15 emulator check starts the real Nearby `CLUSTER` adapter in a
 
 The M2 tests compare causal, equal, and concurrent vector clocks; prove deterministic safe-field convergence in both arrival orders; reject automatic resolution of destination, priority, and medical-quantity disagreement; and merge grow-only sets and per-replica PN-counters. A connected Room test raises a simulated destination conflict, closes and reopens the database, resolves the restored conflict, and verifies the operation count, selected projection, and 64-character convergence hash. The Compose journey proves both languages and the explicit human choice. Physical two-phone convergence and assignment tombstones remain release evidence.
 
+The M4 unit tests parse the JSON fixture, validate graph references, normalize `river` to `WATERWAY`, enforce truck/boat/drone edge constraints, exclude failed edges, and inject a monotonic clock to verify reported recomputation latency. The actual bundled asset is parsed in a connected test so a stale or malformed packaged fixture fails the local gate. The Compose journey starts on truck edges `E1 + E3`, fails `E3`, verifies boat edges `E6 + E7`, checks ETA and visible latency, and switches languages without losing the route state. Current sub-millisecond emulator timing is development evidence only; the final under-two-second claim still needs the named target-phone report.
+
 ## Test layers
 
 ### Unit tests

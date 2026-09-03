@@ -23,7 +23,7 @@ This checklist tracks implementation. Milestone exit criteria live in [MILESTONE
 - [ ] Add the complete Android dependency set. Compose, Material 3, Navigation 3, ZXing, Protobuf Lite, gRPC OkHttp, Hilt, Room, DataStore, Nearby Connections, and test dependencies are present; WorkManager, Tink, MapLibre, and ONNX remain.
 - [x] Add a local Kotlin and Android verification runner; extend it for Go, TypeScript, and Protobuf compatibility as those projects land. Hosted CI and GitHub Actions are deliberately excluded.
 - [ ] Add deterministic clocks, random seeds, and device IDs for demo scenarios.
-- [ ] Add a fixture validator for node and edge references.
+- [x] Add a fixture validator for node and edge references through `SylhetMapParser` and the bundled-asset connected test.
 - [ ] Correct the supplied chaos-server formatting and keep it as a development fixture only.
 - [ ] Add structured logs with event ID, node ID, mission ID, and correlation ID.
 - [ ] Add feature flags for each unfinished module.
@@ -105,20 +105,20 @@ This checklist tracks implementation. Milestone exit criteria live in [MILESTONE
 
 ## M4 multi-modal routing
 
-- [ ] Parse and validate the Sylhet node and edge fixture.
-- [ ] Normalize `river` to the documented waterway edge type.
-- [ ] Add airway edges and test fixtures.
-- [ ] Implement a weighted directed graph.
-- [ ] Implement Dijkstra or A* with deterministic tie-breaking.
-- [ ] Apply truck, boat, and drone constraints.
-- [ ] Exclude failed edges.
+- [x] Parse and validate the Sylhet node and edge fixture from a bundled offline asset.
+- [x] Normalize `river` to the documented waterway edge type.
+- [x] Add a visibly simulated airway edge and test fixtures.
+- [x] Implement a weighted directed graph.
+- [x] Implement Dijkstra with deterministic edge and node tie-breaking.
+- [x] Apply truck, boat, and simulated-drone constraints.
+- [x] Exclude failed edges.
 - [ ] Apply M7 risk penalties without treating predictions as facts.
-- [ ] Recompute active missions after relevant graph events.
-- [ ] Record computation latency and selected alternatives.
-- [ ] Render routes using bundled offline data.
+- [x] Recompute the active demo mission after the `E3` edge-failure event; generalized multi-mission observation remains.
+- [x] Record computation latency and selected fallback policy in the live route state; persistent reports remain.
+- [x] Render the real computed edge sequence using bundled offline scenario data and a Compose canvas.
 - [ ] Embed MapLibre Native Android in Compose through an adapter.
 - [ ] Package and verify the offline Sylhet map region and attribution.
-- [ ] Explain why a route was selected or rejected.
+- [x] Explain why the preferred truck path was selected or rejected and why boat precedes simulated air fallback.
 
 ## M5 proof of delivery
 

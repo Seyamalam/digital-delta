@@ -20,6 +20,10 @@ import com.example.digitaldelta.domain.sync.ConflictSide
 import com.example.digitaldelta.domain.sync.MissionConflictSnapshot
 import com.example.digitaldelta.domain.sync.MissionField
 import com.example.digitaldelta.domain.sync.VectorClock
+import com.example.digitaldelta.domain.routing.DynamicRouteDecision
+import com.example.digitaldelta.domain.routing.PlannedRoute
+import com.example.digitaldelta.domain.routing.RouteScenarioSnapshot
+import com.example.digitaldelta.domain.routing.VehicleType
 import org.junit.Before
 import org.junit.Assert.assertTrue
 import org.junit.Rule
@@ -32,6 +36,7 @@ class MainScreenTest {
     private lateinit var requestState: MutableState<RequestQueueUiState>
     private lateinit var meshState: MutableState<MeshRuntimeState>
     private lateinit var conflictState: MutableState<MissionConflictSnapshot>
+    private lateinit var routeState: MutableState<RouteScenarioSnapshot>
     private var relayStartRequested = false
 
     @Before
@@ -39,6 +44,7 @@ class MainScreenTest {
         requestState = mutableStateOf(RequestQueueUiState.Idle)
         meshState = mutableStateOf(MeshRuntimeState())
         conflictState = mutableStateOf(MissionConflictSnapshot.Idle)
+        routeState = mutableStateOf(routeSnapshot(flooded = false))
         relayStartRequested = false
         composeTestRule.setContent {
             DigitalDeltaTheme(darkTheme = false) {
@@ -68,6 +74,10 @@ class MainScreenTest {
                             resolverIdentityId = "coordinator-sylhet-01",
                             convergenceHash = "a4e96ff28c89d214d02a3c87f01778e7ad3f139307376afaacd1a10da45a9b22",
                         )
+                    },
+                    routeState = routeState.value,
+                    onToggleRouteFailure = {
+                        routeState.value = routeSnapshot(flooded = "E3" !in routeState.value.failedEdgeIds)
                     },
                 )
             }
@@ -170,5 +180,42 @@ class MainScreenTest {
 
         composeTestRule.onNodeWithText("Conflict resolved • devices converge").assertIsDisplayed()
         composeTestRule.onNodeWithText("Hash • a4e96ff28c89").assertIsDisplayed()
+    }
+
+    @Test
+    fun routeFailureRunsRealVehicleConstrainedFallbackWithBilingualEvidence() {
+        composeTestRule.onNodeWithText("পথ ও মেশ").performClick()
+        composeTestRule.onNode(hasScrollAction()).performTouchInput { swipeUp() }
+        composeTestRule.onNodeWithText("অফলাইনে ট্রাকের পথ প্রস্তুত").assertIsDisplayed()
+        composeTestRule.onNode(hasTestTag("toggle-route-failure")).performClick()
+
+        composeTestRule.onNodeWithText("E3 বন্ধ • নৌযানে পুনর্নির্দেশ").assertIsDisplayed()
+        composeTestRule.onNodeWithText("নৌযান • N1 → N3 → N4 • E6 + E7").assertIsDisplayed()
+        composeTestRule.onNode(hasTestTag("route-latency")).assertIsDisplayed()
+
+        composeTestRule.onNodeWithText("English").performClick()
+        composeTestRule.onNodeWithText("E3 failed • rerouted by boat").assertIsDisplayed()
+        composeTestRule.onNodeWithText("Boat • N1 → N3 → N4 • E6 + E7").assertIsDisplayed()
+        composeTestRule.onNodeWithText("Reset offline route").assertIsDisplayed()
+    }
+
+    private fun routeSnapshot(flooded: Boolean): RouteScenarioSnapshot {
+        val vehicle = if (flooded) VehicleType.BOAT else VehicleType.TRUCK
+        return RouteScenarioSnapshot(
+            failedEdgeIds = if (flooded) setOf("E3") else emptySet(),
+            decision = DynamicRouteDecision(
+                route = PlannedRoute(
+                    nodeIds = if (flooded) listOf("N1", "N3", "N4") else listOf("N1", "N2", "N4"),
+                    edgeIds = if (flooded) listOf("E6", "E7") else listOf("E1", "E3"),
+                    totalMinutes = if (flooded) 200 else 65,
+                    riskAdjusted = false,
+                    explanation = "fixture route",
+                ),
+                preferredVehicle = VehicleType.TRUCK,
+                routeVehicle = vehicle,
+                fallbackUsed = flooded,
+                computationNanos = if (flooded) 870_000 else 340_000,
+            ),
+        )
     }
 }

@@ -12,6 +12,13 @@ import com.example.digitaldelta.domain.mesh.RecipientKeyUnavailableException
 import com.example.digitaldelta.domain.sync.ConflictCoordinator
 import com.example.digitaldelta.domain.sync.ConflictSide
 import com.example.digitaldelta.domain.sync.MissionConflictSnapshot
+import com.example.digitaldelta.domain.routing.EdgeMode
+import com.example.digitaldelta.domain.routing.OfflineRouteScenario
+import com.example.digitaldelta.domain.routing.MapEdge
+import com.example.digitaldelta.domain.routing.MapNode
+import com.example.digitaldelta.domain.routing.RouteScenario
+import com.example.digitaldelta.domain.routing.TransportGraph
+import com.example.digitaldelta.domain.routing.VehicleType
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.Flow
@@ -44,6 +51,7 @@ class MainScreenViewModelTest {
             FakeRequestSubmission(),
             FakeIdentityCoordinator(),
             FakeConflictCoordinator(),
+            FakeRouteScenario(),
         )
 
         assertEquals(LanguagePreference.BANGLA, viewModel.language.value)
@@ -62,6 +70,7 @@ class MainScreenViewModelTest {
             submission,
             FakeIdentityCoordinator(),
             FakeConflictCoordinator(),
+            FakeRouteScenario(),
         )
 
         viewModel.queueRequest(medicine = 11, ors = 20, tarpaulin = 5, priorityCode = "P0")
@@ -78,6 +87,7 @@ class MainScreenViewModelTest {
             FakeRequestSubmission(RecipientKeyUnavailableException("N6")),
             FakeIdentityCoordinator(),
             FakeConflictCoordinator(),
+            FakeRouteScenario(),
         )
 
         viewModel.queueRequest(medicine = 10, ors = 20, tarpaulin = 5, priorityCode = "P0")
@@ -97,6 +107,7 @@ class MainScreenViewModelTest {
             FakeRequestSubmission(),
             coordinator,
             FakeConflictCoordinator(),
+            FakeRouteScenario(),
         )
         advanceUntilIdle()
 
@@ -120,6 +131,7 @@ class MainScreenViewModelTest {
             FakeRequestSubmission(),
             coordinator,
             FakeConflictCoordinator(),
+            FakeRouteScenario(),
         )
         advanceUntilIdle()
 
@@ -151,6 +163,7 @@ class MainScreenViewModelTest {
             FakeRequestSubmission(),
             FakeIdentityCoordinator(),
             conflicts,
+            FakeRouteScenario(),
         )
         advanceUntilIdle()
 
@@ -161,6 +174,22 @@ class MainScreenViewModelTest {
         viewModel.resolveConflict("conflict-1", ConflictSide.RIGHT)
         advanceUntilIdle()
         assertEquals("N6", (viewModel.conflictState.value as MissionConflictSnapshot.Resolved).selectedValue)
+    }
+
+    @Test
+    fun `route failure replaces unreachable truck with measured boat fallback`() = runTest(dispatcher) {
+        val viewModel = MainScreenViewModel(
+            FakeSettingsRepository(),
+            FakeRequestSubmission(),
+            FakeIdentityCoordinator(),
+            FakeConflictCoordinator(),
+            FakeRouteScenario(),
+        )
+
+        assertEquals(VehicleType.TRUCK, viewModel.routeState.value.decision.routeVehicle)
+        viewModel.toggleRouteFailure()
+        assertEquals(VehicleType.BOAT, viewModel.routeState.value.decision.routeVehicle)
+        assertEquals(setOf("E3"), viewModel.routeState.value.failedEdgeIds)
     }
 }
 
@@ -235,3 +264,20 @@ private class FakeConflictCoordinator : ConflictCoordinator {
         convergenceHash = "a4e96ff28c89d214d02a3c87f01778e7ad3f139307376afaacd1a10da45a9b22",
     ).also { current = it }
 }
+
+private class FakeRouteScenario : RouteScenario by OfflineRouteScenario(
+    TransportGraph(
+        nodes = listOf(
+            MapNode("N1", "Sylhet Hub", 24.8, 91.8),
+            MapNode("N2", "Airport", 24.9, 91.8),
+            MapNode("N3", "Sunamganj", 25.0, 91.4),
+            MapNode("N4", "Companyganj", 25.0, 91.7),
+        ),
+        edges = listOf(
+            MapEdge("E1", "N1", "N2", EdgeMode.ROAD, 20),
+            MapEdge("E3", "N2", "N4", EdgeMode.ROAD, 45),
+            MapEdge("E6", "N1", "N3", EdgeMode.WATERWAY, 150),
+            MapEdge("E7", "N3", "N4", EdgeMode.WATERWAY, 50),
+        ),
+    ),
+)

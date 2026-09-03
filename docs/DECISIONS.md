@@ -130,6 +130,18 @@ Use this log for choices that affect scope, claims, compatibility, or safety.
 
 **Evidence:** `RoomMeshIngressTest`, `MeshOutboxDispatcherTest`, and `DeltaMigrationTest`.
 
+## DD-013: deterministic preferred-vehicle fallback
+
+**Status:** Accepted
+
+**Decision:** Validate the supplied Sylhet fixture into one weighted directed graph and normalize its `river` code to `WATERWAY`. Run deterministic Dijkstra per vehicle mode. For the current mission, try the assigned truck first, then a boat, then the visibly simulated drone; do not select the globally fastest vehicle and silently discard the assignment policy.
+
+**Reason:** A heterogeneous fleet needs hard feasibility constraints and an explainable fallback order. A simulated drone should not replace a valid boat merely because its fixture time is smaller.
+
+**Consequences:** Failing `E3` makes `N4` unreachable by truck, so the engine selects waterway edges `E6 + E7`. The UI displays the edge sequence, ETA, reason, simulation labels, and monotonic recomputation time. Risk penalties can alter costs later, but a predicted risk remains distinct from a confirmed closure.
+
+**Evidence:** `RoutePlannerTest`, `RouteScenarioTest`, `SylhetMapAssetTest`, `MainScreenTest`, and the paired reroute screenshots under `artifacts/screenshots/`.
+
 ## New decision template
 
 ```md

@@ -27,6 +27,9 @@ import com.example.digitaldelta.domain.request.ReliefRequestSubmission
 import com.example.digitaldelta.domain.request.RoomRequestPersistence
 import com.example.digitaldelta.domain.sync.ConflictCoordinator
 import com.example.digitaldelta.domain.sync.RoomConflictCoordinator
+import com.example.digitaldelta.domain.routing.OfflineRouteScenario
+import com.example.digitaldelta.domain.routing.RouteScenario
+import com.example.digitaldelta.domain.routing.SylhetMapParser
 import com.example.digitaldelta.settings.v1.UserSettings
 import dagger.Module
 import dagger.Provides
@@ -121,4 +124,11 @@ object AppModule {
     @Singleton
     fun provideConflictCoordinator(database: DeltaDatabase): ConflictCoordinator =
         RoomConflictCoordinator(database)
+
+    @Provides
+    @Singleton
+    fun provideRouteScenario(@ApplicationContext context: Context): RouteScenario {
+        val fixture = context.assets.open("sylhet_map.json").bufferedReader().use { it.readText() }
+        return OfflineRouteScenario(SylhetMapParser().parse(fixture).graph)
+    }
 }

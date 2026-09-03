@@ -13,6 +13,8 @@ import com.example.digitaldelta.domain.mesh.RecipientKeyUnavailableException
 import com.example.digitaldelta.domain.sync.ConflictCoordinator
 import com.example.digitaldelta.domain.sync.ConflictSide
 import com.example.digitaldelta.domain.sync.MissionConflictSnapshot
+import com.example.digitaldelta.domain.routing.RouteScenario
+import com.example.digitaldelta.domain.routing.RouteScenarioSnapshot
 import com.example.digitaldelta.proto.v1.PriorityClass
 import dagger.hilt.android.lifecycle.HiltViewModel
 import javax.inject.Inject
@@ -28,6 +30,7 @@ class MainScreenViewModel @Inject constructor(
     private val requestSubmission: ReliefRequestSubmission,
     private val identityCoordinator: IdentityProvisioningCoordinator,
     private val conflictCoordinator: ConflictCoordinator,
+    private val routeScenario: RouteScenario,
 ) : ViewModel() {
     val language: StateFlow<LanguagePreference> = settingsRepository.language.stateIn(
         scope = viewModelScope,
@@ -43,6 +46,9 @@ class MainScreenViewModel @Inject constructor(
 
     private val mutableConflictState = MutableStateFlow<MissionConflictSnapshot>(MissionConflictSnapshot.Idle)
     val conflictState: StateFlow<MissionConflictSnapshot> = mutableConflictState.asStateFlow()
+
+    private val mutableRouteState = MutableStateFlow(routeScenario.snapshot())
+    val routeState: StateFlow<RouteScenarioSnapshot> = mutableRouteState.asStateFlow()
 
     init {
         viewModelScope.launch { loadIdentity() }
@@ -130,6 +136,14 @@ class MainScreenViewModel @Inject constructor(
                     resolverIdentityId = "coordinator-sylhet-01",
                 )
             }.onSuccess { mutableConflictState.value = it }
+        }
+    }
+
+    fun toggleRouteFailure() {
+        mutableRouteState.value = if ("E3" in mutableRouteState.value.failedEdgeIds) {
+            routeScenario.reset()
+        } else {
+            routeScenario.triggerEdgeFailure("E3")
         }
     }
 
