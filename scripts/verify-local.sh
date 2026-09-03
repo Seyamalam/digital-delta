@@ -43,10 +43,10 @@ if [[ -f "${model_dir}/pyproject.toml" ]]; then
   trap - EXIT
 fi
 
-echo "[android] unit tests and debug build"
+echo "[android] unit tests, debug build, and minified release build"
 (
   cd "${android_dir}"
-  env JAVA_HOME="${java_runtime}" ./gradlew test assembleDebug
+  env JAVA_HOME="${java_runtime}" ./gradlew test assembleDebug assembleRelease
 )
 
 if [[ "${1:-}" == "--connected" ]]; then

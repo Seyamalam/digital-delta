@@ -174,7 +174,7 @@ Use this log for choices that affect scope, claims, compatibility, or safety.
 
 **Reason:** M7 should drive a real routing decision without presenting synthetic inference as a field observation. The small linear model is fast, inspectable, reproducible, and sufficient to prove the on-device boundary.
 
-**Consequences:** The fair model is not deployable flood intelligence. Its synthetic scores cannot support real-world accuracy claims. Android uses ONNX Runtime 1.23.2 because 1.29.0 raised an illegal-instruction crash on the Android 16 ARM64 emulator. If model loading or Java inference fails, the app exposes a deterministic baseline fallback. The local gate reproduces every checked artifact; target-phone latency and memory remain required evidence.
+**Consequences:** The fair model is not deployable flood intelligence. Its synthetic scores cannot support real-world accuracy claims. Android uses ONNX Runtime 1.23.2 because 1.29.0 raised an illegal-instruction crash on the Android 16 ARM64 emulator. The fair APK includes only the tested ARM64 ABI rather than four native-runtime copies; another CPU architecture must be added and tested explicitly. If model loading or Java inference fails, the app exposes a deterministic baseline fallback. The local gate reproduces every checked artifact; target-phone latency and memory remain required evidence.
 
 **Evidence:** `MODEL_CARD.md`, `RouteRiskClassifierTest`, `RouteScenarioTest`, `OnnxRouteRiskPredictorTest`, `MainScreenViewModelTest`, `MainScreenTest`, checked model artifacts, and the local reproduction gate.
 

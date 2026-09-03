@@ -19,7 +19,15 @@ class AssetOnnxRouteRiskPredictor(
     private val environment by lazy(OrtEnvironment::getEnvironment)
     private val session by lazy {
         val model = applicationContext.assets.open(MODEL_ASSET).use { it.readBytes() }
-        OrtSession.SessionOptions().use { options -> environment.createSession(model, options) }
+        OrtSession.SessionOptions().use { options ->
+            // One three-feature row does not benefit from ORT's default per-core thread pools.
+            options.setExecutionMode(OrtSession.SessionOptions.ExecutionMode.SEQUENTIAL)
+            options.setIntraOpNumThreads(1)
+            options.setInterOpNumThreads(1)
+            options.setMemoryPatternOptimization(false)
+            options.setCPUArenaAllocator(false)
+            environment.createSession(model, options)
+        }
     }
 
     override fun predict(features: RouteRiskFeatures): RouteRiskPrediction {

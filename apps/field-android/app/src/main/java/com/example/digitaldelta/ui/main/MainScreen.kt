@@ -1199,6 +1199,11 @@ private fun RouteAndMeshScreen(
                 modifier = Modifier.fillMaxWidth().offset(y = (-20).dp),
             ) {
                 Column(Modifier.padding(18.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                    RouteRiskCard(
+                        language = language,
+                        state = routeRiskState,
+                        onToggle = onToggleRouteRisk,
+                    )
                     MeshRelayCard(
                         language = language,
                         state = meshRuntimeState,
@@ -1251,11 +1256,6 @@ private fun RouteAndMeshScreen(
                             modifier = Modifier.testTag("route-latency"),
                         )
                     }
-                    RouteRiskCard(
-                        language = language,
-                        state = routeRiskState,
-                        onToggle = onToggleRouteRisk,
-                    )
                     triageState?.let { state ->
                         TriageCard(
                             language = language,

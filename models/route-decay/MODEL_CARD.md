@@ -4,7 +4,7 @@
 
 - **Name:** `route-risk-logreg-v1`
 - **Type:** standardized logistic regression exported as ONNX, opset 17
-- **Runtime:** ONNX Runtime Android 1.23.2, entirely on device
+- **Runtime:** ONNX Runtime Android 1.23.2, entirely on an ARM64 Android device
 - **Decision threshold:** 0.285, selected on the validation split for F1, then precision
 - **Inputs, in order:** rainfall in millimetres per hour, elevation in metres, and soil saturation from 0 to 1
 - **Output:** probability that a graph edge becomes impassable within two hours
@@ -48,6 +48,7 @@ The maximum absolute probability difference across the 128-sample export parity 
 - Synthetic correlations may not match any real district or monsoon event.
 - False positives can cause unnecessary reroutes; false negatives can leave a risky edge under-penalized.
 - Missing or corrupt model assets fall back to a visible deterministic baseline state. A native-runtime incompatibility still requires a compatible runtime build; version 1.23.2 is pinned because 1.29.0 raised an illegal-instruction crash on the Android 16 ARM64 emulator used for verification.
+- The fair APK targets ARM64 phones so it does not carry four copies of the native inference runtime. Supporting an additional CPU architecture requires adding and testing that ABI explicitly.
 - Prediction and confirmed closure remain different route causes. A prediction never creates proof of physical conditions and never transfers custody.
 - Production work requires governed field data, provenance, time-aware validation, calibration, district-level evaluation, monitoring, and human operational review.
 

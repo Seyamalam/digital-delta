@@ -289,7 +289,9 @@ class MainScreenTest {
         composeTestRule.onNodeWithText("পথ ও মেশ").performClick()
         composeTestRule.onNode(hasTestTag("toggle-route-risk")).performScrollTo().performClick()
 
-        composeTestRule.onNodeWithText("E3 ঝুঁকির পূর্বাভাস • আগেই নৌযানে পুনর্নির্দেশ").assertIsDisplayed()
+        composeTestRule.onNodeWithText("E3 ঝুঁকির পূর্বাভাস • আগেই নৌযানে পুনর্নির্দেশ")
+            .performScrollTo()
+            .assertIsDisplayed()
         composeTestRule.onNodeWithText("পূর্বাভাস ঝুঁকি E3 • 96.0% / 28.5%")
             .performScrollTo()
             .assertIsDisplayed()
