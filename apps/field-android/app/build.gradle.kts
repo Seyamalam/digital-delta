@@ -37,6 +37,8 @@ android {
       shaders = false
     }
 
+    sourceSets.getByName("androidTest").assets.directories.add("$projectDir/schemas")
+
     packaging {
       resources {
         excludes += "/META-INF/{AL2.0,LGPL2.1}"
@@ -77,6 +79,7 @@ dependencies {
   implementation(libs.androidx.room.runtime)
   implementation(libs.androidx.room.ktx)
   implementation(libs.androidx.datastore)
+  implementation(libs.kotlinx.serialization.json)
   implementation(libs.hilt.android)
   ksp(libs.hilt.compiler)
   ksp(libs.androidx.room.compiler)

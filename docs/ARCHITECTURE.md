@@ -142,6 +142,8 @@ Use the selected Android nearby transport to move framed Protocol Buffer envelop
 
 This path must not be described as gRPC unless it actually carries a valid gRPC transport. All mesh payloads remain Protobuf.
 
+Payload encryption is hybrid: each message receives a random AES-256-GCM content key, and that key is wrapped with the final recipient's provisioned RSA-2048 public key using OAEP with SHA-256. Android private encryption and signing keys remain non-exportable in Android Keystore. The Protobuf envelope carries the recipient key ID, nonce, associated-data hash, wrapped content key, and explicit algorithm identifiers so relays can route bytes without opening the domain payload.
+
 ### Dashboard observation
 
 The dashboard may use gRPC-Web, Connect, WebSocket, or server-sent events on the local demonstration network. JSON is acceptable for a presentation-only observer if documented. It must never be confused with the mesh payload format.

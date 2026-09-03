@@ -180,6 +180,64 @@ func (AcknowledgementStatus) EnumDescriptor() ([]byte, []int) {
 	return file_digitaldelta_v1_common_proto_rawDescGZIP(), []int{2}
 }
 
+type IdentityRole int32
+
+const (
+	IdentityRole_IDENTITY_ROLE_UNSPECIFIED IdentityRole = 0
+	IdentityRole_IDENTITY_ROLE_ADMIN       IdentityRole = 1
+	IdentityRole_IDENTITY_ROLE_COORDINATOR IdentityRole = 2
+	IdentityRole_IDENTITY_ROLE_DRIVER      IdentityRole = 3
+	IdentityRole_IDENTITY_ROLE_HOSPITAL    IdentityRole = 4
+	IdentityRole_IDENTITY_ROLE_CLINIC      IdentityRole = 5
+)
+
+// Enum value maps for IdentityRole.
+var (
+	IdentityRole_name = map[int32]string{
+		0: "IDENTITY_ROLE_UNSPECIFIED",
+		1: "IDENTITY_ROLE_ADMIN",
+		2: "IDENTITY_ROLE_COORDINATOR",
+		3: "IDENTITY_ROLE_DRIVER",
+		4: "IDENTITY_ROLE_HOSPITAL",
+		5: "IDENTITY_ROLE_CLINIC",
+	}
+	IdentityRole_value = map[string]int32{
+		"IDENTITY_ROLE_UNSPECIFIED": 0,
+		"IDENTITY_ROLE_ADMIN":       1,
+		"IDENTITY_ROLE_COORDINATOR": 2,
+		"IDENTITY_ROLE_DRIVER":      3,
+		"IDENTITY_ROLE_HOSPITAL":    4,
+		"IDENTITY_ROLE_CLINIC":      5,
+	}
+)
+
+func (x IdentityRole) Enum() *IdentityRole {
+	p := new(IdentityRole)
+	*p = x
+	return p
+}
+
+func (x IdentityRole) String() string {
+	return protoimpl.X.EnumStringOf(x.Descriptor(), protoreflect.EnumNumber(x))
+}
+
+func (IdentityRole) Descriptor() protoreflect.EnumDescriptor {
+	return file_digitaldelta_v1_common_proto_enumTypes[3].Descriptor()
+}
+
+func (IdentityRole) Type() protoreflect.EnumType {
+	return &file_digitaldelta_v1_common_proto_enumTypes[3]
+}
+
+func (x IdentityRole) Number() protoreflect.EnumNumber {
+	return protoreflect.EnumNumber(x)
+}
+
+// Deprecated: Use IdentityRole.Descriptor instead.
+func (IdentityRole) EnumDescriptor() ([]byte, []int) {
+	return file_digitaldelta_v1_common_proto_rawDescGZIP(), []int{3}
+}
+
 type VectorClockEntry struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	ReplicaId     string                 `protobuf:"bytes,1,opt,name=replica_id,json=replicaId,proto3" json:"replica_id,omitempty"`
@@ -277,11 +335,13 @@ func (x *VectorClock) GetEntries() []*VectorClockEntry {
 }
 
 type Signature struct {
-	state         protoimpl.MessageState `protogen:"open.v1"`
-	KeyId         string                 `protobuf:"bytes,1,opt,name=key_id,json=keyId,proto3" json:"key_id,omitempty"`
-	Ed25519       []byte                 `protobuf:"bytes,2,opt,name=ed25519,proto3" json:"ed25519,omitempty"`
-	unknownFields protoimpl.UnknownFields
-	sizeCache     protoimpl.SizeCache
+	state             protoimpl.MessageState `protogen:"open.v1"`
+	KeyId             string                 `protobuf:"bytes,1,opt,name=key_id,json=keyId,proto3" json:"key_id,omitempty"`
+	Ed25519           []byte                 `protobuf:"bytes,2,opt,name=ed25519,proto3" json:"ed25519,omitempty"`
+	Rsa_2048PssSha256 []byte                 `protobuf:"bytes,3,opt,name=rsa_2048_pss_sha256,json=rsa2048PssSha256,proto3" json:"rsa_2048_pss_sha256,omitempty"`
+	Algorithm         string                 `protobuf:"bytes,4,opt,name=algorithm,proto3" json:"algorithm,omitempty"`
+	unknownFields     protoimpl.UnknownFields
+	sizeCache         protoimpl.SizeCache
 }
 
 func (x *Signature) Reset() {
@@ -326,6 +386,20 @@ func (x *Signature) GetEd25519() []byte {
 		return x.Ed25519
 	}
 	return nil
+}
+
+func (x *Signature) GetRsa_2048PssSha256() []byte {
+	if x != nil {
+		return x.Rsa_2048PssSha256
+	}
+	return nil
+}
+
+func (x *Signature) GetAlgorithm() string {
+	if x != nil {
+		return x.Algorithm
+	}
+	return ""
 }
 
 type EncryptedPayload struct {
@@ -676,6 +750,198 @@ func (x *Acknowledgement) GetNodeSignature() *Signature {
 	return nil
 }
 
+type IdentityProvisioningClaims struct {
+	state                          protoimpl.MessageState `protogen:"open.v1"`
+	CredentialId                   string                 `protobuf:"bytes,1,opt,name=credential_id,json=credentialId,proto3" json:"credential_id,omitempty"`
+	IdentityId                     string                 `protobuf:"bytes,2,opt,name=identity_id,json=identityId,proto3" json:"identity_id,omitempty"`
+	NodeId                         string                 `protobuf:"bytes,3,opt,name=node_id,json=nodeId,proto3" json:"node_id,omitempty"`
+	DisplayName                    string                 `protobuf:"bytes,4,opt,name=display_name,json=displayName,proto3" json:"display_name,omitempty"`
+	Role                           IdentityRole           `protobuf:"varint,5,opt,name=role,proto3,enum=digitaldelta.v1.IdentityRole" json:"role,omitempty"`
+	EncryptionKeyId                string                 `protobuf:"bytes,6,opt,name=encryption_key_id,json=encryptionKeyId,proto3" json:"encryption_key_id,omitempty"`
+	Rsa_2048EncryptionPublicKeyDer []byte                 `protobuf:"bytes,7,opt,name=rsa_2048_encryption_public_key_der,json=rsa2048EncryptionPublicKeyDer,proto3" json:"rsa_2048_encryption_public_key_der,omitempty"`
+	SigningKeyId                   string                 `protobuf:"bytes,8,opt,name=signing_key_id,json=signingKeyId,proto3" json:"signing_key_id,omitempty"`
+	Rsa_2048SigningPublicKeyDer    []byte                 `protobuf:"bytes,9,opt,name=rsa_2048_signing_public_key_der,json=rsa2048SigningPublicKeyDer,proto3" json:"rsa_2048_signing_public_key_der,omitempty"`
+	IssuedAtUnixMs                 int64                  `protobuf:"varint,10,opt,name=issued_at_unix_ms,json=issuedAtUnixMs,proto3" json:"issued_at_unix_ms,omitempty"`
+	ExpiresAtUnixMs                int64                  `protobuf:"varint,11,opt,name=expires_at_unix_ms,json=expiresAtUnixMs,proto3" json:"expires_at_unix_ms,omitempty"`
+	IssuerIdentityId               string                 `protobuf:"bytes,12,opt,name=issuer_identity_id,json=issuerIdentityId,proto3" json:"issuer_identity_id,omitempty"`
+	Nonce                          []byte                 `protobuf:"bytes,13,opt,name=nonce,proto3" json:"nonce,omitempty"`
+	unknownFields                  protoimpl.UnknownFields
+	sizeCache                      protoimpl.SizeCache
+}
+
+func (x *IdentityProvisioningClaims) Reset() {
+	*x = IdentityProvisioningClaims{}
+	mi := &file_digitaldelta_v1_common_proto_msgTypes[6]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *IdentityProvisioningClaims) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*IdentityProvisioningClaims) ProtoMessage() {}
+
+func (x *IdentityProvisioningClaims) ProtoReflect() protoreflect.Message {
+	mi := &file_digitaldelta_v1_common_proto_msgTypes[6]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use IdentityProvisioningClaims.ProtoReflect.Descriptor instead.
+func (*IdentityProvisioningClaims) Descriptor() ([]byte, []int) {
+	return file_digitaldelta_v1_common_proto_rawDescGZIP(), []int{6}
+}
+
+func (x *IdentityProvisioningClaims) GetCredentialId() string {
+	if x != nil {
+		return x.CredentialId
+	}
+	return ""
+}
+
+func (x *IdentityProvisioningClaims) GetIdentityId() string {
+	if x != nil {
+		return x.IdentityId
+	}
+	return ""
+}
+
+func (x *IdentityProvisioningClaims) GetNodeId() string {
+	if x != nil {
+		return x.NodeId
+	}
+	return ""
+}
+
+func (x *IdentityProvisioningClaims) GetDisplayName() string {
+	if x != nil {
+		return x.DisplayName
+	}
+	return ""
+}
+
+func (x *IdentityProvisioningClaims) GetRole() IdentityRole {
+	if x != nil {
+		return x.Role
+	}
+	return IdentityRole_IDENTITY_ROLE_UNSPECIFIED
+}
+
+func (x *IdentityProvisioningClaims) GetEncryptionKeyId() string {
+	if x != nil {
+		return x.EncryptionKeyId
+	}
+	return ""
+}
+
+func (x *IdentityProvisioningClaims) GetRsa_2048EncryptionPublicKeyDer() []byte {
+	if x != nil {
+		return x.Rsa_2048EncryptionPublicKeyDer
+	}
+	return nil
+}
+
+func (x *IdentityProvisioningClaims) GetSigningKeyId() string {
+	if x != nil {
+		return x.SigningKeyId
+	}
+	return ""
+}
+
+func (x *IdentityProvisioningClaims) GetRsa_2048SigningPublicKeyDer() []byte {
+	if x != nil {
+		return x.Rsa_2048SigningPublicKeyDer
+	}
+	return nil
+}
+
+func (x *IdentityProvisioningClaims) GetIssuedAtUnixMs() int64 {
+	if x != nil {
+		return x.IssuedAtUnixMs
+	}
+	return 0
+}
+
+func (x *IdentityProvisioningClaims) GetExpiresAtUnixMs() int64 {
+	if x != nil {
+		return x.ExpiresAtUnixMs
+	}
+	return 0
+}
+
+func (x *IdentityProvisioningClaims) GetIssuerIdentityId() string {
+	if x != nil {
+		return x.IssuerIdentityId
+	}
+	return ""
+}
+
+func (x *IdentityProvisioningClaims) GetNonce() []byte {
+	if x != nil {
+		return x.Nonce
+	}
+	return nil
+}
+
+type IdentityProvisioningCredential struct {
+	state           protoimpl.MessageState      `protogen:"open.v1"`
+	Claims          *IdentityProvisioningClaims `protobuf:"bytes,1,opt,name=claims,proto3" json:"claims,omitempty"`
+	IssuerSignature *Signature                  `protobuf:"bytes,2,opt,name=issuer_signature,json=issuerSignature,proto3" json:"issuer_signature,omitempty"`
+	unknownFields   protoimpl.UnknownFields
+	sizeCache       protoimpl.SizeCache
+}
+
+func (x *IdentityProvisioningCredential) Reset() {
+	*x = IdentityProvisioningCredential{}
+	mi := &file_digitaldelta_v1_common_proto_msgTypes[7]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *IdentityProvisioningCredential) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*IdentityProvisioningCredential) ProtoMessage() {}
+
+func (x *IdentityProvisioningCredential) ProtoReflect() protoreflect.Message {
+	mi := &file_digitaldelta_v1_common_proto_msgTypes[7]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use IdentityProvisioningCredential.ProtoReflect.Descriptor instead.
+func (*IdentityProvisioningCredential) Descriptor() ([]byte, []int) {
+	return file_digitaldelta_v1_common_proto_rawDescGZIP(), []int{7}
+}
+
+func (x *IdentityProvisioningCredential) GetClaims() *IdentityProvisioningClaims {
+	if x != nil {
+		return x.Claims
+	}
+	return nil
+}
+
+func (x *IdentityProvisioningCredential) GetIssuerSignature() *Signature {
+	if x != nil {
+		return x.IssuerSignature
+	}
+	return nil
+}
+
 var File_digitaldelta_v1_common_proto protoreflect.FileDescriptor
 
 const file_digitaldelta_v1_common_proto_rawDesc = "" +
@@ -686,10 +952,12 @@ const file_digitaldelta_v1_common_proto_rawDesc = "" +
 	"replica_id\x18\x01 \x01(\tR\treplicaId\x12\x18\n" +
 	"\acounter\x18\x02 \x01(\x04R\acounter\"J\n" +
 	"\vVectorClock\x12;\n" +
-	"\aentries\x18\x01 \x03(\v2!.digitaldelta.v1.VectorClockEntryR\aentries\"<\n" +
+	"\aentries\x18\x01 \x03(\v2!.digitaldelta.v1.VectorClockEntryR\aentries\"\x89\x01\n" +
 	"\tSignature\x12\x15\n" +
 	"\x06key_id\x18\x01 \x01(\tR\x05keyId\x12\x18\n" +
-	"\aed25519\x18\x02 \x01(\fR\aed25519\"\xc7\x02\n" +
+	"\aed25519\x18\x02 \x01(\fR\aed25519\x12-\n" +
+	"\x13rsa_2048_pss_sha256\x18\x03 \x01(\fR\x10rsa2048PssSha256\x12\x1c\n" +
+	"\talgorithm\x18\x04 \x01(\tR\talgorithm\"\xc7\x02\n" +
 	"\x10EncryptedPayload\x12(\n" +
 	"\x10recipient_key_id\x18\x01 \x01(\tR\x0erecipientKeyId\x123\n" +
 	"\x16aes_256_gcm_ciphertext\x18\x02 \x01(\fR\x13aes256GcmCiphertext\x12\x14\n" +
@@ -726,7 +994,26 @@ const file_digitaldelta_v1_common_proto_rawDesc = "" +
 	"\vreason_code\x18\x04 \x01(\tR\n" +
 	"reasonCode\x12-\n" +
 	"\x13recorded_at_unix_ms\x18\x05 \x01(\x03R\x10recordedAtUnixMs\x12A\n" +
-	"\x0enode_signature\x18\x06 \x01(\v2\x1a.digitaldelta.v1.SignatureR\rnodeSignature*\x8b\x01\n" +
+	"\x0enode_signature\x18\x06 \x01(\v2\x1a.digitaldelta.v1.SignatureR\rnodeSignature\"\xcf\x04\n" +
+	"\x1aIdentityProvisioningClaims\x12#\n" +
+	"\rcredential_id\x18\x01 \x01(\tR\fcredentialId\x12\x1f\n" +
+	"\videntity_id\x18\x02 \x01(\tR\n" +
+	"identityId\x12\x17\n" +
+	"\anode_id\x18\x03 \x01(\tR\x06nodeId\x12!\n" +
+	"\fdisplay_name\x18\x04 \x01(\tR\vdisplayName\x121\n" +
+	"\x04role\x18\x05 \x01(\x0e2\x1d.digitaldelta.v1.IdentityRoleR\x04role\x12*\n" +
+	"\x11encryption_key_id\x18\x06 \x01(\tR\x0fencryptionKeyId\x12I\n" +
+	"\"rsa_2048_encryption_public_key_der\x18\a \x01(\fR\x1drsa2048EncryptionPublicKeyDer\x12$\n" +
+	"\x0esigning_key_id\x18\b \x01(\tR\fsigningKeyId\x12C\n" +
+	"\x1frsa_2048_signing_public_key_der\x18\t \x01(\fR\x1arsa2048SigningPublicKeyDer\x12)\n" +
+	"\x11issued_at_unix_ms\x18\n" +
+	" \x01(\x03R\x0eissuedAtUnixMs\x12+\n" +
+	"\x12expires_at_unix_ms\x18\v \x01(\x03R\x0fexpiresAtUnixMs\x12,\n" +
+	"\x12issuer_identity_id\x18\f \x01(\tR\x10issuerIdentityId\x12\x14\n" +
+	"\x05nonce\x18\r \x01(\fR\x05nonce\"\xac\x01\n" +
+	"\x1eIdentityProvisioningCredential\x12C\n" +
+	"\x06claims\x18\x01 \x01(\v2+.digitaldelta.v1.IdentityProvisioningClaimsR\x06claims\x12E\n" +
+	"\x10issuer_signature\x18\x02 \x01(\v2\x1a.digitaldelta.v1.SignatureR\x0fissuerSignature*\x8b\x01\n" +
 	"\rPriorityClass\x12\x1e\n" +
 	"\x1aPRIORITY_CLASS_UNSPECIFIED\x10\x00\x12\x15\n" +
 	"\x11PRIORITY_CLASS_P0\x10\x01\x12\x15\n" +
@@ -742,7 +1029,14 @@ const file_digitaldelta_v1_common_proto_rawDesc = "" +
 	"\"ACKNOWLEDGEMENT_STATUS_UNSPECIFIED\x10\x00\x12)\n" +
 	"%ACKNOWLEDGEMENT_STATUS_DURABLY_STORED\x10\x01\x12\"\n" +
 	"\x1eACKNOWLEDGEMENT_STATUS_APPLIED\x10\x02\x12#\n" +
-	"\x1fACKNOWLEDGEMENT_STATUS_REJECTED\x10\x03Bu\n" +
+	"\x1fACKNOWLEDGEMENT_STATUS_REJECTED\x10\x03*\xb5\x01\n" +
+	"\fIdentityRole\x12\x1d\n" +
+	"\x19IDENTITY_ROLE_UNSPECIFIED\x10\x00\x12\x17\n" +
+	"\x13IDENTITY_ROLE_ADMIN\x10\x01\x12\x1d\n" +
+	"\x19IDENTITY_ROLE_COORDINATOR\x10\x02\x12\x18\n" +
+	"\x14IDENTITY_ROLE_DRIVER\x10\x03\x12\x1a\n" +
+	"\x16IDENTITY_ROLE_HOSPITAL\x10\x04\x12\x18\n" +
+	"\x14IDENTITY_ROLE_CLINIC\x10\x05Bu\n" +
 	"!com.example.digitaldelta.proto.v1H\x03P\x01ZLgithub.com/Seyamalam/digital-delta/services/node/gen/digitaldelta/v1;deltav1b\x06proto3"
 
 var (
@@ -757,32 +1051,38 @@ func file_digitaldelta_v1_common_proto_rawDescGZIP() []byte {
 	return file_digitaldelta_v1_common_proto_rawDescData
 }
 
-var file_digitaldelta_v1_common_proto_enumTypes = make([]protoimpl.EnumInfo, 3)
-var file_digitaldelta_v1_common_proto_msgTypes = make([]protoimpl.MessageInfo, 6)
+var file_digitaldelta_v1_common_proto_enumTypes = make([]protoimpl.EnumInfo, 4)
+var file_digitaldelta_v1_common_proto_msgTypes = make([]protoimpl.MessageInfo, 8)
 var file_digitaldelta_v1_common_proto_goTypes = []any{
-	(PriorityClass)(0),         // 0: digitaldelta.v1.PriorityClass
-	(TransportMode)(0),         // 1: digitaldelta.v1.TransportMode
-	(AcknowledgementStatus)(0), // 2: digitaldelta.v1.AcknowledgementStatus
-	(*VectorClockEntry)(nil),   // 3: digitaldelta.v1.VectorClockEntry
-	(*VectorClock)(nil),        // 4: digitaldelta.v1.VectorClock
-	(*Signature)(nil),          // 5: digitaldelta.v1.Signature
-	(*EncryptedPayload)(nil),   // 6: digitaldelta.v1.EncryptedPayload
-	(*Envelope)(nil),           // 7: digitaldelta.v1.Envelope
-	(*Acknowledgement)(nil),    // 8: digitaldelta.v1.Acknowledgement
+	(PriorityClass)(0),                     // 0: digitaldelta.v1.PriorityClass
+	(TransportMode)(0),                     // 1: digitaldelta.v1.TransportMode
+	(AcknowledgementStatus)(0),             // 2: digitaldelta.v1.AcknowledgementStatus
+	(IdentityRole)(0),                      // 3: digitaldelta.v1.IdentityRole
+	(*VectorClockEntry)(nil),               // 4: digitaldelta.v1.VectorClockEntry
+	(*VectorClock)(nil),                    // 5: digitaldelta.v1.VectorClock
+	(*Signature)(nil),                      // 6: digitaldelta.v1.Signature
+	(*EncryptedPayload)(nil),               // 7: digitaldelta.v1.EncryptedPayload
+	(*Envelope)(nil),                       // 8: digitaldelta.v1.Envelope
+	(*Acknowledgement)(nil),                // 9: digitaldelta.v1.Acknowledgement
+	(*IdentityProvisioningClaims)(nil),     // 10: digitaldelta.v1.IdentityProvisioningClaims
+	(*IdentityProvisioningCredential)(nil), // 11: digitaldelta.v1.IdentityProvisioningCredential
 }
 var file_digitaldelta_v1_common_proto_depIdxs = []int32{
-	3, // 0: digitaldelta.v1.VectorClock.entries:type_name -> digitaldelta.v1.VectorClockEntry
-	4, // 1: digitaldelta.v1.Envelope.vector_clock:type_name -> digitaldelta.v1.VectorClock
-	0, // 2: digitaldelta.v1.Envelope.priority:type_name -> digitaldelta.v1.PriorityClass
-	6, // 3: digitaldelta.v1.Envelope.encrypted_payload:type_name -> digitaldelta.v1.EncryptedPayload
-	5, // 4: digitaldelta.v1.Envelope.sender_signature:type_name -> digitaldelta.v1.Signature
-	2, // 5: digitaldelta.v1.Acknowledgement.status:type_name -> digitaldelta.v1.AcknowledgementStatus
-	5, // 6: digitaldelta.v1.Acknowledgement.node_signature:type_name -> digitaldelta.v1.Signature
-	7, // [7:7] is the sub-list for method output_type
-	7, // [7:7] is the sub-list for method input_type
-	7, // [7:7] is the sub-list for extension type_name
-	7, // [7:7] is the sub-list for extension extendee
-	0, // [0:7] is the sub-list for field type_name
+	4,  // 0: digitaldelta.v1.VectorClock.entries:type_name -> digitaldelta.v1.VectorClockEntry
+	5,  // 1: digitaldelta.v1.Envelope.vector_clock:type_name -> digitaldelta.v1.VectorClock
+	0,  // 2: digitaldelta.v1.Envelope.priority:type_name -> digitaldelta.v1.PriorityClass
+	7,  // 3: digitaldelta.v1.Envelope.encrypted_payload:type_name -> digitaldelta.v1.EncryptedPayload
+	6,  // 4: digitaldelta.v1.Envelope.sender_signature:type_name -> digitaldelta.v1.Signature
+	2,  // 5: digitaldelta.v1.Acknowledgement.status:type_name -> digitaldelta.v1.AcknowledgementStatus
+	6,  // 6: digitaldelta.v1.Acknowledgement.node_signature:type_name -> digitaldelta.v1.Signature
+	3,  // 7: digitaldelta.v1.IdentityProvisioningClaims.role:type_name -> digitaldelta.v1.IdentityRole
+	10, // 8: digitaldelta.v1.IdentityProvisioningCredential.claims:type_name -> digitaldelta.v1.IdentityProvisioningClaims
+	6,  // 9: digitaldelta.v1.IdentityProvisioningCredential.issuer_signature:type_name -> digitaldelta.v1.Signature
+	10, // [10:10] is the sub-list for method output_type
+	10, // [10:10] is the sub-list for method input_type
+	10, // [10:10] is the sub-list for extension type_name
+	10, // [10:10] is the sub-list for extension extendee
+	0,  // [0:10] is the sub-list for field type_name
 }
 
 func init() { file_digitaldelta_v1_common_proto_init() }
@@ -795,8 +1095,8 @@ func file_digitaldelta_v1_common_proto_init() {
 		File: protoimpl.DescBuilder{
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_digitaldelta_v1_common_proto_rawDesc), len(file_digitaldelta_v1_common_proto_rawDesc)),
-			NumEnums:      3,
-			NumMessages:   6,
+			NumEnums:      4,
+			NumMessages:   8,
 			NumExtensions: 0,
 			NumServices:   0,
 		},

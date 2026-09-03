@@ -57,16 +57,16 @@ This checklist tracks implementation. Milestone exit criteria live in [MILESTONE
 
 ## M1 secure identity
 
-- [ ] Generate device-bound Ed25519 identity keys.
-- [ ] Store private keys in the strongest available device-protected storage.
-- [ ] Implement offline administrator provisioning QR.
+- [x] Generate device-bound RSA-2048 encryption and signing identities, the accepted C5 alternative to Ed25519.
+- [x] Keep private identity keys non-exportable in Android Keystore. Hardware-backed availability still requires target-phone evidence.
+- [ ] Implement offline administrator provisioning QR. Signed credential issue/verify, expiry checks, and durable storage are complete; the bilingual scan/display journey remains.
 - [ ] Add local PIN or device-authentication unlock.
 - [ ] Implement roles and permission policy.
 - [ ] Hide forbidden actions and enforce the same policy below the user interface.
 - [ ] Add signed audit events.
 - [ ] Add failed-login delay and lockout policy suitable for offline operation.
 - [ ] Add key revocation and expiry events that propagate later.
-- [ ] Test valid, expired, revoked, malformed, and wrong-role credentials.
+- [ ] Test valid, expired, revoked, malformed, and wrong-role credentials. Valid, expired, tampered, and untrusted-issuer cases pass; revocation and role-specific provisioning cases remain.
 
 ## M2 distributed data and CRDT sync
 
@@ -95,7 +95,7 @@ This checklist tracks implementation. Milestone exit criteria live in [MILESTONE
 - [ ] Implement store-and-forward relay.
 - [ ] Implement TTL and hop-limit enforcement. The Go durable relay enforces both; Android queue enforcement remains.
 - [ ] Implement deduplication before domain-event application. The Go durable relay rejects duplicate message IDs; Android persistence remains.
-- [ ] Encrypt payloads for the final recipient.
+- [ ] Encrypt payloads for the final recipient. RSA-OAEP-wrapped AES-256-GCM and recipient-only decryption pass; the production request path will switch after the provisioning journey lands.
 - [ ] Allow relays to inspect routing metadata only.
 - [ ] Select relay behavior using battery, signal, queue size, and proximity.
 - [ ] Reduce broadcast frequency by 60 percent below 30 percent battery.

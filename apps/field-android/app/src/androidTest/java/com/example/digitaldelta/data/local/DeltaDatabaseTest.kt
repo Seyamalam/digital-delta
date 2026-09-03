@@ -91,4 +91,30 @@ class DeltaDatabaseTest {
             dao.forMission("mission-1").map { it.eventId },
         )
     }
+
+    @Test
+    fun recipientDirectoryPersistsProvisionedPublicKeysWithoutPrivateMaterial() = runTest {
+        val record = RecipientKeyEntity(
+            nodeId = "N6",
+            identityId = "hospital-operator-1",
+            displayName = "Habiganj Medical",
+            roleCode = "HOSPITAL",
+            encryptionKeyId = "n6-encryption-1",
+            encryptionPublicKeyDer = byteArrayOf(1, 2, 3),
+            signingKeyId = "n6-signing-1",
+            signingPublicKeyDer = byteArrayOf(4, 5, 6),
+            issuerIdentityId = "delta-admin-1",
+            credentialBytes = byteArrayOf(7, 8, 9),
+            issuedAtUnixMs = 100,
+            expiresAtUnixMs = 200,
+            revokedAtUnixMs = null,
+            provisionedAtUnixMs = 110,
+        )
+
+        database.recipientKeyDao().upsert(record)
+
+        val restored = requireNotNull(database.recipientKeyDao().findByNodeId("N6"))
+        assertEquals("n6-encryption-1", restored.encryptionKeyId)
+        assertEquals(listOf<Byte>(1, 2, 3), restored.encryptionPublicKeyDer.toList())
+    }
 }

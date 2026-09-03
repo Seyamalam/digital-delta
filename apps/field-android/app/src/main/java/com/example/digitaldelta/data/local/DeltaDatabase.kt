@@ -9,6 +9,8 @@ import androidx.room.OnConflictStrategy
 import androidx.room.PrimaryKey
 import androidx.room.Query
 import androidx.room.RoomDatabase
+import androidx.room.migration.Migration
+import androidx.sqlite.db.SupportSQLiteDatabase
 
 enum class QueueState {
     PENDING,
@@ -49,6 +51,27 @@ data class OperationEntity(
     val eventType: String,
     val payloadBytes: ByteArray,
     val createdAtUnixMs: Long,
+)
+
+@Entity(
+    tableName = "recipient_keys",
+    indices = [Index(value = ["encryptionKeyId"], unique = true)],
+)
+data class RecipientKeyEntity(
+    @PrimaryKey val nodeId: String,
+    val identityId: String,
+    val displayName: String,
+    val roleCode: String,
+    val encryptionKeyId: String,
+    val encryptionPublicKeyDer: ByteArray,
+    val signingKeyId: String,
+    val signingPublicKeyDer: ByteArray,
+    val issuerIdentityId: String,
+    val credentialBytes: ByteArray,
+    val issuedAtUnixMs: Long,
+    val expiresAtUnixMs: Long,
+    val revokedAtUnixMs: Long?,
+    val provisionedAtUnixMs: Long,
 )
 
 @Dao
@@ -99,13 +122,60 @@ interface OperationLogDao {
     suspend fun forMission(missionId: String): List<OperationEntity>
 }
 
+@Dao
+interface RecipientKeyDao {
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    suspend fun upsert(key: RecipientKeyEntity)
+
+    @Query("SELECT * FROM recipient_keys WHERE nodeId = :nodeId LIMIT 1")
+    suspend fun findByNodeId(nodeId: String): RecipientKeyEntity?
+}
+
 @Database(
-    entities = [MeshEnvelopeEntity::class, UsedNonceEntity::class, OperationEntity::class],
-    version = 1,
+    entities = [
+        MeshEnvelopeEntity::class,
+        UsedNonceEntity::class,
+        OperationEntity::class,
+        RecipientKeyEntity::class,
+    ],
+    version = 2,
     exportSchema = true,
 )
 abstract class DeltaDatabase : RoomDatabase() {
     abstract fun outboxDao(): OutboxDao
     abstract fun nonceDao(): NonceDao
     abstract fun operationLogDao(): OperationLogDao
+    abstract fun recipientKeyDao(): RecipientKeyDao
+}
+
+object DeltaMigrations {
+    val VERSION_1_TO_2 = object : Migration(1, 2) {
+        override fun migrate(db: SupportSQLiteDatabase) {
+            db.execSQL(
+                """
+                CREATE TABLE IF NOT EXISTS recipient_keys (
+                    nodeId TEXT NOT NULL,
+                    identityId TEXT NOT NULL,
+                    displayName TEXT NOT NULL,
+                    roleCode TEXT NOT NULL,
+                    encryptionKeyId TEXT NOT NULL,
+                    encryptionPublicKeyDer BLOB NOT NULL,
+                    signingKeyId TEXT NOT NULL,
+                    signingPublicKeyDer BLOB NOT NULL,
+                    issuerIdentityId TEXT NOT NULL,
+                    credentialBytes BLOB NOT NULL,
+                    issuedAtUnixMs INTEGER NOT NULL,
+                    expiresAtUnixMs INTEGER NOT NULL,
+                    revokedAtUnixMs INTEGER,
+                    provisionedAtUnixMs INTEGER NOT NULL,
+                    PRIMARY KEY(nodeId)
+                )
+                """.trimIndent(),
+            )
+            db.execSQL(
+                "CREATE UNIQUE INDEX IF NOT EXISTS index_recipient_keys_encryptionKeyId " +
+                    "ON recipient_keys (encryptionKeyId)",
+            )
+        }
+    }
 }
