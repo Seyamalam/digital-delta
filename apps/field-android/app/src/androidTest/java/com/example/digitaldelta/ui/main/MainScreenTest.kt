@@ -10,6 +10,8 @@ import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performTouchInput
 import androidx.compose.ui.test.swipeUp
+import androidx.compose.runtime.MutableState
+import androidx.compose.runtime.mutableStateOf
 import com.example.digitaldelta.theme.DigitalDeltaTheme
 import org.junit.Before
 import org.junit.Rule
@@ -19,11 +21,17 @@ class MainScreenTest {
     @get:Rule
     val composeTestRule = createAndroidComposeRule<ComponentActivity>()
 
+    private lateinit var requestState: MutableState<RequestQueueUiState>
+
     @Before
     fun setup() {
+        requestState = mutableStateOf(RequestQueueUiState.Idle)
         composeTestRule.setContent {
             DigitalDeltaTheme(darkTheme = false) {
-                DigitalDeltaApp(showBootSequence = false)
+                DigitalDeltaApp(
+                    showBootSequence = false,
+                    requestQueueState = requestState.value,
+                )
             }
         }
     }
@@ -72,5 +80,18 @@ class MainScreenTest {
         composeTestRule.onNodeWithText("English").performClick()
         composeTestRule.onNodeWithText("Identity and offline keys").assertIsDisplayed()
         composeTestRule.onNodeWithText("Preparing protected device keys").assertIsDisplayed()
+    }
+
+    @Test
+    fun missingRecipientKey_hasActionableBanglaAndEnglishMessage() {
+        composeTestRule.onNodeWithText("অনুরোধ").performClick()
+        composeTestRule.onNode(hasScrollAction()).performTouchInput { swipeUp() }
+        composeTestRule.runOnIdle {
+            requestState.value = RequestQueueUiState.Failed(RequestFailure.RECIPIENT_NOT_PROVISIONED)
+        }
+        composeTestRule.onNodeWithText("পাঠানোর আগে গন্তব্যের পরিচয় নিবন্ধন করুন।").assertIsDisplayed()
+
+        composeTestRule.onNodeWithText("English").performClick()
+        composeTestRule.onNodeWithText("Provision the destination identity before sending.").assertIsDisplayed()
     }
 }

@@ -12,7 +12,7 @@ import com.example.digitaldelta.data.local.RecipientKeyDao
 import com.example.digitaldelta.data.settings.ProtoUserSettingsRepository
 import com.example.digitaldelta.data.settings.UserSettingsRepository
 import com.example.digitaldelta.data.settings.userSettingsDataStore
-import com.example.digitaldelta.domain.mesh.AndroidKeystorePayloadProtector
+import com.example.digitaldelta.domain.mesh.DirectoryBackedMeshPayloadProtector
 import com.example.digitaldelta.domain.mesh.MeshPayloadProtector
 import com.example.digitaldelta.domain.mesh.RecipientKeyDirectory
 import com.example.digitaldelta.domain.identity.AndroidDeviceIdentityKeyStore
@@ -98,7 +98,8 @@ object AppModule {
 
     @Provides
     @Singleton
-    fun providePayloadProtector(): MeshPayloadProtector = AndroidKeystorePayloadProtector()
+    fun providePayloadProtector(recipientKeys: RecipientKeyDirectory): MeshPayloadProtector =
+        DirectoryBackedMeshPayloadProtector(recipientKeys)
 
     @Provides
     @Singleton

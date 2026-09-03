@@ -9,6 +9,7 @@ import com.example.digitaldelta.domain.request.ReliefRequestDraft
 import com.example.digitaldelta.domain.request.ReliefRequestSubmission
 import com.example.digitaldelta.domain.identity.AcceptedRecipient
 import com.example.digitaldelta.domain.identity.IdentityProvisioningCoordinator
+import com.example.digitaldelta.domain.mesh.RecipientKeyUnavailableException
 import com.example.digitaldelta.proto.v1.PriorityClass
 import dagger.hilt.android.lifecycle.HiltViewModel
 import javax.inject.Inject
@@ -70,8 +71,14 @@ class MainScreenViewModel @Inject constructor(
                 )
             }.onSuccess { receipt ->
                 mutableRequestQueueState.value = RequestQueueUiState.Queued(receipt.requestId, receipt.messageId)
-            }.onFailure {
-                mutableRequestQueueState.value = RequestQueueUiState.Failed
+            }.onFailure { error ->
+                mutableRequestQueueState.value = RequestQueueUiState.Failed(
+                    if (error is RecipientKeyUnavailableException) {
+                        RequestFailure.RECIPIENT_NOT_PROVISIONED
+                    } else {
+                        RequestFailure.STORAGE_OR_CRYPTO
+                    },
+                )
             }
         }
     }
@@ -134,8 +141,10 @@ sealed interface RequestQueueUiState {
     data object Idle : RequestQueueUiState
     data object Submitting : RequestQueueUiState
     data class Queued(val requestId: String, val messageId: String) : RequestQueueUiState
-    data object Failed : RequestQueueUiState
+    data class Failed(val reason: RequestFailure) : RequestQueueUiState
 }
+
+enum class RequestFailure { RECIPIENT_NOT_PROVISIONED, STORAGE_OR_CRYPTO }
 
 enum class IdentityFailure { KEYSTORE, INVALID_TRUST, INVALID_CREDENTIAL }
 

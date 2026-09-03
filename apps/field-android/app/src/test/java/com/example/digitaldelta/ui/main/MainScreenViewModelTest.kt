@@ -8,6 +8,7 @@ import com.example.digitaldelta.domain.request.ReliefRequestSubmission
 import com.example.digitaldelta.domain.identity.AcceptedRecipient
 import com.example.digitaldelta.domain.identity.IdentityProvisioningCoordinator
 import com.example.digitaldelta.domain.identity.IdentityProvisioningSnapshot
+import com.example.digitaldelta.domain.mesh.RecipientKeyUnavailableException
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.Flow
@@ -55,6 +56,23 @@ class MainScreenViewModelTest {
 
         assertEquals(11, submission.received?.cargo?.first { it.itemCode == "medicine" }?.quantity)
         assertEquals(RequestQueueUiState.Queued("request-9", "message-9"), viewModel.requestQueueState.value)
+    }
+
+    @Test
+    fun `request reports that destination identity must be provisioned`() = runTest(dispatcher) {
+        val viewModel = MainScreenViewModel(
+            FakeSettingsRepository(),
+            FakeRequestSubmission(RecipientKeyUnavailableException("N6")),
+            FakeIdentityCoordinator(),
+        )
+
+        viewModel.queueRequest(medicine = 10, ors = 20, tarpaulin = 5, priorityCode = "P0")
+        advanceUntilIdle()
+
+        assertEquals(
+            RequestQueueUiState.Failed(RequestFailure.RECIPIENT_NOT_PROVISIONED),
+            viewModel.requestQueueState.value,
+        )
     }
 
     @Test
@@ -111,10 +129,11 @@ private class FakeSettingsRepository : UserSettingsRepository {
     }
 }
 
-private class FakeRequestSubmission : ReliefRequestSubmission {
+private class FakeRequestSubmission(private val failure: Throwable? = null) : ReliefRequestSubmission {
     var received: ReliefRequestDraft? = null
 
     override suspend fun submit(draft: ReliefRequestDraft): QueueReceipt {
+        failure?.let { throw it }
         received = draft
         return QueueReceipt("request-9", "message-9")
     }

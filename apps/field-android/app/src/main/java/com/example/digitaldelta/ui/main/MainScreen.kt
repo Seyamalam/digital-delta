@@ -856,7 +856,7 @@ private fun RequestScreen(
                     }
                 }
             }
-            AnimatedVisibility(requestQueueState == RequestQueueUiState.Failed) {
+            AnimatedVisibility(requestQueueState is RequestQueueUiState.Failed) {
                 Row(
                     Modifier.fillMaxWidth().padding(top = 12.dp),
                     verticalAlignment = Alignment.CenterVertically,
@@ -864,7 +864,17 @@ private fun RequestScreen(
                 ) {
                     Icon(Icons.Default.Warning, null, tint = MaterialTheme.colorScheme.error)
                     Spacer(Modifier.width(8.dp))
-                    Text(text(R.string.request_queue_failed, language), color = MaterialTheme.colorScheme.error)
+                    Text(
+                        text(
+                            if ((requestQueueState as? RequestQueueUiState.Failed)?.reason == RequestFailure.RECIPIENT_NOT_PROVISIONED) {
+                                R.string.request_recipient_not_provisioned
+                            } else {
+                                R.string.request_queue_failed
+                            },
+                            language,
+                        ),
+                        color = MaterialTheme.colorScheme.error,
+                    )
                 }
             }
         }

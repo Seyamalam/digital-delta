@@ -95,7 +95,7 @@ This checklist tracks implementation. Milestone exit criteria live in [MILESTONE
 - [ ] Implement store-and-forward relay.
 - [ ] Implement TTL and hop-limit enforcement. The Go durable relay enforces both; Android queue enforcement remains.
 - [ ] Implement deduplication before domain-event application. The Go durable relay rejects duplicate message IDs; Android persistence remains.
-- [ ] Encrypt payloads for the final recipient. RSA-OAEP-wrapped AES-256-GCM, recipient-only decryption, and the provisioned key directory pass; the production request path switchover remains.
+- [x] Encrypt payloads for the final recipient through the signed public-key directory using RSA-OAEP-wrapped AES-256-GCM; production instrumentation decrypts the persisted request with only the intended recipient key.
 - [ ] Allow relays to inspect routing metadata only.
 - [ ] Select relay behavior using battery, signal, queue size, and proximity.
 - [ ] Reduce broadcast frequency by 60 percent below 30 percent battery.

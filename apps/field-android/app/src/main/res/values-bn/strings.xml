@@ -32,6 +32,7 @@
     <string name="request_queued">অনুরোধ এনক্রিপ্ট করে অফলাইনে সারিবদ্ধ হয়েছে</string>
     <string name="queueing_request">এনক্রিপ্ট করে সংরক্ষণ করা হচ্ছে…</string>
     <string name="request_queue_failed">স্থানীয়ভাবে সংরক্ষণ করা যায়নি। আবার চেষ্টা করুন।</string>
+    <string name="request_recipient_not_provisioned">পাঠানোর আগে গন্তব্যের পরিচয় নিবন্ধন করুন।</string>
     <string name="road_flooded">সড়ক প্লাবিত • নৌপথে পুনর্নির্দেশ</string>
     <string name="predicted">পূর্বাভাসকৃত</string>
     <string name="route_selected">নির্বাচিত পথ • নৌপথ A → B → C</string>

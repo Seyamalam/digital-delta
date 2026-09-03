@@ -32,6 +32,7 @@
     <string name="request_queued">Request encrypted and queued offline</string>
     <string name="queueing_request">Encrypting and saving…</string>
     <string name="request_queue_failed">Could not save locally. Try again.</string>
+    <string name="request_recipient_not_provisioned">Provision the destination identity before sending.</string>
     <string name="road_flooded">Road flooded • rerouted by boat</string>
     <string name="predicted">PREDICTED</string>
     <string name="route_selected">Selected path • Boat route A → B → C</string>

@@ -1,0 +1,18 @@
+package com.example.digitaldelta.di
+
+import com.example.digitaldelta.data.local.DeltaDatabase
+import com.example.digitaldelta.domain.identity.RecipientProvisioningRepository
+import dagger.hilt.EntryPoint
+import dagger.hilt.InstallIn
+import dagger.hilt.components.SingletonComponent
+
+/**
+ * Access to singleton graph components for Android-owned entry points that Hilt cannot construct,
+ * such as the upcoming foreground relay service and black-box instrumentation evidence.
+ */
+@EntryPoint
+@InstallIn(SingletonComponent::class)
+interface DigitalDeltaGraphEntryPoint {
+    fun database(): DeltaDatabase
+    fun recipientProvisioningRepository(): RecipientProvisioningRepository
+}
