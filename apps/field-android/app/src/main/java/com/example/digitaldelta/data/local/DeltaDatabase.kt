@@ -129,6 +129,9 @@ interface RecipientKeyDao {
 
     @Query("SELECT * FROM recipient_keys WHERE nodeId = :nodeId LIMIT 1")
     suspend fun findByNodeId(nodeId: String): RecipientKeyEntity?
+
+    @Query("SELECT * FROM recipient_keys ORDER BY provisionedAtUnixMs DESC, nodeId ASC LIMIT 1")
+    suspend fun mostRecentlyProvisioned(): RecipientKeyEntity?
 }
 
 @Database(

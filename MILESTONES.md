@@ -66,7 +66,7 @@ Modules completed toward demo: M1 and M5.
 Deliverables:
 
 - Offline administrator provisioning QR
-- Ed25519 device and user keys
+- RSA-2048 device encryption and signing keys in Android Keystore
 - PIN or device-secure-storage unlock
 - Signed audit events
 - Signed QR handoff with delivery ID, sender key, payload hash, nonce, and timestamp

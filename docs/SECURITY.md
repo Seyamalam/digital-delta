@@ -24,7 +24,7 @@ The fair build demonstrates offline identity, encrypted relay, signed custody, r
 | Malicious relay | Recipient encryption, signed envelope, limited metadata, TTL and hop limit |
 | Duplicate message | Message ID deduplication before event application |
 | Replayed QR | Persistent nonce cache, delivery-state check, expiry |
-| Tampered QR or event | SHA-256 payload hash and Ed25519 signature verification |
+| Tampered QR or event | SHA-256 payload hash and RSA-2048-PSS signature verification |
 | Unauthorized role | Policy enforcement below the interface and signed audit denial |
 | False simulation presented as fact | Signed simulation marker and persistent screen label |
 | Clock disagreement | Bounded skew rules and logical ordering through events and vector clocks |
@@ -45,12 +45,13 @@ The app must not describe stale offline identity as globally current.
 
 ## Cryptographic choices
 
-- Ed25519 for device identity and signatures
-- AES-256-GCM for protected payloads
+- RSA-2048-PSS with SHA-256 for identity and provisioning signatures
+- RSA-2048-OAEP with SHA-256 for wrapping per-message content keys
+- AES-256-GCM with fresh random keys and nonces for protected payloads
 - SHA-256 for hashes and content addressing
 - Platform secure random source for keys and nonces
 
-Do not invent cryptographic primitives. Use maintained platform or audited libraries. Record library and platform decisions in `DECISIONS.md`.
+The OAEP mask-generation digest is SHA-1 for Android Keystore interoperability; the OAEP main digest remains SHA-256. This follows the platform provider contract and is covered by device tests. Do not invent cryptographic primitives. Use maintained platform or audited libraries. Record library and platform decisions in `DECISIONS.md`.
 
 ## Message processing order
 
@@ -138,4 +139,3 @@ The final policy will use explicit permissions rather than hard-coded screen nam
 - Nearby transport security does not replace application-layer recipient encryption.
 - The demo has not undergone an independent security audit.
 - Load simulation does not prove production behavior across real disaster geography.
-

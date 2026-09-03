@@ -52,7 +52,7 @@ All phones enter airplane mode before the mission. Bluetooth and local Wi-Fi may
 - React, TypeScript, Vite, and MapLibre GL JS command dashboard
 - Protocol Buffers Kotlin Lite, Go, and TypeScript generated contracts
 - gRPC on supported IP links, with framed Protobuf transport for nearby-radio links
-- Google Tink and Android Keystore for Ed25519, AES-256-GCM, and protected keysets
+- JCA/JCE and Android Keystore for RSA-2048-PSS signatures, RSA-OAEP key wrapping, AES-256-GCM payloads, and protected device keys
 - MapLibre Native Android embedded in Compose with bundled offline regions
 - ZXing Core for QR generation and bundled ML Kit barcode scanning
 - ONNX Runtime Android for the on-device route-risk classifier
@@ -94,6 +94,7 @@ research/                 Source-backed problem and fair research
 - [Testing strategy](docs/TESTING.md)
 - [Requirements traceability](docs/TRACEABILITY.md)
 - [Architecture decisions](docs/DECISIONS.md)
+- [Offline provisioning runbook](docs/PROVISIONING.md)
 - [Innovation fair research](research/innovation-fair-fit.md)
 
 ## Definition of done
@@ -112,6 +113,6 @@ The project is fair-ready when:
 
 Implementation is active. The native Android field shell now builds and runs with Bangla-first and English interfaces, four interactive demo surfaces, an animated offline initialization sequence, real QR generation, and device-tested state preservation. Language-neutral engines and passing JVM tests exist for authorization, vector clocks, mesh policy, multimodal routing, proof-of-delivery verification, triage, route-risk prediction, and hybrid-fleet rendezvous.
 
-The shared Protobuf contract now lints and generates Android Lite and Go bindings. The Go node exposes a bidirectional gRPC stream backed by a durable Bolt inbox with TTL, hop-limit, and duplicate rejection. On Android, the bilingual relief-request form now creates a real Protobuf domain event, protects it with AES-256-GCM, and atomically writes its operation and binary envelope to the Room outbox. Hybrid recipient encryption, RSA-2048 device-bound Android Keystore identities, signed offline provisioning credentials, and a durable public-key directory now have JVM and emulator evidence.
+The shared Protobuf contract now lints and generates Android Lite and Go bindings. The Go node exposes a bidirectional gRPC stream backed by a durable Bolt inbox with TTL, hop-limit, and duplicate rejection. On Android, the bilingual relief-request form now creates a real Protobuf domain event, protects it with AES-256-GCM, and atomically writes its operation and binary envelope to the Room outbox. Hybrid recipient encryption, RSA-2048 device-bound Android Keystore identities, signed offline provisioning credentials, a durable public-key directory, and the bilingual enrollment/trust interface now have JVM and emulator evidence. The laptop-side `delta-provision` tool creates an administrator trust anchor and signs device enrollment requests without internet.
 
-These are integrated foundations, not a claim that all eight modules are complete. The provisioning user journey and production request-path switchover, Nearby Connections, signed peer acknowledgements, ONNX inference, MapLibre offline regions, and the command dashboard remain under active implementation. Current evidence is recorded in `artifacts/` and can be reproduced with `scripts/verify-local.sh --connected`.
+These are integrated foundations, not a claim that all eight modules are complete. Camera scanning for provisioning codes, the production request-path switchover, Nearby Connections, signed peer acknowledgements, ONNX inference, MapLibre offline regions, and the command dashboard remain under active implementation. Current evidence is recorded in `artifacts/` and can be reproduced with `scripts/verify-local.sh --connected`.

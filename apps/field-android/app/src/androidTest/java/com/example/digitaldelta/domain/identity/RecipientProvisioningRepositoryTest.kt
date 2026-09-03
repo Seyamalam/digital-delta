@@ -63,6 +63,10 @@ class RecipientProvisioningRepositoryTest {
             "n6-encryption-1",
             database.recipientKeyDao().findByNodeId("N6")?.encryptionKeyId,
         )
+        assertEquals(
+            "Habiganj Medical",
+            repository.mostRecentlyAccepted()?.displayName,
+        )
     }
 
     private fun rsaKeyPair() = KeyPairGenerator.getInstance("RSA").run {

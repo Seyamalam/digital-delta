@@ -18,7 +18,7 @@ This is the accepted implementation stack for the fair build. Dependency version
 | Deferred jobs | WorkManager | Retry, cleanup, expiry, and maintenance that can run later |
 | Binary contracts | Protocol Buffers Kotlin Lite | Compact language-neutral mesh envelopes |
 | IP communication | gRPC Kotlin | RPC on direct local IP links that support gRPC correctly |
-| Cryptography | Google Tink | Ed25519 signatures, AES-256-GCM payload encryption, and tested primitives |
+| Cryptography | JCA/JCE and Android Keystore | RSA-2048-PSS signatures, RSA-OAEP key wrapping, AES-256-GCM payload encryption, and SHA-256 hashes |
 | Key protection | Android Keystore | Protect device-local keysets and restrict key use |
 | Routing | Pure Kotlin A* or Dijkstra | Deterministic on-device multi-modal routing |
 | Map | MapLibre Native Android | Offline regions, route overlays, and map attribution |
@@ -110,4 +110,3 @@ Training uses Python, pandas, scikit-learn, and skl2onnx. The repository stores 
 - IoT devices and custom hardware
 - Physical-drone control
 - Continuous mesh work through WorkManager
-

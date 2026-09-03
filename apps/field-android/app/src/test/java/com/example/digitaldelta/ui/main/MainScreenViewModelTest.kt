@@ -5,6 +5,9 @@ import com.example.digitaldelta.data.settings.UserSettingsRepository
 import com.example.digitaldelta.domain.request.QueueReceipt
 import com.example.digitaldelta.domain.request.ReliefRequestDraft
 import com.example.digitaldelta.domain.request.ReliefRequestSubmission
+import com.example.digitaldelta.domain.identity.AcceptedRecipient
+import com.example.digitaldelta.domain.identity.IdentityProvisioningCoordinator
+import com.example.digitaldelta.domain.identity.IdentityProvisioningSnapshot
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.Flow
@@ -32,7 +35,7 @@ class MainScreenViewModelTest {
     @Test
     fun `language starts Bangla and persists English selection`() = runTest(dispatcher) {
         val repository = FakeSettingsRepository()
-        val viewModel = MainScreenViewModel(repository, FakeRequestSubmission())
+        val viewModel = MainScreenViewModel(repository, FakeRequestSubmission(), FakeIdentityCoordinator())
 
         assertEquals(LanguagePreference.BANGLA, viewModel.language.value)
         viewModel.setBangla(false)
@@ -45,13 +48,57 @@ class MainScreenViewModelTest {
     @Test
     fun `queue request exposes durable receipt to the interface`() = runTest(dispatcher) {
         val submission = FakeRequestSubmission()
-        val viewModel = MainScreenViewModel(FakeSettingsRepository(), submission)
+        val viewModel = MainScreenViewModel(FakeSettingsRepository(), submission, FakeIdentityCoordinator())
 
         viewModel.queueRequest(medicine = 11, ors = 20, tarpaulin = 5, priorityCode = "P0")
         advanceUntilIdle()
 
         assertEquals(11, submission.received?.cargo?.first { it.itemCode == "medicine" }?.quantity)
         assertEquals(RequestQueueUiState.Queued("request-9", "message-9"), viewModel.requestQueueState.value)
+    }
+
+    @Test
+    fun `identity screen exposes enrollment then reflects trusted recipient import`() = runTest(dispatcher) {
+        val coordinator = FakeIdentityCoordinator()
+        val viewModel = MainScreenViewModel(FakeSettingsRepository(), FakeRequestSubmission(), coordinator)
+        advanceUntilIdle()
+
+        assertEquals("enrollment-code", (viewModel.identityState.value as IdentityUiState.Ready).enrollmentCode)
+        viewModel.pinAdministrator("trust-code")
+        advanceUntilIdle()
+        assertEquals("admin-abcd", (viewModel.identityState.value as IdentityUiState.Ready).trustedIssuerFingerprint)
+
+        viewModel.importRecipientCredential("credential-code")
+        advanceUntilIdle()
+        val ready = viewModel.identityState.value as IdentityUiState.Ready
+        assertEquals("Habiganj Medical", ready.acceptedRecipient?.displayName)
+        assertEquals("credential-code", coordinator.importedCode)
+    }
+
+    @Test
+    fun `failed trust code keeps identity available for a successful retry`() = runTest(dispatcher) {
+        val coordinator = FakeIdentityCoordinator()
+        val viewModel = MainScreenViewModel(FakeSettingsRepository(), FakeRequestSubmission(), coordinator)
+        advanceUntilIdle()
+
+        viewModel.pinAdministrator("invalid")
+        advanceUntilIdle()
+        val failed = viewModel.identityState.value as IdentityUiState.Failed
+        assertEquals("enrollment-code", failed.previous?.enrollmentCode)
+
+        viewModel.pinAdministrator("still-invalid")
+        advanceUntilIdle()
+        assertEquals(
+            "enrollment-code",
+            (viewModel.identityState.value as IdentityUiState.Failed).previous?.enrollmentCode,
+        )
+
+        viewModel.pinAdministrator("trust-code")
+        advanceUntilIdle()
+        assertEquals(
+            "admin-abcd",
+            (viewModel.identityState.value as IdentityUiState.Ready).trustedIssuerFingerprint,
+        )
     }
 }
 
@@ -70,5 +117,28 @@ private class FakeRequestSubmission : ReliefRequestSubmission {
     override suspend fun submit(draft: ReliefRequestDraft): QueueReceipt {
         received = draft
         return QueueReceipt("request-9", "message-9")
+    }
+}
+
+private class FakeIdentityCoordinator : IdentityProvisioningCoordinator {
+    var importedCode: String? = null
+    private var fingerprint: String? = null
+
+    override suspend fun snapshot(): IdentityProvisioningSnapshot = IdentityProvisioningSnapshot(
+        localNodeId = "N4",
+        localEncryptionKeyId = "rsa-local-1",
+        enrollmentCode = "enrollment-code",
+        trustedIssuerFingerprint = fingerprint,
+    )
+
+    override suspend fun pinTrustAnchor(code: String): IdentityProvisioningSnapshot {
+        require(code == "trust-code")
+        fingerprint = "admin-abcd"
+        return snapshot()
+    }
+
+    override suspend fun acceptRecipientCredential(code: String): AcceptedRecipient {
+        importedCode = code
+        return AcceptedRecipient("N6", "Habiganj Medical", "rsa-recipient-1")
     }
 }

@@ -51,6 +51,14 @@ Example:
 | H07 | Conflict resolution | Two versions and selected resolution | Prove offline convergence |
 | H08 | Drone rendezvous | Drone-required zone and computed coordinate | Explain M8 without physical hardware |
 
+## Development evidence captured
+
+These are real emulator captures from the working application, not final submission assets. They remain in the manifest so the implementation trail is auditable and will be replaced only after final-device capture.
+
+| Surface | Bangla | English | Evidence |
+|---|---:|---:|---|
+| Offline device enrollment and pinned administrator | Captured | Captured | `artifacts/screenshots/field-bn/09-field-bn-offline-provisioning-trusted-1280x2856.png`, `artifacts/screenshots/field-en/09-field-en-offline-provisioning-trusted-1280x2856.png` |
+
 ## Field application shots
 
 - [ ] First-run language choice
@@ -126,4 +134,3 @@ Record these as separate clips so a failed edit does not destroy the whole walkt
 ```csv
 file,commit,device,os,viewport,language,scenario_seed,module,real_or_simulated,captured_at,notes
 ```
-

@@ -3,6 +3,7 @@ package com.example.digitaldelta.ui.main
 import androidx.activity.ComponentActivity
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.hasScrollAction
+import androidx.compose.ui.test.hasTestTag
 import androidx.compose.ui.test.junit4.createAndroidComposeRule
 import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onNodeWithText
@@ -60,5 +61,16 @@ class MainScreenTest {
 
         composeTestRule.onNodeWithText("Replay rejected").assertIsDisplayed()
         composeTestRule.onNodeWithText("Handoff verified").assertExists()
+    }
+
+    @Test
+    fun identityProvisioning_isBilingualAndUsesPurposefulLoadingState() {
+        composeTestRule.onNode(hasTestTag("identity-open")).performClick()
+        composeTestRule.onNodeWithText("পরিচয় ও অফলাইন কী").assertIsDisplayed()
+        composeTestRule.onNodeWithText("সুরক্ষিত ডিভাইস কী প্রস্তুত হচ্ছে").assertIsDisplayed()
+
+        composeTestRule.onNodeWithText("English").performClick()
+        composeTestRule.onNodeWithText("Identity and offline keys").assertIsDisplayed()
+        composeTestRule.onNodeWithText("Preparing protected device keys").assertIsDisplayed()
     }
 }

@@ -54,4 +54,25 @@
     <string name="replay_explanation">এই QR আগে ব্যবহৃত হয়েছে; হস্তান্তর বদলায়নি।</string>
     <string name="verify_handoff">স্বাক্ষরিত হস্তান্তর যাচাই করুন</string>
     <string name="demo_identity">সমন্বয়কারী • SYL-01</string>
+    <string name="identity_and_keys">পরিচয় ও অফলাইন কী</string>
+    <string name="identity_offline_subtitle">ইন্টারনেট ছাড়াই ডিভাইস অনুমোদন করুন</string>
+    <string name="back">পেছনে</string>
+    <string name="device_key_ready">ডিভাইস-সুরক্ষিত কী প্রস্তুত</string>
+    <string name="enrollment_qr">ডিভাইস নিবন্ধন</string>
+    <string name="enrollment_qr_description">প্রোটোবাফ ডিভাইস নিবন্ধন QR কোড</string>
+    <string name="enrollment_qr_help">প্রশাসকের ল্যাপটপে এই পাবলিক নিবন্ধনটি স্ক্যান করুন। প্রাইভেট কী কখনও এই ফোন ছাড়ে না।</string>
+    <string name="copy_enrollment_code">নিবন্ধন কোড কপি করুন</string>
+    <string name="administrator_trust">প্রশাসকের বিশ্বাসযোগ্যতা</string>
+    <string name="trust_code">প্রশাসকের ট্রাস্ট কোড</string>
+    <string name="pin_administrator">প্রশাসকের কী পিন করুন</string>
+    <string name="trusted">বিশ্বস্ত প্রশাসক</string>
+    <string name="recipient_credential">প্রাপকের পরিচয়পত্র</string>
+    <string name="credential_code">স্বাক্ষরিত প্রাপক পরিচয়পত্র</string>
+    <string name="verify_add_recipient">যাচাই করে প্রাপক যোগ করুন</string>
+    <string name="identity_keystore_failed">ডিভাইস কী প্রস্তুত করা যায়নি। পুনরায় চালু করে চেষ্টা করুন।</string>
+    <string name="invalid_trust_code">প্রশাসকের কোডটি সঠিক নয়। প্রশাসকের সঙ্গে ফিঙ্গারপ্রিন্ট মিলিয়ে নিন।</string>
+    <string name="invalid_credential">পরিচয়পত্র প্রত্যাখ্যাত: স্বাক্ষর, কী বা মেয়াদ সঠিক নয়।</string>
+    <string name="preparing_device_keys">সুরক্ষিত ডিভাইস কী প্রস্তুত হচ্ছে</string>
+    <string name="private_keys_never_leave">RSA-2048 প্রাইভেট কী Android Keystore থেকে কখনও বের হয় না।</string>
+    <string name="signed_delivery_qr_description">স্বাক্ষরিত সরবরাহ হস্তান্তর QR কোড</string>
 </resources>

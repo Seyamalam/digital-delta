@@ -98,11 +98,11 @@ Use this log for choices that affect scope, claims, compatibility, or safety.
 
 **Status:** Accepted
 
-**Decision:** Use Room for structured mission data and Proto DataStore for small typed preferences. Use Google Tink for Ed25519 and AES-256-GCM primitives, with device-local keysets protected through Android Keystore.
+**Decision:** Use Room for structured mission data and Proto DataStore for small typed preferences. Use RSA-2048 identity keys generated and retained in Android Keystore, RSA-PSS/SHA-256 signatures, RSA-OAEP/SHA-256 content-key wrapping, and AES-256-GCM payload protection.
 
-**Reason:** Room provides SQLite migrations and compile-time query checks. DataStore fits small transactional settings. Tink avoids custom cryptographic construction, while Android Keystore makes device keys harder to extract.
+**Reason:** Room provides SQLite migrations and compile-time query checks. DataStore fits small transactional settings. RSA-2048 is an explicit C5 option and is consistently available across the Android baseline; Android Keystore keeps private keys non-exportable.
 
-**Consequences:** Sensitive stores are excluded from cloud backup. Signature tests use canonical Protobuf bytes. The implementation must verify target-device Keystore behavior before describing keys as hardware-backed.
+**Consequences:** Sensitive stores are excluded from cloud backup. Signature tests use deterministic Protobuf bytes. The implementation must verify target-device Keystore behavior before describing keys as hardware-backed. OAEP uses a SHA-256 main digest and MGF1/SHA-1 for Android provider compatibility.
 
 ## DD-011: Android mapping and QR
 

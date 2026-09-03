@@ -16,8 +16,12 @@ import com.example.digitaldelta.domain.mesh.AndroidKeystorePayloadProtector
 import com.example.digitaldelta.domain.mesh.MeshPayloadProtector
 import com.example.digitaldelta.domain.mesh.RecipientKeyDirectory
 import com.example.digitaldelta.domain.identity.AndroidDeviceIdentityKeyStore
+import com.example.digitaldelta.domain.identity.DefaultIdentityProvisioningCoordinator
+import com.example.digitaldelta.domain.identity.IdentityProvisioningCoordinator
+import com.example.digitaldelta.domain.identity.ProtoTrustAnchorRepository
 import com.example.digitaldelta.domain.identity.RecipientProvisioningRepository
 import com.example.digitaldelta.domain.identity.RoomRecipientKeyDirectory
+import com.example.digitaldelta.domain.identity.TrustAnchorRepository
 import com.example.digitaldelta.domain.request.DefaultReliefRequestSubmission
 import com.example.digitaldelta.domain.request.ReliefRequestSubmission
 import com.example.digitaldelta.domain.request.RoomRequestPersistence
@@ -64,6 +68,23 @@ object AppModule {
     @Provides
     @Singleton
     fun provideDeviceIdentityKeyStore(): AndroidDeviceIdentityKeyStore = AndroidDeviceIdentityKeyStore()
+
+    @Provides
+    @Singleton
+    fun provideTrustAnchorRepository(dataStore: DataStore<UserSettings>): TrustAnchorRepository =
+        ProtoTrustAnchorRepository(dataStore)
+
+    @Provides
+    @Singleton
+    fun provideIdentityProvisioningCoordinator(
+        deviceKeys: AndroidDeviceIdentityKeyStore,
+        trustAnchors: TrustAnchorRepository,
+        recipients: RecipientProvisioningRepository,
+    ): IdentityProvisioningCoordinator = DefaultIdentityProvisioningCoordinator(
+        deviceKeys = deviceKeys,
+        trustAnchors = trustAnchors,
+        recipients = recipients,
+    )
 
     @Provides
     @Singleton

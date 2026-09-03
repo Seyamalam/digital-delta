@@ -38,13 +38,17 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardActions
+import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.Send
 import androidx.compose.material.icons.filled.AccessTime
+import androidx.compose.material.icons.filled.AdminPanelSettings
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.AddCircle
 import androidx.compose.material.icons.filled.AirplanemodeActive
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.CheckCircle
+import androidx.compose.material.icons.filled.ContentCopy
 import androidx.compose.material.icons.filled.DirectionsBoat
 import androidx.compose.material.icons.filled.Handshake
 import androidx.compose.material.icons.filled.Hub
@@ -56,7 +60,6 @@ import androidx.compose.material.icons.filled.LocalHospital
 import androidx.compose.material.icons.filled.LocationOn
 import androidx.compose.material.icons.filled.Map
 import androidx.compose.material.icons.filled.Medication
-import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material.icons.filled.MyLocation
 import androidx.compose.material.icons.filled.Remove
 import androidx.compose.material.icons.filled.Replay
@@ -64,6 +67,7 @@ import androidx.compose.material.icons.filled.Shield
 import androidx.compose.material.icons.filled.Warning
 import androidx.compose.material.icons.filled.WaterDrop
 import androidx.compose.material.icons.filled.WifiOff
+import androidx.compose.material.icons.filled.VpnKey
 import androidx.compose.material3.AssistChip
 import androidx.compose.material3.Button
 import androidx.compose.material3.CardDefaults
@@ -103,12 +107,16 @@ import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalClipboardManager
+import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.semantics.heading
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
@@ -157,6 +165,9 @@ fun DigitalDeltaApp(
     onLanguageChange: ((Boolean) -> Unit)? = null,
     requestQueueState: RequestQueueUiState = RequestQueueUiState.Idle,
     onQueueRequest: ((Int, Int, Int, String) -> Unit)? = null,
+    identityState: IdentityUiState = IdentityUiState.Loading,
+    onPinAdministrator: ((String) -> Unit)? = null,
+    onImportRecipientCredential: ((String) -> Unit)? = null,
 ) {
     var booting by rememberSaveable { mutableStateOf(showBootSequence) }
     LaunchedEffect(showBootSequence) {
@@ -179,6 +190,9 @@ fun DigitalDeltaApp(
                 onLanguageChange = onLanguageChange,
                 requestQueueState = requestQueueState,
                 onQueueRequest = onQueueRequest,
+                identityState = identityState,
+                onPinAdministrator = onPinAdministrator,
+                onImportRecipientCredential = onImportRecipientCredential,
             )
         }
     }
@@ -267,8 +281,12 @@ private fun DeltaShell(
     onLanguageChange: ((Boolean) -> Unit)?,
     requestQueueState: RequestQueueUiState,
     onQueueRequest: ((Int, Int, Int, String) -> Unit)?,
+    identityState: IdentityUiState,
+    onPinAdministrator: ((String) -> Unit)?,
+    onImportRecipientCredential: ((String) -> Unit)?,
 ) {
     var destination by rememberSaveable { mutableStateOf(DeltaDestination.OPERATIONS) }
+    var identityOpen by rememberSaveable { mutableStateOf(false) }
     var localUseBangla by rememberSaveable { mutableStateOf(useBangla) }
     LaunchedEffect(useBangla) {
         if (onLanguageChange != null) localUseBangla = useBangla
@@ -278,10 +296,14 @@ private fun DeltaShell(
     Scaffold(
         containerColor = MaterialTheme.colorScheme.background,
         topBar = {
-            ConnectivityBar(language) {
-                localUseBangla = !localUseBangla
-                onLanguageChange?.invoke(localUseBangla)
-            }
+            ConnectivityBar(
+                language = language,
+                onLanguageChange = {
+                    localUseBangla = !localUseBangla
+                    onLanguageChange?.invoke(localUseBangla)
+                },
+                onIdentity = { identityOpen = true },
+            )
         },
         bottomBar = {
             NavigationBar(containerColor = MaterialTheme.colorScheme.surface, tonalElevation = 0.dp) {
@@ -310,11 +332,21 @@ private fun DeltaShell(
         },
     ) { contentPadding ->
         AnimatedContent(
-            targetState = destination,
+            targetState = if (identityOpen) null else destination,
             transitionSpec = { fadeIn(tween(180)) togetherWith fadeOut(tween(120)) },
             label = "top-level-destination",
             modifier = Modifier.padding(contentPadding),
         ) { selected ->
+            if (selected == null) {
+                IdentityScreen(
+                    language = language,
+                    state = identityState,
+                    onBack = { identityOpen = false },
+                    onPinAdministrator = onPinAdministrator,
+                    onImportRecipientCredential = onImportRecipientCredential,
+                )
+                return@AnimatedContent
+            }
             when (selected) {
                 DeltaDestination.OPERATIONS -> OperationsScreen(language)
                 DeltaDestination.REQUEST -> RequestScreen(
@@ -330,7 +362,11 @@ private fun DeltaShell(
 }
 
 @Composable
-private fun ConnectivityBar(language: AppLanguage, onLanguageChange: () -> Unit) {
+private fun ConnectivityBar(
+    language: AppLanguage,
+    onLanguageChange: () -> Unit,
+    onIdentity: () -> Unit,
+) {
     Surface(color = DeltaTeal) {
         Row(
             modifier = Modifier
@@ -355,9 +391,259 @@ private fun ConnectivityBar(language: AppLanguage, onLanguageChange: () -> Unit)
                 Spacer(Modifier.width(4.dp))
                 Text(text(R.string.language_toggle, language), color = Color.White)
             }
-            IconButton(onClick = {}) {
-                Icon(Icons.Default.MoreVert, contentDescription = "More options", tint = Color.White)
+            IconButton(onClick = onIdentity, modifier = Modifier.testTag("identity-open")) {
+                Icon(
+                    Icons.Default.AdminPanelSettings,
+                    contentDescription = text(R.string.identity_and_keys, language),
+                    tint = Color.White,
+                )
             }
+        }
+    }
+}
+
+@Composable
+private fun IdentityScreen(
+    language: AppLanguage,
+    state: IdentityUiState,
+    onBack: () -> Unit,
+    onPinAdministrator: ((String) -> Unit)?,
+    onImportRecipientCredential: ((String) -> Unit)?,
+) {
+    var trustCode by rememberSaveable { mutableStateOf("") }
+    var credentialCode by rememberSaveable { mutableStateOf("") }
+    val clipboard = LocalClipboardManager.current
+    val focusManager = LocalFocusManager.current
+    val ready = when (state) {
+        is IdentityUiState.Ready -> state
+        is IdentityUiState.Working -> state.previous
+        is IdentityUiState.Failed -> state.previous
+        IdentityUiState.Loading -> null
+    }
+
+    LazyColumn(
+        modifier = Modifier.fillMaxSize().testTag("identity-screen"),
+        contentPadding = PaddingValues(16.dp, 12.dp, 16.dp, 28.dp),
+        verticalArrangement = Arrangement.spacedBy(16.dp),
+    ) {
+        item {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                IconButton(onClick = onBack) {
+                    Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = text(R.string.back, language))
+                }
+                Spacer(Modifier.width(4.dp))
+                Column {
+                    Text(
+                        text(R.string.identity_and_keys, language),
+                        style = MaterialTheme.typography.headlineSmall,
+                        modifier = Modifier.semantics { heading() },
+                    )
+                    Text(
+                        text(R.string.identity_offline_subtitle, language),
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                }
+            }
+        }
+        if (ready == null) {
+            item { IdentityLoadingCard(language) }
+        } else {
+            item {
+                Surface(
+                    color = VerifiedGreen.copy(alpha = .10f),
+                    contentColor = VerifiedGreen,
+                    shape = RoundedCornerShape(16.dp),
+                    modifier = Modifier.fillMaxWidth(),
+                ) {
+                    Row(Modifier.padding(16.dp), verticalAlignment = Alignment.CenterVertically) {
+                        Icon(Icons.Default.VpnKey, null, modifier = Modifier.size(34.dp))
+                        Spacer(Modifier.width(12.dp))
+                        Column(Modifier.weight(1f)) {
+                            Text(text(R.string.device_key_ready, language), fontWeight = FontWeight.Bold)
+                            Text("${ready.localNodeId} • ${ready.localEncryptionKeyId.takeLast(12)}")
+                        }
+                    }
+                }
+            }
+            item {
+                SectionLabel(text(R.string.enrollment_qr, language))
+                Spacer(Modifier.height(8.dp))
+                Surface(
+                    color = MaterialTheme.colorScheme.surface,
+                    shape = RoundedCornerShape(18.dp),
+                    border = CardDefaults.outlinedCardBorder(),
+                    modifier = Modifier.fillMaxWidth().testTag("enrollment-card"),
+                ) {
+                    Column(
+                        Modifier.padding(16.dp),
+                        horizontalAlignment = Alignment.CenterHorizontally,
+                        verticalArrangement = Arrangement.spacedBy(10.dp),
+                    ) {
+                        QrCode(
+                            value = ready.enrollmentCode,
+                            size = 258.dp,
+                            description = text(R.string.enrollment_qr_description, language),
+                        )
+                        Text(
+                            text(R.string.enrollment_qr_help, language),
+                            textAlign = TextAlign.Center,
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        )
+                        OutlinedButton(
+                            onClick = { clipboard.setText(AnnotatedString(ready.enrollmentCode)) },
+                            modifier = Modifier.fillMaxWidth(),
+                        ) {
+                            Icon(Icons.Default.ContentCopy, null)
+                            Spacer(Modifier.width(8.dp))
+                            Text(text(R.string.copy_enrollment_code, language))
+                        }
+                    }
+                }
+            }
+            item {
+                SectionLabel(text(R.string.administrator_trust, language))
+                Spacer(Modifier.height(8.dp))
+                if (ready.trustedIssuerFingerprint == null) {
+                    OutlinedTextField(
+                        value = trustCode,
+                        onValueChange = { trustCode = it },
+                        label = { Text(text(R.string.trust_code, language)) },
+                        minLines = 2,
+                        keyboardOptions = KeyboardOptions(imeAction = ImeAction.Done),
+                        keyboardActions = KeyboardActions(
+                            onDone = {
+                                focusManager.clearFocus()
+                                if (trustCode.isNotBlank()) onPinAdministrator?.invoke(trustCode)
+                            },
+                        ),
+                        modifier = Modifier.fillMaxWidth(),
+                    )
+                    Spacer(Modifier.height(8.dp))
+                    Button(
+                        onClick = { onPinAdministrator?.invoke(trustCode) },
+                        enabled = trustCode.isNotBlank() && state !is IdentityUiState.Working,
+                        modifier = Modifier.fillMaxWidth().height(52.dp).testTag("pin-admin"),
+                    ) {
+                        Icon(Icons.Default.Shield, null)
+                        Spacer(Modifier.width(8.dp))
+                        Text(text(R.string.pin_administrator, language))
+                    }
+                } else {
+                    InfoRow(Icons.Default.CheckCircle, "${text(R.string.trusted, language)} • ${ready.trustedIssuerFingerprint}", VerifiedGreen)
+                }
+            }
+            item {
+                SectionLabel(text(R.string.recipient_credential, language))
+                Spacer(Modifier.height(8.dp))
+                OutlinedTextField(
+                    value = credentialCode,
+                    onValueChange = { credentialCode = it },
+                    label = { Text(text(R.string.credential_code, language)) },
+                    minLines = 3,
+                    keyboardOptions = KeyboardOptions(imeAction = ImeAction.Done),
+                    keyboardActions = KeyboardActions(
+                        onDone = {
+                            focusManager.clearFocus()
+                            if (ready.trustedIssuerFingerprint != null && credentialCode.isNotBlank()) {
+                                onImportRecipientCredential?.invoke(credentialCode)
+                            }
+                        },
+                    ),
+                    modifier = Modifier.fillMaxWidth(),
+                )
+                Spacer(Modifier.height(8.dp))
+                Button(
+                    onClick = { onImportRecipientCredential?.invoke(credentialCode) },
+                    enabled = ready.trustedIssuerFingerprint != null && credentialCode.isNotBlank() && state !is IdentityUiState.Working,
+                    modifier = Modifier.fillMaxWidth().height(52.dp).testTag("import-credential"),
+                ) {
+                    Icon(Icons.Default.AdminPanelSettings, null)
+                    Spacer(Modifier.width(8.dp))
+                    Text(text(R.string.verify_add_recipient, language))
+                }
+                ready.acceptedRecipient?.let { recipient ->
+                    Spacer(Modifier.height(10.dp))
+                    Surface(
+                        color = VerifiedGreen.copy(alpha = .10f),
+                        shape = RoundedCornerShape(14.dp),
+                        modifier = Modifier.fillMaxWidth().testTag("recipient-accepted"),
+                    ) {
+                        Row(Modifier.padding(14.dp), verticalAlignment = Alignment.CenterVertically) {
+                            Icon(Icons.Default.CheckCircle, null, tint = VerifiedGreen)
+                            Spacer(Modifier.width(10.dp))
+                            Column {
+                                Text(recipient.displayName, fontWeight = FontWeight.Bold)
+                                Text("${recipient.nodeId} • ${recipient.encryptionKeyId.takeLast(12)}")
+                            }
+                        }
+                    }
+                }
+            }
+        }
+        if (state is IdentityUiState.Failed) {
+            item {
+                Surface(
+                    color = MaterialTheme.colorScheme.errorContainer,
+                    contentColor = MaterialTheme.colorScheme.onErrorContainer,
+                    shape = RoundedCornerShape(14.dp),
+                    modifier = Modifier.fillMaxWidth().testTag("identity-error"),
+                ) {
+                    Row(Modifier.padding(14.dp), verticalAlignment = Alignment.CenterVertically) {
+                        Icon(Icons.Default.Warning, null)
+                        Spacer(Modifier.width(10.dp))
+                        Text(
+                            text(
+                                when (state.reason) {
+                                    IdentityFailure.KEYSTORE -> R.string.identity_keystore_failed
+                                    IdentityFailure.INVALID_TRUST -> R.string.invalid_trust_code
+                                    IdentityFailure.INVALID_CREDENTIAL -> R.string.invalid_credential
+                                },
+                                language,
+                            ),
+                        )
+                    }
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun IdentityLoadingCard(language: AppLanguage) {
+    val transition = rememberInfiniteTransition(label = "identity-key-loading")
+    val pulse by transition.animateFloat(
+        initialValue = .55f,
+        targetValue = 1f,
+        animationSpec = infiniteRepeatable(tween(850), RepeatMode.Reverse),
+        label = "identity-key-pulse",
+    )
+    Surface(
+        color = MaterialTheme.colorScheme.surface,
+        shape = RoundedCornerShape(18.dp),
+        border = CardDefaults.outlinedCardBorder(),
+        modifier = Modifier.fillMaxWidth(),
+    ) {
+        Column(
+            Modifier.padding(24.dp),
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.spacedBy(14.dp),
+        ) {
+            Box(Modifier.size(88.dp), contentAlignment = Alignment.Center) {
+                Canvas(Modifier.fillMaxSize()) {
+                    drawCircle(DeltaTeal.copy(alpha = .10f + pulse * .12f), radius = size.minDimension * .48f * pulse)
+                    drawCircle(DeltaTeal.copy(alpha = .24f), radius = size.minDimension * .28f)
+                }
+                Icon(Icons.Default.VpnKey, null, tint = DeltaTeal, modifier = Modifier.size(34.dp))
+            }
+            Text(text(R.string.preparing_device_keys, language), fontWeight = FontWeight.SemiBold)
+            Text(
+                text(R.string.private_keys_never_leave, language),
+                textAlign = TextAlign.Center,
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
         }
     }
 }
@@ -653,7 +939,10 @@ private fun HandoffScreen(language: AppLanguage) {
                 modifier = Modifier.fillMaxWidth(),
             ) {
                 Column(Modifier.padding(18.dp), horizontalAlignment = Alignment.CenterHorizontally) {
-                    QrCode("DELTA-2026-0001|Boat-02|Hospital-01|nonce-0001")
+                    QrCode(
+                        value = "DELTA-2026-0001|Boat-02|Hospital-01|nonce-0001",
+                        description = text(R.string.signed_delivery_qr_description, language),
+                    )
                     Spacer(Modifier.height(12.dp))
                     Text(text(R.string.scan_recipient_qr, language), textAlign = TextAlign.Center)
                 }
@@ -930,7 +1219,11 @@ private fun QuantityRow(icon: ImageVector, label: String, value: Int, onValueCha
 }
 
 @Composable
-private fun QrCode(value: String) {
+private fun QrCode(
+    value: String,
+    size: Dp = 220.dp,
+    description: String,
+) {
     val image = remember(value) {
         val matrix = QRCodeWriter().encode(value, BarcodeFormat.QR_CODE, 520, 520)
         val pixels = IntArray(matrix.width * matrix.height) { index ->
@@ -944,9 +1237,9 @@ private fun QrCode(value: String) {
     }
     androidx.compose.foundation.Image(
         bitmap = image,
-        contentDescription = "Signed delivery QR code",
+        contentDescription = description,
         modifier = Modifier
-            .size(220.dp)
+            .size(size)
             .border(1.dp, MaterialTheme.colorScheme.outlineVariant, RoundedCornerShape(10.dp))
             .padding(8.dp),
     )

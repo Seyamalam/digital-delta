@@ -1,0 +1,3 @@
+file,commit,device,os,viewport,language,scenario_seed,module,real_or_simulated,captured_at,notes
+field-bn/09-field-bn-offline-provisioning-trusted-1280x2856.png,3a45ea8,Mento_API_35 emulator,Android 15 API 35,1280x2856,bn,none,M1,real app on emulator,2026-09-03T19:39:00+06:00,Device-bound key enrollment QR and pinned administrator fingerprint; public key material only
+field-en/09-field-en-offline-provisioning-trusted-1280x2856.png,3a45ea8,Mento_API_35 emulator,Android 15 API 35,1280x2856,en,none,M1,real app on emulator,2026-09-03T19:40:00+06:00,English parity after runtime language switch; public key material only

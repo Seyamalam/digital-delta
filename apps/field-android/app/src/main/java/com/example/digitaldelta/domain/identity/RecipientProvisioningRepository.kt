@@ -41,6 +41,15 @@ class RecipientProvisioningRepository(
             revokedAtUnixMs = null,
         )
     }
+
+    suspend fun mostRecentlyAccepted(): AcceptedRecipient? =
+        dao.mostRecentlyProvisioned()?.let { entity ->
+            AcceptedRecipient(
+                nodeId = entity.nodeId,
+                displayName = entity.displayName,
+                encryptionKeyId = entity.encryptionKeyId,
+            )
+        }
 }
 
 class RoomRecipientKeyDirectory(private val dao: RecipientKeyDao) : RecipientKeyDirectory {

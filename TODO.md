@@ -31,7 +31,7 @@ This checklist tracks implementation. Milestone exit criteria live in [MILESTONE
 ## Protocol and domain contracts
 
 - [x] Define `Envelope`, `VectorClock`, `Signature`, `EncryptedPayload`, and `Acknowledgement` messages.
-- [ ] Define identity, request, cargo, route, vehicle, handoff, receipt, prediction, and audit events. Request, cargo, route, handoff, prediction, conflict, SLA, and preemption events exist; identity, vehicle, and audit events remain.
+- [ ] Define identity, request, cargo, route, vehicle, handoff, receipt, prediction, and audit events. Enrollment and signed identity-credential contracts plus request, cargo, route, handoff, prediction, conflict, SLA, and preemption events exist; vehicle and audit events remain.
 - [x] Add schema version and minimum reader version.
 - [x] Add TTL, hop count, creation time, sender, recipient, payload hash, and nonce fields.
 - [ ] Generate Kotlin/Java Lite gRPC and Go clients. TypeScript generation remains.
@@ -41,25 +41,25 @@ This checklist tracks implementation. Milestone exit criteria live in [MILESTONE
 
 ## Bangla and English foundation
 
-- [ ] Bundle Bangla and English strings into the app.
-- [ ] Add `values/strings.xml`, `values-bn/strings.xml`, and generated locale configuration.
+- [x] Bundle Bangla and English strings into the app.
+- [x] Add `values/strings.xml`, `values-bn/strings.xml`, and generated locale configuration.
 - [ ] Add a first-run language chooser with `বাংলা` first and `English` second.
-- [ ] Persist the selected language in Proto DataStore.
+- [x] Persist the selected language in Proto DataStore.
 - [ ] Add Noto Sans Bengali or another tested Bengali font with an offline license file.
 - [ ] Create the glossary in `packages/localization/glossary.csv`.
 - [ ] Add translation-key completeness tests.
 - [ ] Add tests that reject raw user-facing strings in critical field screens.
 - [ ] Test Bengali combining marks, wrapping, truncation, and large text.
-- [ ] Keep P0 to P3, coordinates, cryptographic fingerprints, and delivery IDs language-neutral.
+- [x] Keep P0 to P3, coordinates, cryptographic fingerprints, and delivery IDs language-neutral.
 - [ ] Provide bilingual status text when a term could affect safety.
-- [ ] Add accessible labels in both languages.
-- [ ] Verify that no language change clears forms or mission state.
+- [x] Add accessible labels in both languages for the implemented field surfaces; continue auditing new screens.
+- [x] Verify that no language change clears the implemented request and identity state.
 
 ## M1 secure identity
 
 - [x] Generate device-bound RSA-2048 encryption and signing identities, the accepted C5 alternative to Ed25519.
 - [x] Keep private identity keys non-exportable in Android Keystore. Hardware-backed availability still requires target-phone evidence.
-- [ ] Implement offline administrator provisioning QR. Signed credential issue/verify, expiry checks, and durable storage are complete; the bilingual scan/display journey remains.
+- [ ] Implement offline administrator provisioning QR. Signed enrollment, administrator trust pinning, credential issue/verify, expiry checks, durable storage, and the bilingual display/paste journey are complete; bundled camera scanning remains.
 - [ ] Add local PIN or device-authentication unlock.
 - [ ] Implement roles and permission policy.
 - [ ] Hide forbidden actions and enforce the same policy below the user interface.
@@ -95,7 +95,7 @@ This checklist tracks implementation. Milestone exit criteria live in [MILESTONE
 - [ ] Implement store-and-forward relay.
 - [ ] Implement TTL and hop-limit enforcement. The Go durable relay enforces both; Android queue enforcement remains.
 - [ ] Implement deduplication before domain-event application. The Go durable relay rejects duplicate message IDs; Android persistence remains.
-- [ ] Encrypt payloads for the final recipient. RSA-OAEP-wrapped AES-256-GCM and recipient-only decryption pass; the production request path will switch after the provisioning journey lands.
+- [ ] Encrypt payloads for the final recipient. RSA-OAEP-wrapped AES-256-GCM, recipient-only decryption, and the provisioned key directory pass; the production request path switchover remains.
 - [ ] Allow relays to inspect routing metadata only.
 - [ ] Select relay behavior using battery, signal, queue size, and proximity.
 - [ ] Reduce broadcast frequency by 60 percent below 30 percent battery.

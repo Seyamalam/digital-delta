@@ -54,4 +54,25 @@
     <string name="replay_explanation">This QR was already used; custody did not change.</string>
     <string name="verify_handoff">Verify signed handoff</string>
     <string name="demo_identity">Coordinator • SYL-01</string>
+    <string name="identity_and_keys">Identity and offline keys</string>
+    <string name="identity_offline_subtitle">Provision devices without internet</string>
+    <string name="back">Back</string>
+    <string name="device_key_ready">Device-bound keys ready</string>
+    <string name="enrollment_qr">Device enrollment</string>
+    <string name="enrollment_qr_description">Protobuf device enrollment QR code</string>
+    <string name="enrollment_qr_help">Let the administrator laptop scan this public enrollment. Private keys never leave this phone.</string>
+    <string name="copy_enrollment_code">Copy enrollment code</string>
+    <string name="administrator_trust">Administrator trust</string>
+    <string name="trust_code">Administrator trust code</string>
+    <string name="pin_administrator">Pin administrator key</string>
+    <string name="trusted">Trusted administrator</string>
+    <string name="recipient_credential">Recipient credential</string>
+    <string name="credential_code">Signed recipient credential</string>
+    <string name="verify_add_recipient">Verify and add recipient</string>
+    <string name="identity_keystore_failed">Device keys could not be prepared. Restart and try again.</string>
+    <string name="invalid_trust_code">Administrator code is invalid. Check the fingerprint with the administrator.</string>
+    <string name="invalid_credential">Credential rejected: invalid signature, key, or validity time.</string>
+    <string name="preparing_device_keys">Preparing protected device keys</string>
+    <string name="private_keys_never_leave">RSA-2048 private keys remain non-exportable in Android Keystore.</string>
+    <string name="signed_delivery_qr_description">Signed delivery handoff QR code</string>
 </resources>

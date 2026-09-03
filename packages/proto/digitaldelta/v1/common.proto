@@ -113,3 +113,16 @@ message IdentityProvisioningCredential {
   IdentityProvisioningClaims claims = 1;
   Signature issuer_signature = 2;
 }
+
+message IdentityEnrollmentRequest {
+  string identity_id = 1;
+  string node_id = 2;
+  string display_name = 3;
+  IdentityRole role = 4;
+  string encryption_key_id = 5;
+  bytes rsa_2048_encryption_public_key_der = 6;
+  string signing_key_id = 7;
+  bytes rsa_2048_signing_public_key_der = 8;
+  int64 created_at_unix_ms = 9;
+  bytes nonce = 10;
+}

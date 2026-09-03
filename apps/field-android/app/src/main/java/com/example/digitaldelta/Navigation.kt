@@ -13,11 +13,15 @@ fun MainNavigation() {
   val viewModel: MainScreenViewModel = viewModel()
   val language by viewModel.language.collectAsStateWithLifecycle()
   val requestQueueState by viewModel.requestQueueState.collectAsStateWithLifecycle()
+  val identityState by viewModel.identityState.collectAsStateWithLifecycle()
 
   DigitalDeltaApp(
     useBangla = language == LanguagePreference.BANGLA,
     onLanguageChange = viewModel::setBangla,
     requestQueueState = requestQueueState,
     onQueueRequest = viewModel::queueRequest,
+    identityState = identityState,
+    onPinAdministrator = viewModel::pinAdministrator,
+    onImportRecipientCredential = viewModel::importRecipientCredential,
   )
 }
