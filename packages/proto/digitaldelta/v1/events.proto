@@ -131,6 +131,33 @@ message CustodyTransfer {
   bool simulated_vehicle = 10;
 }
 
+message VehicleStateChanged {
+  string vehicle_id = 1;
+  TransportMode mode = 2;
+  string state_code = 3;
+  string node_id = 4;
+  double latitude_degrees = 5;
+  double longitude_degrees = 6;
+  uint32 battery_percent = 7;
+  bool simulated = 8;
+}
+
+message RendezvousPlanned {
+  string mission_id = 1;
+  string boat_vehicle_id = 2;
+  string drone_vehicle_id = 3;
+  string candidate_id = 4;
+  double latitude_degrees = 5;
+  double longitude_degrees = 6;
+  uint32 boat_eta_minutes = 7;
+  uint32 drone_eta_minutes = 8;
+  uint32 delivery_eta_minutes = 9;
+  uint32 projected_drone_battery_percent = 10;
+  uint32 reserve_battery_percent = 11;
+  string objective_code = 12;
+  bool simulated = 13;
+}
+
 message DomainEvent {
   string event_id = 1;
   uint32 schema_version = 2;
@@ -150,5 +177,7 @@ message DomainEvent {
     PreemptionConfirmed preemption_confirmed = 27;
     CustodyTransfer custody_transfer = 28;
     MissionFieldUpdated mission_field_updated = 29;
+    VehicleStateChanged vehicle_state_changed = 30;
+    RendezvousPlanned rendezvous_planned = 31;
   }
 }

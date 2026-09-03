@@ -26,9 +26,27 @@ data class RendezvousPlan(
     val boatArrivalMinutes: Double,
     val droneArrivalMinutes: Double,
     val maxArrivalMinutes: Double,
-    val objective: String = "minimize-latest-arrival",
+    val droneLastMileMinutes: Double,
+    val deliveryArrivalMinutes: Double,
+    val droneMissionDistanceKm: Double,
+    val projectedDroneBatteryPercent: Double,
+    val objective: String = "minimize-delivery-completion-with-reserve",
     val simulated: Boolean = true,
 )
+
+data class HybridFleetInputs(
+    val boatPosition: GeoPoint,
+    val droneBase: GeoPoint,
+    val droneDestination: GeoPoint,
+    val candidates: List<NamedPoint>,
+    val boatSpeedKph: Double,
+    val droneSpeedKph: Double,
+    val droneBatteryPercent: Int,
+    val droneRangeAtFullChargeKm: Double,
+    val reserveBatteryPercent: Int,
+)
+
+class NoFeasibleRendezvousException(message: String) : IllegalStateException(message)
 
 class FleetOrchestrator(
     private val routePlanner: RoutePlanner = RoutePlanner(),
@@ -52,24 +70,70 @@ class FleetOrchestrator(
     fun computeRendezvous(
         boatPosition: GeoPoint,
         droneBase: GeoPoint,
+        droneDestination: GeoPoint,
         candidates: List<NamedPoint>,
         boatSpeedKph: Double,
         droneSpeedKph: Double,
-    ): RendezvousPlan {
-        require(candidates.isNotEmpty())
-        require(boatSpeedKph > 0.0)
-        require(droneSpeedKph > 0.0)
+        droneBatteryPercent: Int,
+        droneRangeAtFullChargeKm: Double,
+        reserveBatteryPercent: Int,
+    ): RendezvousPlan = computeRendezvous(
+        HybridFleetInputs(
+            boatPosition = boatPosition,
+            droneBase = droneBase,
+            droneDestination = droneDestination,
+            candidates = candidates,
+            boatSpeedKph = boatSpeedKph,
+            droneSpeedKph = droneSpeedKph,
+            droneBatteryPercent = droneBatteryPercent,
+            droneRangeAtFullChargeKm = droneRangeAtFullChargeKm,
+            reserveBatteryPercent = reserveBatteryPercent,
+        ),
+    )
 
-        return candidates.map { candidate ->
-            val boatMinutes = travelMinutes(boatPosition, candidate.coordinate, boatSpeedKph)
-            val droneMinutes = travelMinutes(droneBase, candidate.coordinate, droneSpeedKph)
+    fun computeRendezvous(inputs: HybridFleetInputs): RendezvousPlan {
+        require(inputs.candidates.isNotEmpty())
+        require(inputs.boatSpeedKph > 0.0)
+        require(inputs.droneSpeedKph > 0.0)
+        require(inputs.droneBatteryPercent in 0..100)
+        require(inputs.reserveBatteryPercent in 0..100)
+        require(inputs.droneRangeAtFullChargeKm > 0.0)
+        require(inputs.reserveBatteryPercent <= inputs.droneBatteryPercent)
+
+        return inputs.candidates.mapNotNull { candidate ->
+            val boatMinutes = travelMinutes(
+                inputs.boatPosition,
+                candidate.coordinate,
+                inputs.boatSpeedKph,
+            )
+            val droneToHandoffKm = haversineKilometers(inputs.droneBase, candidate.coordinate)
+            val droneLastMileKm = haversineKilometers(candidate.coordinate, inputs.droneDestination)
+            val missionDistanceKm = droneToHandoffKm + droneLastMileKm
+            val projectedBattery = inputs.droneBatteryPercent -
+                (missionDistanceKm / inputs.droneRangeAtFullChargeKm * 100.0)
+            if (projectedBattery < inputs.reserveBatteryPercent) return@mapNotNull null
+            val droneMinutes = droneToHandoffKm / inputs.droneSpeedKph * 60.0
+            val handoffReadyMinutes = max(boatMinutes, droneMinutes)
+            val lastMileMinutes = droneLastMileKm / inputs.droneSpeedKph * 60.0
             RendezvousPlan(
                 point = candidate,
                 boatArrivalMinutes = boatMinutes,
                 droneArrivalMinutes = droneMinutes,
-                maxArrivalMinutes = max(boatMinutes, droneMinutes),
+                maxArrivalMinutes = handoffReadyMinutes,
+                droneLastMileMinutes = lastMileMinutes,
+                deliveryArrivalMinutes = handoffReadyMinutes + lastMileMinutes,
+                droneMissionDistanceKm = missionDistanceKm,
+                projectedDroneBatteryPercent = projectedBattery,
             )
-        }.minWith(compareBy(RendezvousPlan::maxArrivalMinutes, { it.point.id }))
+        }.minWithOrNull(
+            compareBy(
+                RendezvousPlan::deliveryArrivalMinutes,
+                RendezvousPlan::maxArrivalMinutes,
+                { it.point.id },
+            ),
+        ) ?: throw NoFeasibleRendezvousException(
+            "no rendezvous preserves the ${inputs.reserveBatteryPercent}% drone reserve",
+        )
     }
 
     private fun hasRoute(
