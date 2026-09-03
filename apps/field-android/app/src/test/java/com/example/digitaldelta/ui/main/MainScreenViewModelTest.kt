@@ -13,10 +13,13 @@ import com.example.digitaldelta.domain.sync.ConflictCoordinator
 import com.example.digitaldelta.domain.sync.ConflictSide
 import com.example.digitaldelta.domain.sync.MissionConflictSnapshot
 import com.example.digitaldelta.domain.routing.EdgeMode
+import com.example.digitaldelta.domain.routing.DynamicRouteEngine
 import com.example.digitaldelta.domain.routing.OfflineRouteScenario
 import com.example.digitaldelta.domain.routing.MapEdge
 import com.example.digitaldelta.domain.routing.MapNode
 import com.example.digitaldelta.domain.routing.RouteScenario
+import com.example.digitaldelta.domain.routing.RouteDecisionCause
+import com.example.digitaldelta.domain.routing.RoutePlanner
 import com.example.digitaldelta.domain.routing.TransportGraph
 import com.example.digitaldelta.domain.routing.VehicleType
 import com.example.digitaldelta.domain.triage.TriageWorkflowSnapshot
@@ -28,15 +31,20 @@ import com.example.digitaldelta.domain.pod.DeliveryOfferReady
 import com.example.digitaldelta.domain.pod.DeliveryOfferRejection
 import com.example.digitaldelta.domain.pod.DeliveryReceiptResult
 import com.example.digitaldelta.domain.pod.ProofOfDeliveryWorkflow
+import com.example.digitaldelta.domain.prediction.RouteRiskPrediction
+import com.example.digitaldelta.domain.prediction.RouteRiskPredictor
+import com.example.digitaldelta.domain.prediction.RouteRiskRuntime
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.test.StandardTestDispatcher
 import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.resetMain
 import kotlinx.coroutines.test.runTest
 import kotlinx.coroutines.test.setMain
+import kotlinx.coroutines.withTimeout
 import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Before
@@ -200,6 +208,43 @@ class MainScreenViewModelTest {
         assertEquals(VehicleType.BOAT, viewModel.routeState.value.decision.routeVehicle)
         assertEquals(setOf("E3"), viewModel.routeState.value.failedEdgeIds)
         assertEquals(295, (viewModel.triageState.value as TriageWorkflowSnapshot.Proposed).decision.slowedArrivalMinutes)
+    }
+
+    @Test
+    fun `on-device risk prediction penalizes open road and proactively reroutes`() = runTest(dispatcher) {
+        val predictor = RouteRiskPredictor {
+            RouteRiskPrediction(
+                probability = 0.96,
+                impassableWithinTwoHours = true,
+                threshold = 0.285,
+                modelVersion = "route-risk-logreg-v1",
+                simulatedInputs = true,
+                runtime = RouteRiskRuntime.ONNX,
+            )
+        }
+        val viewModel = MainScreenViewModel(
+            FakeSettingsRepository(),
+            FakeRequestSubmission(),
+            FakeIdentityCoordinator(),
+            FakeConflictCoordinator(),
+            FakeRouteScenario(riskAware = true),
+            routeRiskPredictor = predictor,
+        )
+
+        viewModel.toggleRouteRisk()
+        advanceUntilIdle()
+        val active = withTimeout(2_000) {
+            viewModel.routeRiskState.first { it is RouteRiskUiState.Active }
+        } as RouteRiskUiState.Active
+
+        assertEquals("E3", active.edgeId)
+        assertEquals(VehicleType.BOAT, viewModel.routeState.value.decision.routeVehicle)
+        assertEquals(RouteDecisionCause.PREDICTED_RISK, viewModel.routeState.value.decision.cause)
+        assertEquals(emptySet<String>(), viewModel.routeState.value.failedEdgeIds)
+
+        viewModel.toggleRouteRisk()
+        assertEquals(RouteRiskUiState.Idle, viewModel.routeRiskState.value)
+        assertEquals(VehicleType.TRUCK, viewModel.routeState.value.decision.routeVehicle)
     }
 
     @Test
@@ -385,7 +430,7 @@ private class FakeConflictCoordinator : ConflictCoordinator {
     ).also { current = it }
 }
 
-private class FakeRouteScenario : RouteScenario by OfflineRouteScenario(
+private class FakeRouteScenario(riskAware: Boolean = false) : RouteScenario by OfflineRouteScenario(
     TransportGraph(
         nodes = listOf(
             MapNode("N1", "Sylhet Hub", 24.8, 91.8),
@@ -399,5 +444,9 @@ private class FakeRouteScenario : RouteScenario by OfflineRouteScenario(
             MapEdge("E6", "N1", "N3", EdgeMode.WATERWAY, 150),
             MapEdge("E7", "N3", "N4", EdgeMode.WATERWAY, 50),
         ),
+    ),
+    engine = DynamicRouteEngine(
+        planner = RoutePlanner(riskPenaltyMinutes = if (riskAware) 180 else 60),
+        allowRiskDrivenFallback = riskAware,
     ),
 )

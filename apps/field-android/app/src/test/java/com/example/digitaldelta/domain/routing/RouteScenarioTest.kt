@@ -62,6 +62,23 @@ class RouteScenarioTest {
     }
 
     @Test
+    fun `high predicted road risk applies cost and proactively selects boat`() {
+        val graph = SylhetMapParser().parse(fixture).graph.withRisk("E3", 0.96)
+        val engine = DynamicRouteEngine(
+            planner = RoutePlanner(riskPenaltyMinutes = 180),
+            allowRiskDrivenFallback = true,
+        )
+
+        val decision = engine.recompute(graph, "N1", "N4", VehicleType.TRUCK)
+
+        assertEquals(VehicleType.BOAT, decision.routeVehicle)
+        assertEquals(listOf("E6", "E7"), decision.route.edgeIds)
+        assertTrue(decision.fallbackUsed)
+        assertEquals(RouteDecisionCause.PREDICTED_RISK, decision.cause)
+        assertTrue(graph.edges.none { it.state == EdgeState.FAILED })
+    }
+
+    @Test
     fun `route scenario can fail and reset without internet or mutable global data`() {
         val scenario = OfflineRouteScenario(SylhetMapParser().parse(fixture).graph)
 

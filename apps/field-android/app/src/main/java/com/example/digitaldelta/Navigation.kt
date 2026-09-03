@@ -31,6 +31,7 @@ fun MainNavigation(meshRuntimeStateStore: MeshRuntimeStateStore) {
   val routeState by viewModel.routeState.collectAsStateWithLifecycle()
   val triageState by viewModel.triageState.collectAsStateWithLifecycle()
   val proofOfDeliveryState by viewModel.proofOfDeliveryState.collectAsStateWithLifecycle()
+  val routeRiskState by viewModel.routeRiskState.collectAsStateWithLifecycle()
   val meshRuntimeState by meshRuntimeStateStore.state.collectAsStateWithLifecycle()
   var startAfterPermissions by remember { mutableStateOf(false) }
   val permissionLauncher = rememberLauncherForActivityResult(
@@ -89,6 +90,8 @@ fun MainNavigation(meshRuntimeStateStore: MeshRuntimeStateStore) {
     onResolveConflict = viewModel::resolveConflict,
     routeState = routeState,
     onToggleRouteFailure = viewModel::toggleRouteFailure,
+    routeRiskState = routeRiskState,
+    onToggleRouteRisk = viewModel::toggleRouteRisk,
     triageState = triageState,
     onConfirmPreemption = viewModel::confirmPreemption,
     proofOfDeliveryState = proofOfDeliveryState,

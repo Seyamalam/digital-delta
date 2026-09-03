@@ -4,6 +4,7 @@ set -euo pipefail
 script_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 repo_dir="$(cd "${script_dir}/.." && pwd)"
 android_dir="${repo_dir}/apps/field-android"
+model_dir="${repo_dir}/models/route-decay"
 java_runtime="${JAVA_HOME:-/opt/homebrew/opt/openjdk@17/libexec/openjdk.jdk/Contents/Home}"
 
 echo "[proto] lint shared wire contract"
@@ -14,6 +15,32 @@ if rg -n '(^|[^A-Za-z])json([^A-Za-z]|$)' \
   "${repo_dir}/services/node/internal/mesh" >/dev/null; then
   echo "JSON reference found in a mesh package; mesh transport must remain Protobuf-only." >&2
   exit 1
+fi
+
+if [[ -f "${model_dir}/pyproject.toml" ]]; then
+  echo "[model] reproduce synthetic dataset, metrics, and ONNX export"
+  command -v uv >/dev/null || {
+    echo "uv is required to verify the route-decay model." >&2
+    exit 1
+  }
+  model_tmp="$(mktemp -d)"
+  cleanup_model_tmp() {
+    rm -rf -- "${model_tmp}"
+  }
+  trap cleanup_model_tmp EXIT
+  (
+    cd "${model_dir}"
+    uv run --frozen train.py --output-dir "${model_tmp}"
+  )
+  for artifact in route_risk_v1.onnx metrics.json model_config.json synthetic_route_risk.csv; do
+    cmp "${model_dir}/artifacts/${artifact}" "${model_tmp}/${artifact}"
+  done
+  cmp "${model_dir}/artifacts/route_risk_v1.onnx" \
+    "${android_dir}/app/src/main/assets/route_risk_v1.onnx"
+  cmp "${model_dir}/artifacts/model_config.json" \
+    "${android_dir}/app/src/main/assets/route_risk_v1_config.json"
+  cleanup_model_tmp
+  trap - EXIT
 fi
 
 echo "[android] unit tests and debug build"

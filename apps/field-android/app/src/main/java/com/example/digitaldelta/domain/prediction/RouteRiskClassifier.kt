@@ -21,7 +21,14 @@ data class RouteRiskPrediction(
     val threshold: Double,
     val modelVersion: String,
     val simulatedInputs: Boolean,
+    val runtime: RouteRiskRuntime,
 )
+
+enum class RouteRiskRuntime { ONNX, BASELINE_FALLBACK }
+
+fun interface RouteRiskPredictor {
+    fun predict(features: RouteRiskFeatures): RouteRiskPrediction
+}
 
 /**
  * A deterministic, on-device logistic baseline used until the versioned ONNX model is bundled.
@@ -29,12 +36,12 @@ data class RouteRiskPrediction(
  */
 class RouteRiskClassifier(
     private val threshold: Double,
-) {
+) : RouteRiskPredictor {
     init {
         require(threshold in 0.0..1.0)
     }
 
-    fun predict(features: RouteRiskFeatures): RouteRiskPrediction {
+    override fun predict(features: RouteRiskFeatures): RouteRiskPrediction {
         val logit = -3.0 +
             (features.rainfallMmPerHour * 0.04) -
             (features.elevationMeters * 0.06) +
@@ -46,6 +53,7 @@ class RouteRiskClassifier(
             threshold = threshold,
             modelVersion = "baseline-logit-v1",
             simulatedInputs = features.simulated,
+            runtime = RouteRiskRuntime.BASELINE_FALLBACK,
         )
     }
 }

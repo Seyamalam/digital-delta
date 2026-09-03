@@ -23,6 +23,11 @@ import com.example.digitaldelta.domain.pod.DeliveryOfferReady
 import com.example.digitaldelta.domain.pod.DeliveryOfferRejection
 import com.example.digitaldelta.domain.pod.DeliveryReceiptResult
 import com.example.digitaldelta.domain.pod.ProofOfDeliveryWorkflow
+import com.example.digitaldelta.domain.prediction.RouteRiskClassifier
+import com.example.digitaldelta.domain.prediction.RouteRiskFeatures
+import com.example.digitaldelta.domain.prediction.RouteRiskPrediction
+import com.example.digitaldelta.domain.prediction.RouteRiskPredictor
+import com.example.digitaldelta.domain.routing.DynamicRouteDecision
 import com.example.digitaldelta.proto.v1.PriorityClass
 import dagger.hilt.android.lifecycle.HiltViewModel
 import javax.inject.Inject
@@ -31,7 +36,9 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.stateIn
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 @HiltViewModel
 class MainScreenViewModel @Inject constructor(
     private val settingsRepository: UserSettingsRepository,
@@ -41,6 +48,7 @@ class MainScreenViewModel @Inject constructor(
     private val routeScenario: RouteScenario,
     private val triageWorkflow: TriageWorkflow = DefaultTriageWorkflow(),
     private val proofOfDeliveryWorkflow: ProofOfDeliveryWorkflow = UnavailableProofOfDeliveryWorkflow,
+    private val routeRiskPredictor: RouteRiskPredictor = RouteRiskClassifier(threshold = 0.65),
 ) : ViewModel() {
     val language: StateFlow<LanguagePreference> = settingsRepository.language.stateIn(
         scope = viewModelScope,
@@ -67,6 +75,9 @@ class MainScreenViewModel @Inject constructor(
 
     private val mutableProofOfDeliveryState = MutableStateFlow<ProofOfDeliveryUiState>(ProofOfDeliveryUiState.Loading)
     val proofOfDeliveryState: StateFlow<ProofOfDeliveryUiState> = mutableProofOfDeliveryState.asStateFlow()
+
+    private val mutableRouteRiskState = MutableStateFlow<RouteRiskUiState>(RouteRiskUiState.Idle)
+    val routeRiskState: StateFlow<RouteRiskUiState> = mutableRouteRiskState.asStateFlow()
 
     init {
         viewModelScope.launch { loadIdentity() }
@@ -159,12 +170,61 @@ class MainScreenViewModel @Inject constructor(
     }
 
     fun toggleRouteFailure() {
+        if (mutableRouteRiskState.value !is RouteRiskUiState.Idle) {
+            mutableRouteState.value = routeScenario.clearPredictedRisk()
+            mutableRouteRiskState.value = RouteRiskUiState.Idle
+        }
         mutableRouteState.value = if ("E3" in mutableRouteState.value.failedEdgeIds) {
             routeScenario.reset()
         } else {
             routeScenario.triggerEdgeFailure("E3")
         }
         mutableTriageState.value = triageWorkflow.evaluate(mutableRouteState.value.decision.route.totalMinutes)
+    }
+
+    fun toggleRouteRisk() {
+        when (mutableRouteRiskState.value) {
+            is RouteRiskUiState.Evaluating -> return
+            is RouteRiskUiState.Active,
+            is RouteRiskUiState.Failed,
+            -> {
+                mutableRouteState.value = routeScenario.clearPredictedRisk()
+                mutableRouteRiskState.value = RouteRiskUiState.Idle
+                mutableTriageState.value = triageWorkflow.evaluate(
+                    mutableRouteState.value.decision.route.totalMinutes,
+                )
+            }
+            RouteRiskUiState.Idle -> {
+                val features = RouteRiskFeatures(
+                    rainfallMmPerHour = 82.0,
+                    elevationMeters = 3.0,
+                    soilSaturation = 0.92,
+                    simulated = true,
+                )
+                mutableRouteRiskState.value = RouteRiskUiState.Evaluating(features)
+                viewModelScope.launch {
+                    runCatching {
+                        withContext(Dispatchers.Default) { routeRiskPredictor.predict(features) }
+                    }.onSuccess { prediction ->
+                        val before = mutableRouteState.value.decision
+                        val updated = routeScenario.applyPredictedRisk("E3", prediction.probability)
+                        mutableRouteState.value = updated
+                        mutableRouteRiskState.value = RouteRiskUiState.Active(
+                            edgeId = "E3",
+                            features = features,
+                            prediction = prediction,
+                            previousDecision = before,
+                            updatedDecision = updated.decision,
+                        )
+                        mutableTriageState.value = triageWorkflow.evaluate(
+                            updated.decision.route.totalMinutes,
+                        )
+                    }.onFailure {
+                        mutableRouteRiskState.value = RouteRiskUiState.Failed(features)
+                    }
+                }
+            }
+        }
     }
 
     fun confirmPreemption() {
@@ -252,6 +312,19 @@ sealed interface ProofOfDeliveryUiState {
         val preservedChain: List<CustodyReceiptRecord>,
     ) : ProofOfDeliveryUiState
     data object Failed : ProofOfDeliveryUiState
+}
+
+sealed interface RouteRiskUiState {
+    data object Idle : RouteRiskUiState
+    data class Evaluating(val features: RouteRiskFeatures) : RouteRiskUiState
+    data class Active(
+        val edgeId: String,
+        val features: RouteRiskFeatures,
+        val prediction: RouteRiskPrediction,
+        val previousDecision: DynamicRouteDecision,
+        val updatedDecision: DynamicRouteDecision,
+    ) : RouteRiskUiState
+    data class Failed(val features: RouteRiskFeatures) : RouteRiskUiState
 }
 
 private fun ProofOfDeliveryUiState.offerOrNull(): DeliveryOfferReady? = when (this) {

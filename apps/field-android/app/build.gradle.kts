@@ -83,6 +83,7 @@ dependencies {
   implementation(libs.kotlinx.serialization.json)
   implementation(libs.hilt.android)
   implementation(libs.play.services.nearby)
+  implementation(libs.onnxruntime.android)
   ksp(libs.hilt.compiler)
   ksp(libs.androidx.room.compiler)
   androidTestImplementation(libs.androidx.room.testing)

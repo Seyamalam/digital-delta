@@ -166,6 +166,18 @@ Use this log for choices that affect scope, claims, compatibility, or safety.
 
 **Evidence:** `DeliveryOfferCodecTest`, `AndroidDeviceIdentityKeyStoreTest`, `RoomProofOfDeliveryWorkflowTest`, `MainScreenViewModelTest`, `MainScreenTest`, and paired acceptance/replay/tamper screenshots under `artifacts/screenshots/`.
 
+## DD-016: predicted risk changes cost, not truth
+
+**Status:** Accepted
+
+**Decision:** Run a versioned logistic-regression ONNX model locally from three visibly simulated features. Apply its probability as an M4 graph cost and allow an explainable vehicle fallback only when that alternative beats the risk-adjusted preferred route. Keep predicted risk, confirmed closure, and model-unavailable fallback as distinct states.
+
+**Reason:** M7 should drive a real routing decision without presenting synthetic inference as a field observation. The small linear model is fast, inspectable, reproducible, and sufficient to prove the on-device boundary.
+
+**Consequences:** The fair model is not deployable flood intelligence. Its synthetic scores cannot support real-world accuracy claims. Android uses ONNX Runtime 1.23.2 because 1.29.0 raised an illegal-instruction crash on the Android 16 ARM64 emulator. If model loading or Java inference fails, the app exposes a deterministic baseline fallback. The local gate reproduces every checked artifact; target-phone latency and memory remain required evidence.
+
+**Evidence:** `MODEL_CARD.md`, `RouteRiskClassifierTest`, `RouteScenarioTest`, `OnnxRouteRiskPredictorTest`, `MainScreenViewModelTest`, `MainScreenTest`, checked model artifacts, and the local reproduction gate.
+
 ## New decision template
 
 ```md

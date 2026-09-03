@@ -1,6 +1,7 @@
 package com.example.digitaldelta.domain.prediction
 
 import org.junit.Assert.assertFalse
+import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
 import org.junit.Test
 
@@ -16,6 +17,7 @@ class RouteRiskClassifierTest {
         assertTrue(prediction.impassableWithinTwoHours)
         assertTrue(prediction.probability >= 0.65)
         assertTrue(prediction.simulatedInputs)
+        assertEquals(RouteRiskRuntime.BASELINE_FALLBACK, prediction.runtime)
     }
 
     @Test
@@ -26,5 +28,21 @@ class RouteRiskClassifierTest {
 
         assertFalse(prediction.impassableWithinTwoHours)
         assertTrue(prediction.probability < 0.65)
+    }
+
+    @Test
+    fun `resilient predictor exposes baseline fallback when model fails`() {
+        val predictor = ResilientRouteRiskPredictor(
+            primary = RouteRiskPredictor { error("model unavailable") },
+            fallback = classifier,
+        )
+
+        val prediction = predictor.predict(
+            RouteRiskFeatures(rainfallMmPerHour = 82.0, elevationMeters = 3.0, soilSaturation = 0.92),
+        )
+
+        assertEquals(RouteRiskRuntime.BASELINE_FALLBACK, prediction.runtime)
+        assertEquals("baseline-logit-v1", prediction.modelVersion)
+        assertTrue(prediction.impassableWithinTwoHours)
     }
 }

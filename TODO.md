@@ -112,7 +112,7 @@ This checklist tracks implementation. Milestone exit criteria live in [MILESTONE
 - [x] Implement Dijkstra with deterministic edge and node tie-breaking.
 - [x] Apply truck, boat, and simulated-drone constraints.
 - [x] Exclude failed edges.
-- [ ] Apply M7 risk penalties without treating predictions as facts.
+- [x] Apply M7 risk penalties without treating predictions as facts.
 - [x] Recompute the active demo mission after the `E3` edge-failure event; generalized multi-mission observation remains.
 - [x] Record computation latency and selected fallback policy in the live route state; persistent reports remain.
 - [x] Render the real computed edge sequence using bundled offline scenario data and a Compose canvas.
@@ -149,19 +149,19 @@ This checklist tracks implementation. Milestone exit criteria live in [MILESTONE
 
 ## M7 predictive route decay
 
-- [ ] Define training data provenance and licensing.
-- [ ] Build the synthetic scenario generator only if real labelled data is unavailable.
-- [ ] Label all synthetic data in reports and screens.
-- [ ] Engineer rainfall, elevation, and saturation features.
-- [ ] Create training, validation, and held-out test splits.
-- [ ] Establish a non-ML baseline.
-- [ ] Train and select the smallest defensible classifier.
-- [ ] Report precision, recall, F1, confusion matrix, and threshold.
-- [ ] Export and validate the ONNX model.
-- [ ] Run inference through ONNX Runtime Android on the field device.
-- [ ] Add risk overlay and explanation panel.
-- [ ] Feed risk penalties into M4.
-- [ ] Write the model card with failure modes and safety limits.
+- [x] Define training data provenance and licensing.
+- [x] Build the synthetic scenario generator because no governed real labelled dataset is available.
+- [x] Label all synthetic data in reports and screens.
+- [x] Engineer rainfall, elevation, and saturation features.
+- [x] Create training, validation, and held-out test splits.
+- [x] Establish a non-ML baseline.
+- [x] Train and select the smallest defensible classifier.
+- [x] Report precision, recall, F1, confusion matrix, and threshold.
+- [x] Export and validate the ONNX model.
+- [x] Run inference through ONNX Runtime Android on the field emulator; target-phone measurement remains.
+- [x] Add risk overlay and explanation panel.
+- [x] Feed risk penalties into M4.
+- [x] Write the model card with failure modes and safety limits.
 
 ## M8 hybrid fleet and simulated drone handoff
 

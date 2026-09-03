@@ -8,6 +8,7 @@ import androidx.compose.ui.test.junit4.createAndroidComposeRule
 import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
+import androidx.compose.ui.test.performScrollTo
 import androidx.compose.ui.test.performTouchInput
 import androidx.compose.ui.test.swipeUp
 import androidx.compose.runtime.MutableState
@@ -24,6 +25,10 @@ import com.example.digitaldelta.domain.routing.DynamicRouteDecision
 import com.example.digitaldelta.domain.routing.PlannedRoute
 import com.example.digitaldelta.domain.routing.RouteScenarioSnapshot
 import com.example.digitaldelta.domain.routing.VehicleType
+import com.example.digitaldelta.domain.routing.RouteDecisionCause
+import com.example.digitaldelta.domain.prediction.RouteRiskFeatures
+import com.example.digitaldelta.domain.prediction.RouteRiskPrediction
+import com.example.digitaldelta.domain.prediction.RouteRiskRuntime
 import com.example.digitaldelta.domain.triage.DefaultTriageWorkflow
 import com.example.digitaldelta.domain.triage.TriageWorkflowSnapshot
 import com.example.digitaldelta.domain.pod.CustodyReceiptRecord
@@ -44,6 +49,7 @@ class MainScreenTest {
     private lateinit var routeState: MutableState<RouteScenarioSnapshot>
     private lateinit var triageState: MutableState<TriageWorkflowSnapshot>
     private lateinit var proofState: MutableState<ProofOfDeliveryUiState>
+    private lateinit var riskState: MutableState<RouteRiskUiState>
     private var relayStartRequested = false
 
     @Before
@@ -54,6 +60,7 @@ class MainScreenTest {
         routeState = mutableStateOf(routeSnapshot(flooded = false))
         triageState = mutableStateOf(DefaultTriageWorkflow().evaluate(65))
         proofState = mutableStateOf(ProofOfDeliveryUiState.Ready(podOffer()))
+        riskState = mutableStateOf(RouteRiskUiState.Idle)
         relayStartRequested = false
         composeTestRule.setContent {
             DigitalDeltaTheme(darkTheme = false) {
@@ -89,6 +96,33 @@ class MainScreenTest {
                         val flooded = "E3" !in routeState.value.failedEdgeIds
                         routeState.value = routeSnapshot(flooded = flooded)
                         triageState.value = DefaultTriageWorkflow().evaluate(if (flooded) 200 else 65)
+                    },
+                    routeRiskState = riskState.value,
+                    onToggleRouteRisk = {
+                        if (riskState.value is RouteRiskUiState.Active) {
+                            routeState.value = routeSnapshot(flooded = false)
+                            riskState.value = RouteRiskUiState.Idle
+                        } else {
+                            val before = routeState.value.decision
+                            val updated = routeSnapshot(flooded = true).decision.copy(
+                                cause = RouteDecisionCause.PREDICTED_RISK,
+                            )
+                            routeState.value = RouteScenarioSnapshot(emptySet(), updated)
+                            riskState.value = RouteRiskUiState.Active(
+                                edgeId = "E3",
+                                features = RouteRiskFeatures(82.0, 3.0, 0.92),
+                                prediction = RouteRiskPrediction(
+                                    probability = 0.96,
+                                    impassableWithinTwoHours = true,
+                                    threshold = 0.285,
+                                    modelVersion = "route-risk-logreg-v1",
+                                    simulatedInputs = true,
+                                    runtime = RouteRiskRuntime.ONNX,
+                                ),
+                                previousDecision = before,
+                                updatedDecision = updated,
+                            )
+                        }
                     },
                     triageState = triageState.value,
                     onConfirmPreemption = {
@@ -248,6 +282,26 @@ class MainScreenTest {
         composeTestRule.onNodeWithText("E3 failed • rerouted by boat").assertIsDisplayed()
         composeTestRule.onNodeWithText("Boat • N1 → N3 → N4 • E6 + E7").assertIsDisplayed()
         composeTestRule.onNodeWithText("Reset offline route").assertIsDisplayed()
+    }
+
+    @Test
+    fun onDeviceRiskPredictionIsVisiblySimulatedAndProactivelyReroutes() {
+        composeTestRule.onNodeWithText("পথ ও মেশ").performClick()
+        composeTestRule.onNode(hasTestTag("toggle-route-risk")).performScrollTo().performClick()
+
+        composeTestRule.onNodeWithText("E3 ঝুঁকির পূর্বাভাস • আগেই নৌযানে পুনর্নির্দেশ").assertIsDisplayed()
+        composeTestRule.onNodeWithText("পূর্বাভাস ঝুঁকি E3 • 96.0% / 28.5%")
+            .performScrollTo()
+            .assertIsDisplayed()
+        composeTestRule.onNodeWithText("ONNX • route-risk-logreg-v1").performScrollTo().assertIsDisplayed()
+        composeTestRule.onNodeWithText("নৌযান • N1 → N3 → N4 • E6 + E7").assertExists()
+
+        composeTestRule.onNodeWithText("English").performClick()
+        composeTestRule.onNodeWithText("E3 predicted at risk • proactively rerouted by boat")
+            .performScrollTo()
+            .assertIsDisplayed()
+        composeTestRule.onNodeWithText("Prediction adds a route cost; it is not treated as a confirmed closure.")
+            .assertExists()
     }
 
     @Test

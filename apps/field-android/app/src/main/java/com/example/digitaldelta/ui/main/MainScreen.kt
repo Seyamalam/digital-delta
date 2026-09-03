@@ -128,7 +128,9 @@ import com.example.digitaldelta.domain.mesh.MeshRuntimeState
 import com.example.digitaldelta.domain.sync.ConflictSide
 import com.example.digitaldelta.domain.sync.MissionConflictSnapshot
 import com.example.digitaldelta.domain.routing.RouteScenarioSnapshot
+import com.example.digitaldelta.domain.routing.RouteDecisionCause
 import com.example.digitaldelta.domain.routing.VehicleType
+import com.example.digitaldelta.domain.prediction.RouteRiskRuntime
 import com.example.digitaldelta.domain.triage.TriageWorkflowSnapshot
 import com.example.digitaldelta.theme.AlertCoral
 import com.example.digitaldelta.theme.DeltaTeal
@@ -186,6 +188,8 @@ fun DigitalDeltaApp(
     onResolveConflict: ((String, ConflictSide) -> Unit)? = null,
     routeState: RouteScenarioSnapshot? = null,
     onToggleRouteFailure: (() -> Unit)? = null,
+    routeRiskState: RouteRiskUiState = RouteRiskUiState.Idle,
+    onToggleRouteRisk: (() -> Unit)? = null,
     triageState: TriageWorkflowSnapshot? = null,
     onConfirmPreemption: (() -> Unit)? = null,
     proofOfDeliveryState: ProofOfDeliveryUiState = ProofOfDeliveryUiState.Loading,
@@ -226,6 +230,8 @@ fun DigitalDeltaApp(
                 onResolveConflict = onResolveConflict,
                 routeState = routeState,
                 onToggleRouteFailure = onToggleRouteFailure,
+                routeRiskState = routeRiskState,
+                onToggleRouteRisk = onToggleRouteRisk,
                 triageState = triageState,
                 onConfirmPreemption = onConfirmPreemption,
                 proofOfDeliveryState = proofOfDeliveryState,
@@ -332,6 +338,8 @@ private fun DeltaShell(
     onResolveConflict: ((String, ConflictSide) -> Unit)?,
     routeState: RouteScenarioSnapshot?,
     onToggleRouteFailure: (() -> Unit)?,
+    routeRiskState: RouteRiskUiState,
+    onToggleRouteRisk: (() -> Unit)?,
     triageState: TriageWorkflowSnapshot?,
     onConfirmPreemption: (() -> Unit)?,
     proofOfDeliveryState: ProofOfDeliveryUiState,
@@ -421,6 +429,8 @@ private fun DeltaShell(
                     onRejectPeer = onRejectPeer,
                     routeState = routeState,
                     onToggleRouteFailure = onToggleRouteFailure,
+                    routeRiskState = routeRiskState,
+                    onToggleRouteRisk = onToggleRouteRisk,
                     triageState = triageState,
                     onConfirmPreemption = onConfirmPreemption,
                 )
@@ -1150,10 +1160,13 @@ private fun RouteAndMeshScreen(
     onRejectPeer: ((String) -> Unit)?,
     routeState: RouteScenarioSnapshot?,
     onToggleRouteFailure: (() -> Unit)?,
+    routeRiskState: RouteRiskUiState,
+    onToggleRouteRisk: (() -> Unit)?,
     triageState: TriageWorkflowSnapshot?,
     onConfirmPreemption: (() -> Unit)?,
 ) {
     val flooded = routeState?.failedEdgeIds?.contains("E3") == true
+    val riskActive = routeRiskState is RouteRiskUiState.Active
     val decision = routeState?.decision
     val progress = remember { Animatable(0f) }
     LaunchedEffect(decision?.routeVehicle, flooded) {
@@ -1166,7 +1179,7 @@ private fun RouteAndMeshScreen(
                 FloodMap(
                     routeProgress = progress.value,
                     showFailure = flooded,
-                    showRisk = false,
+                    showRisk = riskActive,
                     detailed = true,
                     routeVehicle = decision?.routeVehicle ?: VehicleType.TRUCK,
                 )
@@ -1174,6 +1187,7 @@ private fun RouteAndMeshScreen(
                     language = language,
                     routeVehicle = decision?.routeVehicle ?: VehicleType.TRUCK,
                     showFailure = flooded,
+                    showRisk = riskActive,
                     modifier = Modifier.align(Alignment.TopEnd).padding(12.dp),
                 )
             }
@@ -1194,7 +1208,14 @@ private fun RouteAndMeshScreen(
                         onRejectPeer = onRejectPeer,
                     )
                     Text(
-                        text(if (flooded) R.string.road_flooded else R.string.truck_route_ready, language),
+                        text(
+                            when {
+                                flooded -> R.string.road_flooded
+                                riskActive -> R.string.predicted_risk_rerouted
+                                else -> R.string.truck_route_ready
+                            },
+                            language,
+                        ),
                         style = MaterialTheme.typography.titleLarge,
                         modifier = Modifier.semantics { heading() },
                     )
@@ -1221,7 +1242,7 @@ private fun RouteAndMeshScreen(
                         routeSummary(decision, language),
                     )
                     InfoRow(Icons.Default.AccessTime, etaSummary(decision, language))
-                    InfoRow(Icons.Default.Info, routeReason(flooded, language))
+                    InfoRow(Icons.Default.Info, routeReason(flooded, riskActive, language))
                     decision?.let {
                         Text(
                             "${text(R.string.recompute_time, language)} • ${"%.3f".format(Locale.US, it.computationNanos / 1_000_000.0)} ms",
@@ -1230,6 +1251,11 @@ private fun RouteAndMeshScreen(
                             modifier = Modifier.testTag("route-latency"),
                         )
                     }
+                    RouteRiskCard(
+                        language = language,
+                        state = routeRiskState,
+                        onToggle = onToggleRouteRisk,
+                    )
                     triageState?.let { state ->
                         TriageCard(
                             language = language,
@@ -1383,8 +1409,143 @@ private fun etaSummary(
 }
 
 @Composable
-private fun routeReason(flooded: Boolean, language: AppLanguage): String =
-    text(if (flooded) R.string.boat_fallback_reason else R.string.truck_route_reason, language)
+private fun routeReason(flooded: Boolean, riskActive: Boolean, language: AppLanguage): String =
+    text(
+        when {
+            flooded -> R.string.boat_fallback_reason
+            riskActive -> R.string.predicted_risk_route_reason
+            else -> R.string.truck_route_reason
+        },
+        language,
+    )
+
+@Composable
+private fun RouteRiskCard(
+    language: AppLanguage,
+    state: RouteRiskUiState,
+    onToggle: (() -> Unit)?,
+) {
+    val active = state as? RouteRiskUiState.Active
+    val evaluating = state is RouteRiskUiState.Evaluating
+    val accent = when {
+        active != null -> RiskAmber
+        state is RouteRiskUiState.Failed -> AlertCoral
+        else -> DeltaTeal
+    }
+    Surface(
+        color = accent.copy(alpha = .09f),
+        shape = RoundedCornerShape(16.dp),
+        modifier = Modifier.fillMaxWidth().testTag("route-risk-card"),
+    ) {
+        Column(Modifier.padding(14.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Icon(Icons.Default.WaterDrop, null, tint = accent)
+                Spacer(Modifier.width(9.dp))
+                Column(Modifier.weight(1f)) {
+                    Text(text(R.string.route_risk_title, language), fontWeight = FontWeight.Bold)
+                    Text(
+                        text(
+                            when {
+                                active != null -> R.string.route_risk_active
+                                evaluating -> R.string.route_risk_evaluating
+                                state is RouteRiskUiState.Failed -> R.string.route_risk_failed
+                                else -> R.string.route_risk_idle
+                            },
+                            language,
+                        ),
+                        style = MaterialTheme.typography.bodySmall,
+                    )
+                }
+                SimulationPill(language)
+            }
+            val features = when (state) {
+                is RouteRiskUiState.Active -> state.features
+                is RouteRiskUiState.Evaluating -> state.features
+                is RouteRiskUiState.Failed -> state.features
+                RouteRiskUiState.Idle -> null
+            }
+            if (features != null) {
+                Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    RiskMetric(
+                        label = text(R.string.rainfall, language),
+                        value = "${features.rainfallMmPerHour.toInt()} mm/h",
+                        modifier = Modifier.weight(1f),
+                    )
+                    RiskMetric(
+                        label = text(R.string.elevation, language),
+                        value = "${features.elevationMeters.toInt()} m",
+                        modifier = Modifier.weight(1f),
+                    )
+                    RiskMetric(
+                        label = text(R.string.soil_saturation, language),
+                        value = "${(features.soilSaturation * 100).toInt()}%",
+                        modifier = Modifier.weight(1f),
+                    )
+                }
+            }
+            if (active != null) {
+                val prediction = active.prediction
+                Text(
+                    "${text(R.string.edge_risk, language)} ${active.edgeId} • " +
+                        "${"%.1f".format(Locale.US, prediction.probability * 100)}% / " +
+                        "${"%.1f".format(Locale.US, prediction.threshold * 100)}%",
+                    color = RiskAmber,
+                    fontWeight = FontWeight.Bold,
+                    modifier = Modifier.testTag("route-risk-probability"),
+                )
+                Text(
+                    "${if (prediction.runtime == RouteRiskRuntime.ONNX) "ONNX" else "BASELINE"} • " +
+                        prediction.modelVersion,
+                    style = MaterialTheme.typography.labelSmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+                if (active.updatedDecision.cause == RouteDecisionCause.PREDICTED_RISK) {
+                    Text(
+                        text(R.string.proactive_reroute, language),
+                        color = RiskAmber,
+                        fontWeight = FontWeight.SemiBold,
+                    )
+                }
+                Text(
+                    text(R.string.prediction_not_closure, language),
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+            }
+            if (evaluating) {
+                LinearProgressIndicator(Modifier.fillMaxWidth())
+            }
+            Button(
+                onClick = { onToggle?.invoke() },
+                enabled = !evaluating,
+                modifier = Modifier.fillMaxWidth().height(50.dp).testTag("toggle-route-risk"),
+            ) {
+                Icon(if (active != null) Icons.Default.Replay else Icons.Default.WaterDrop, null)
+                Spacer(Modifier.width(8.dp))
+                Text(
+                    text(
+                        if (active != null || state is RouteRiskUiState.Failed) {
+                            R.string.reset_predicted_risk
+                        } else {
+                            R.string.run_risk_prediction
+                        },
+                        language,
+                    ),
+                )
+            }
+        }
+    }
+}
+
+@Composable
+private fun RiskMetric(label: String, value: String, modifier: Modifier = Modifier) {
+    Surface(color = MaterialTheme.colorScheme.surface, shape = RoundedCornerShape(12.dp), modifier = modifier) {
+        Column(Modifier.padding(horizontal = 9.dp, vertical = 8.dp)) {
+            Text(label, style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+            Text(value, fontWeight = FontWeight.Bold, fontSize = 13.sp)
+        }
+    }
+}
 
 @Composable
 private fun MeshRelayCard(
@@ -1831,6 +1992,7 @@ private fun MapLegend(
     language: AppLanguage,
     routeVehicle: VehicleType,
     showFailure: Boolean,
+    showRisk: Boolean = false,
     modifier: Modifier = Modifier,
 ) {
     Surface(color = MaterialTheme.colorScheme.surface.copy(alpha = .94f), shape = RoundedCornerShape(12.dp), modifier = modifier) {
@@ -1850,6 +2012,7 @@ private fun MapLegend(
             )
             LegendLine(routeColor, vehicleLabel)
             if (showFailure) LegendLine(AlertCoral, text(R.string.failed_edge, language), dashed = true)
+            if (showRisk) LegendLine(RiskAmber, text(R.string.predicted_risk_edge, language), dashed = true)
             LegendLine(DeltaTeal, text(R.string.mesh_legend, language), dashed = true)
         }
     }

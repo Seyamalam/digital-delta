@@ -1,0 +1,66 @@
+{
+  "dataset": {
+    "features": [
+      "rainfall_mm_per_hour",
+      "elevation_meters",
+      "soil_saturation"
+    ],
+    "kind": "deterministic synthetic scenario data; not observed ground truth",
+    "positive_rate": 0.381833,
+    "rows": 6000,
+    "seed": 20260412,
+    "split_rows": {
+      "test": 900,
+      "train": 4200,
+      "validation": 900
+    }
+  },
+  "held_out_test": {
+    "confusion_matrix": [
+      [
+        374,
+        182
+      ],
+      [
+        56,
+        288
+      ]
+    ],
+    "f1": 0.707617,
+    "precision": 0.612766,
+    "recall": 0.837209
+  },
+  "model_version": "route-risk-logreg-v1",
+  "non_ml_baseline_test": {
+    "confusion_matrix": [
+      [
+        555,
+        1
+      ],
+      [
+        323,
+        21
+      ]
+    ],
+    "f1": 0.114754,
+    "precision": 0.954545,
+    "recall": 0.061047
+  },
+  "onnx_parity_max_absolute_error": 8.940696716308594e-08,
+  "threshold": 0.28500000000000003,
+  "validation": {
+    "confusion_matrix": [
+      [
+        385,
+        172
+      ],
+      [
+        53,
+        290
+      ]
+    ],
+    "f1": 0.720497,
+    "precision": 0.627706,
+    "recall": 0.845481
+  }
+}

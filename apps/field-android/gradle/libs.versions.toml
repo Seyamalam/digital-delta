@@ -23,6 +23,7 @@ datastore = "1.2.1"
 hilt = "2.60.1"
 serialization = "1.8.1"
 playServicesNearby = "19.5.0"
+onnxRuntime = "1.23.2"
 
 [libraries]
 androidx-core-ktx = { module = "androidx.core:core-ktx", version.ref = "androidxCore" }
@@ -62,6 +63,7 @@ androidx-datastore = { module = "androidx.datastore:datastore", version.ref = "d
 hilt-android = { module = "com.google.dagger:hilt-android", version.ref = "hilt" }
 hilt-compiler = { module = "com.google.dagger:hilt-android-compiler", version.ref = "hilt" }
 play-services-nearby = { module = "com.google.android.gms:play-services-nearby", version.ref = "playServicesNearby" }
+onnxruntime-android = { module = "com.microsoft.onnxruntime:onnxruntime-android", version.ref = "onnxRuntime" }
 
 [plugins]
 android-application = { id = "com.android.application", version.ref = "androidGradlePlugin" }

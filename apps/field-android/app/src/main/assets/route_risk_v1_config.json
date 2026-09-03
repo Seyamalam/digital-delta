@@ -1,0 +1,12 @@
+{
+  "feature_order": [
+    "rainfall_mm_per_hour",
+    "elevation_meters",
+    "soil_saturation"
+  ],
+  "input_name": "features",
+  "model_version": "route-risk-logreg-v1",
+  "probability_output_name": "probabilities",
+  "simulated_training_data": true,
+  "threshold": 0.28500000000000003
+}
