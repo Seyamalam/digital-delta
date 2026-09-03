@@ -34,6 +34,28 @@ data class MeshEnvelopeEntity(
     val acknowledgedAtUnixMs: Long? = null,
 )
 
+@Entity(
+    tableName = "mesh_inbox",
+    indices = [Index(value = ["receivedAtUnixMs"]), Index(value = ["recipientNodeId"])],
+)
+data class MeshInboxEntity(
+    @PrimaryKey val messageId: String,
+    val wireBytes: ByteArray,
+    val senderNodeId: String,
+    val recipientNodeId: String,
+    val expiresAtUnixMs: Long,
+    val hopCount: Int,
+    val hopLimit: Int,
+    val receivedAtUnixMs: Long,
+)
+
+@Entity(tableName = "seen_messages", indices = [Index(value = ["expiresAtUnixMs"])])
+data class SeenMessageEntity(
+    @PrimaryKey val messageId: String,
+    val expiresAtUnixMs: Long,
+    val firstSeenAtUnixMs: Long,
+)
+
 @Entity(tableName = "used_nonces", indices = [Index(value = ["deliveryId"])])
 data class UsedNonceEntity(
     @PrimaryKey val nonceSha256: String,
@@ -91,6 +113,33 @@ interface OutboxDao {
     )
     suspend fun pending(nowUnixMs: Long, limit: Int): List<MeshEnvelopeEntity>
 
+    @Query("SELECT * FROM mesh_outbox WHERE messageId = :messageId LIMIT 1")
+    suspend fun find(messageId: String): MeshEnvelopeEntity?
+
+    @Query(
+        "UPDATE mesh_outbox SET state = 'PENDING', nextAttemptAtUnixMs = :nowUnixMs " +
+            "WHERE state = 'IN_FLIGHT'",
+    )
+    suspend fun recoverInFlight(nowUnixMs: Long): Int
+
+    @Query("UPDATE mesh_outbox SET state = 'IN_FLIGHT' WHERE messageId = :messageId AND state = 'PENDING'")
+    suspend fun markInFlight(messageId: String): Int
+
+    @Query(
+        "UPDATE mesh_outbox SET state = 'PENDING', attemptCount = attemptCount + 1, " +
+            "nextAttemptAtUnixMs = :nextAttemptAtUnixMs WHERE messageId = :messageId",
+    )
+    suspend fun scheduleRetry(messageId: String, nextAttemptAtUnixMs: Long): Int
+
+    @Query(
+        "UPDATE mesh_outbox SET state = 'DEAD_LETTER' " +
+            "WHERE state IN ('PENDING', 'IN_FLIGHT') AND expiresAtUnixMs <= :nowUnixMs",
+    )
+    suspend fun deadLetterExpired(nowUnixMs: Long): Int
+
+    @Query("UPDATE mesh_outbox SET state = 'DEAD_LETTER' WHERE messageId = :messageId")
+    suspend fun markDeadLetter(messageId: String): Int
+
     @Query(
         """
         UPDATE mesh_outbox
@@ -99,6 +148,27 @@ interface OutboxDao {
         """,
     )
     suspend fun markAcknowledged(messageId: String, acknowledgedAtUnixMs: Long): Int
+}
+
+@Dao
+interface MeshInboxDao {
+    @Insert(onConflict = OnConflictStrategy.IGNORE)
+    suspend fun insert(envelope: MeshInboxEntity): Long
+
+    @Query("SELECT * FROM mesh_inbox WHERE messageId = :messageId LIMIT 1")
+    suspend fun find(messageId: String): MeshInboxEntity?
+
+    @Query("SELECT COUNT(*) FROM mesh_inbox")
+    suspend fun count(): Int
+}
+
+@Dao
+interface SeenMessageDao {
+    @Insert(onConflict = OnConflictStrategy.IGNORE)
+    suspend fun claim(message: SeenMessageEntity): Long
+
+    @Query("DELETE FROM seen_messages WHERE expiresAtUnixMs <= :nowUnixMs")
+    suspend fun pruneExpired(nowUnixMs: Long): Int
 }
 
 @Dao
@@ -140,8 +210,10 @@ interface RecipientKeyDao {
         UsedNonceEntity::class,
         OperationEntity::class,
         RecipientKeyEntity::class,
+        MeshInboxEntity::class,
+        SeenMessageEntity::class,
     ],
-    version = 2,
+    version = 3,
     exportSchema = true,
 )
 abstract class DeltaDatabase : RoomDatabase() {
@@ -149,6 +221,8 @@ abstract class DeltaDatabase : RoomDatabase() {
     abstract fun nonceDao(): NonceDao
     abstract fun operationLogDao(): OperationLogDao
     abstract fun recipientKeyDao(): RecipientKeyDao
+    abstract fun meshInboxDao(): MeshInboxDao
+    abstract fun seenMessageDao(): SeenMessageDao
 }
 
 object DeltaMigrations {
@@ -178,6 +252,48 @@ object DeltaMigrations {
             db.execSQL(
                 "CREATE UNIQUE INDEX IF NOT EXISTS index_recipient_keys_encryptionKeyId " +
                     "ON recipient_keys (encryptionKeyId)",
+            )
+        }
+    }
+
+    val VERSION_2_TO_3 = object : Migration(2, 3) {
+        override fun migrate(db: SupportSQLiteDatabase) {
+            db.execSQL(
+                """
+                CREATE TABLE IF NOT EXISTS mesh_inbox (
+                    messageId TEXT NOT NULL,
+                    wireBytes BLOB NOT NULL,
+                    senderNodeId TEXT NOT NULL,
+                    recipientNodeId TEXT NOT NULL,
+                    expiresAtUnixMs INTEGER NOT NULL,
+                    hopCount INTEGER NOT NULL,
+                    hopLimit INTEGER NOT NULL,
+                    receivedAtUnixMs INTEGER NOT NULL,
+                    PRIMARY KEY(messageId)
+                )
+                """.trimIndent(),
+            )
+            db.execSQL(
+                "CREATE INDEX IF NOT EXISTS index_mesh_inbox_receivedAtUnixMs " +
+                    "ON mesh_inbox (receivedAtUnixMs)",
+            )
+            db.execSQL(
+                "CREATE INDEX IF NOT EXISTS index_mesh_inbox_recipientNodeId " +
+                    "ON mesh_inbox (recipientNodeId)",
+            )
+            db.execSQL(
+                """
+                CREATE TABLE IF NOT EXISTS seen_messages (
+                    messageId TEXT NOT NULL,
+                    expiresAtUnixMs INTEGER NOT NULL,
+                    firstSeenAtUnixMs INTEGER NOT NULL,
+                    PRIMARY KEY(messageId)
+                )
+                """.trimIndent(),
+            )
+            db.execSQL(
+                "CREATE INDEX IF NOT EXISTS index_seen_messages_expiresAtUnixMs " +
+                    "ON seen_messages (expiresAtUnixMs)",
             )
         }
     }

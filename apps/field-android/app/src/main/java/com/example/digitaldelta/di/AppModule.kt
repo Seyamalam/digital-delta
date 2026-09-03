@@ -40,7 +40,7 @@ object AppModule {
     @Singleton
     fun provideDatabase(@ApplicationContext context: Context): DeltaDatabase =
         Room.databaseBuilder(context, DeltaDatabase::class.java, "digital-delta.db")
-            .addMigrations(DeltaMigrations.VERSION_1_TO_2)
+            .addMigrations(DeltaMigrations.VERSION_1_TO_2, DeltaMigrations.VERSION_2_TO_3)
             .build()
 
     @Provides

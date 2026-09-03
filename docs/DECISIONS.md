@@ -114,6 +114,18 @@ Use this log for choices that affect scope, claims, compatibility, or safety.
 
 **Consequences:** The map boundary sits behind a Compose adapter. Offline assets, tile licensing, attribution, storage size, and scanner availability become release checks.
 
+## DD-012: acknowledge only after atomic durable relay receipt
+
+**Status:** Accepted
+
+**Decision:** Android records the seen-message claim, immutable inbox bytes, and next-hop outbox entry in one Room transaction. A durable acknowledgement is created only after that transaction commits. Outbound failures return the item to `PENDING` with bounded exponential backoff; terminal rejection or expiry moves it to `DEAD_LETTER`.
+
+**Reason:** A relay that acknowledges before durable storage can lose relief data if the process or phone stops. Separate inbox and outbox commits can also strand a message between receipt and forwarding.
+
+**Consequences:** Nearby Connections remains a replaceable byte transport. Room schema version 3 adds `mesh_inbox` and `seen_messages`; migrations and restart behavior are connected-test gates. Acknowledgement signing is a subsequent security step and unsigned acknowledgements cannot yet be treated as authenticated peer evidence.
+
+**Evidence:** `RoomMeshIngressTest`, `MeshOutboxDispatcherTest`, and `DeltaMigrationTest`.
+
 ## New decision template
 
 ```md

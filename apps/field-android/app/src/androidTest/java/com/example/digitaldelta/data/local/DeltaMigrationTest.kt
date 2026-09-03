@@ -52,6 +52,33 @@ class DeltaMigrationTest {
         }
     }
 
+    @Test
+    fun migrationTwoToThreePreservesRecipientsAndAddsDurableMeshInbox() {
+        helper.createDatabase(TEST_DATABASE_V3, 2).apply {
+            execSQL(
+                "INSERT INTO recipient_keys " +
+                    "(nodeId, identityId, displayName, roleCode, encryptionKeyId, " +
+                    "encryptionPublicKeyDer, signingKeyId, signingPublicKeyDer, " +
+                    "issuerIdentityId, credentialBytes, issuedAtUnixMs, expiresAtUnixMs, " +
+                    "revokedAtUnixMs, provisionedAtUnixMs) VALUES " +
+                    "('N6', 'hospital-1', 'Habiganj Medical', 'HOSPITAL', 'enc-1', " +
+                    "X'01', 'sig-1', X'02', 'admin-1', X'03', 100, 200, NULL, 110)",
+            )
+            close()
+        }
+
+        helper.runMigrationsAndValidate(
+            TEST_DATABASE_V3,
+            3,
+            true,
+            DeltaMigrations.VERSION_2_TO_3,
+        ).use { migrated ->
+            assertEquals(1, migrated.count("SELECT COUNT(*) FROM recipient_keys"))
+            assertEquals(0, migrated.count("SELECT COUNT(*) FROM mesh_inbox"))
+            assertEquals(0, migrated.count("SELECT COUNT(*) FROM seen_messages"))
+        }
+    }
+
     private fun SupportSQLiteDatabase.count(query: String): Int =
         query(query).use { cursor ->
             check(cursor.moveToFirst())
@@ -60,5 +87,6 @@ class DeltaMigrationTest {
 
     companion object {
         private const val TEST_DATABASE = "delta-migration-test"
+        private const val TEST_DATABASE_V3 = "delta-migration-v3-test"
     }
 }
