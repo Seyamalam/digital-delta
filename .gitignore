@@ -6,9 +6,12 @@
 **/.idea/
 **/node_modules/
 **/dist/
+**/*.tsbuildinfo
 **/.venv/
 **/__pycache__/
 artifacts/reports/local-verify/
 /services/node/delta-node
 /services/node/demo-secrets/
 /services/node/delta-provision
+/apps/command/vite.config.js
+/apps/command/vite.config.d.ts
