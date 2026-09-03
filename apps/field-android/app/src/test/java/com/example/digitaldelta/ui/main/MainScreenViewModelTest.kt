@@ -19,6 +19,9 @@ import com.example.digitaldelta.domain.routing.MapNode
 import com.example.digitaldelta.domain.routing.RouteScenario
 import com.example.digitaldelta.domain.routing.TransportGraph
 import com.example.digitaldelta.domain.routing.VehicleType
+import com.example.digitaldelta.domain.triage.TriageWorkflowSnapshot
+import com.example.digitaldelta.domain.triage.TriageWorkflow
+import com.example.digitaldelta.domain.triage.DefaultTriageWorkflow
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.Flow
@@ -190,6 +193,50 @@ class MainScreenViewModelTest {
         viewModel.toggleRouteFailure()
         assertEquals(VehicleType.BOAT, viewModel.routeState.value.decision.routeVehicle)
         assertEquals(setOf("E3"), viewModel.routeState.value.failedEdgeIds)
+        assertEquals(295, (viewModel.triageState.value as TriageWorkflowSnapshot.Proposed).decision.slowedArrivalMinutes)
+    }
+
+    @Test
+    fun `preemption confirmation ignores duplicate taps while recording locally`() = runTest(dispatcher) {
+        val triage = CountingTriageWorkflow()
+        val viewModel = MainScreenViewModel(
+            FakeSettingsRepository(),
+            FakeRequestSubmission(),
+            FakeIdentityCoordinator(),
+            FakeConflictCoordinator(),
+            FakeRouteScenario(),
+            triage,
+        )
+
+        viewModel.toggleRouteFailure()
+        viewModel.confirmPreemption()
+        assertEquals(true, viewModel.triageState.value is TriageWorkflowSnapshot.Confirming)
+
+        viewModel.confirmPreemption()
+        advanceUntilIdle()
+
+        assertEquals(1, triage.confirmCalls)
+        assertEquals(true, viewModel.triageState.value is TriageWorkflowSnapshot.Confirmed)
+    }
+}
+
+private class CountingTriageWorkflow : TriageWorkflow {
+    private val delegate = DefaultTriageWorkflow()
+    var confirmCalls = 0
+
+    override fun evaluate(routeEtaMinutes: Int): TriageWorkflowSnapshot = delegate.evaluate(routeEtaMinutes)
+
+    override suspend fun confirm(
+        proposal: TriageWorkflowSnapshot.Proposed,
+        confirmerIdentityId: String,
+    ): TriageWorkflowSnapshot.Confirmed {
+        confirmCalls += 1
+        return TriageWorkflowSnapshot.Confirmed(
+            decision = proposal.decision,
+            proposal = proposal.proposal,
+            eventId = "preemption-event-1",
+            confirmedAtUnixMs = 1_800_000_000_000,
+        )
     }
 }
 

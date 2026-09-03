@@ -95,6 +95,8 @@ message PreemptionConfirmed {
   string waypoint_node_id = 4;
   string confirmer_identity_id = 5;
   string policy_version = 6;
+  string reason_code = 7;
+  uint32 estimated_minutes_gained = 8;
 }
 
 message CustodyTransfer {

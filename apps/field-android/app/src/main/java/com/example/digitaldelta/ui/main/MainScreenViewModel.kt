@@ -15,6 +15,9 @@ import com.example.digitaldelta.domain.sync.ConflictSide
 import com.example.digitaldelta.domain.sync.MissionConflictSnapshot
 import com.example.digitaldelta.domain.routing.RouteScenario
 import com.example.digitaldelta.domain.routing.RouteScenarioSnapshot
+import com.example.digitaldelta.domain.triage.TriageWorkflow
+import com.example.digitaldelta.domain.triage.TriageWorkflowSnapshot
+import com.example.digitaldelta.domain.triage.DefaultTriageWorkflow
 import com.example.digitaldelta.proto.v1.PriorityClass
 import dagger.hilt.android.lifecycle.HiltViewModel
 import javax.inject.Inject
@@ -31,6 +34,7 @@ class MainScreenViewModel @Inject constructor(
     private val identityCoordinator: IdentityProvisioningCoordinator,
     private val conflictCoordinator: ConflictCoordinator,
     private val routeScenario: RouteScenario,
+    private val triageWorkflow: TriageWorkflow = DefaultTriageWorkflow(),
 ) : ViewModel() {
     val language: StateFlow<LanguagePreference> = settingsRepository.language.stateIn(
         scope = viewModelScope,
@@ -49,6 +53,11 @@ class MainScreenViewModel @Inject constructor(
 
     private val mutableRouteState = MutableStateFlow(routeScenario.snapshot())
     val routeState: StateFlow<RouteScenarioSnapshot> = mutableRouteState.asStateFlow()
+
+    private val mutableTriageState = MutableStateFlow(
+        triageWorkflow.evaluate(mutableRouteState.value.decision.route.totalMinutes),
+    )
+    val triageState: StateFlow<TriageWorkflowSnapshot> = mutableTriageState.asStateFlow()
 
     init {
         viewModelScope.launch { loadIdentity() }
@@ -144,6 +153,20 @@ class MainScreenViewModel @Inject constructor(
             routeScenario.reset()
         } else {
             routeScenario.triggerEdgeFailure("E3")
+        }
+        mutableTriageState.value = triageWorkflow.evaluate(mutableRouteState.value.decision.route.totalMinutes)
+    }
+
+    fun confirmPreemption() {
+        val proposal = mutableTriageState.value as? TriageWorkflowSnapshot.Proposed ?: return
+        mutableTriageState.value = TriageWorkflowSnapshot.Confirming(
+            decision = proposal.decision,
+            proposal = proposal.proposal,
+        )
+        viewModelScope.launch {
+            runCatching { triageWorkflow.confirm(proposal, "coordinator-sylhet-01") }
+                .onSuccess { mutableTriageState.value = it }
+                .onFailure { mutableTriageState.value = proposal }
         }
     }
 

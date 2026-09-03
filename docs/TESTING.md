@@ -27,6 +27,8 @@ The M2 tests compare causal, equal, and concurrent vector clocks; prove determin
 
 The M4 unit tests parse the JSON fixture, validate graph references, normalize `river` to `WATERWAY`, enforce truck/boat/drone edge constraints, exclude failed edges, and inject a monotonic clock to verify reported recomputation latency. The actual bundled asset is parsed in a connected test so a stale or malformed packaged fixture fails the local gate. The Compose journey starts on truck edges `E1 + E3`, fails `E3`, verifies boat edges `E6 + E7`, checks ETA and visible latency, and switches languages without losing the route state. Current sub-millisecond emulator timing is development evidence only; the final under-two-second claim still needs the named target-phone report.
 
+The integrated M6 tests consume those exact M4 route ETAs. The initial 65-minute truck route reaches the 120-minute P0 boundary under 30-percent slowdown without being classified late; the 200-minute boat fallback produces a 235-minute baseline and 295-minute stressed arrival, raises a proposal, and selects safe waypoint `N3`. Domain tests reject equal-priority transitions and a proposal with no safe waypoint. The ViewModel test proves a second confirmation tap is ignored while the first local write is pending. A connected Room test parses the persisted Protobuf event and verifies the reason code, policy, confirmer, affected cargo, waypoint, and estimated gain. The Compose journey confirms the proposal and switches languages without losing the result. Assignment-projection mutation, stale-input arbitration, and target-phone evidence remain release work.
+
 ## Test layers
 
 ### Unit tests

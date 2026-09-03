@@ -1,0 +1,155 @@
+package com.example.digitaldelta.domain.triage
+
+import com.example.digitaldelta.data.local.DeltaDatabase
+import com.example.digitaldelta.data.local.OperationEntity
+import com.example.digitaldelta.proto.v1.DomainEvent
+import com.example.digitaldelta.proto.v1.PreemptionConfirmed
+import java.util.UUID
+
+sealed interface TriageWorkflowSnapshot {
+    val decision: TriageDecision
+
+    data class Protected(override val decision: TriageDecision) : TriageWorkflowSnapshot
+    data class Warning(override val decision: TriageDecision) : TriageWorkflowSnapshot
+    data class Proposed(
+        override val decision: TriageDecision,
+        val proposal: PreemptionProposal,
+    ) : TriageWorkflowSnapshot
+
+    data class Confirming(
+        override val decision: TriageDecision,
+        val proposal: PreemptionProposal,
+    ) : TriageWorkflowSnapshot
+
+    data class Confirmed(
+        override val decision: TriageDecision,
+        val proposal: PreemptionProposal,
+        val eventId: String,
+        val confirmedAtUnixMs: Long,
+    ) : TriageWorkflowSnapshot
+}
+
+interface TriageWorkflow {
+    fun evaluate(routeEtaMinutes: Int): TriageWorkflowSnapshot
+    suspend fun confirm(
+        proposal: TriageWorkflowSnapshot.Proposed,
+        confirmerIdentityId: String,
+    ): TriageWorkflowSnapshot.Confirmed
+}
+
+fun interface PreemptionPersistence {
+    suspend fun record(
+        proposal: TriageWorkflowSnapshot.Proposed,
+        confirmerIdentityId: String,
+    ): TriageWorkflowSnapshot.Confirmed
+}
+
+class DefaultTriageWorkflow(
+    private val engine: TriageEngine = TriageEngine(),
+    private val persistence: PreemptionPersistence? = null,
+) : TriageWorkflow {
+    override fun evaluate(routeEtaMinutes: Int): TriageWorkflowSnapshot {
+        val decision = engine.evaluate(
+            priority = CargoPriority.P0,
+            elapsedMinutes = ELAPSED_MINUTES,
+            etaMinutes = routeEtaMinutes,
+        )
+        return when (decision.action) {
+            TriageAction.CONTINUE -> TriageWorkflowSnapshot.Protected(decision)
+            TriageAction.WARN -> TriageWorkflowSnapshot.Warning(decision)
+            TriageAction.PREEMPT_LOWER_PRIORITY -> TriageWorkflowSnapshot.Proposed(
+                decision = decision,
+                proposal = engine.proposePreemption(
+                    urgentCargoId = URGENT_CARGO_ID,
+                    urgentPriority = CargoPriority.P0,
+                    lowerPriorityCargoId = LOWER_PRIORITY_CARGO_ID,
+                    lowerPriority = CargoPriority.P2,
+                    candidates = listOf(
+                        DropWaypoint("N5", safe = false, handlingMinutes = 2),
+                        DropWaypoint("N3", safe = true, handlingMinutes = 7),
+                        DropWaypoint("N4", safe = true, handlingMinutes = 12),
+                    ),
+                ).copy(estimatedMinutesGained = ESTIMATED_MINUTES_GAINED),
+            )
+        }
+    }
+
+    override suspend fun confirm(
+        proposal: TriageWorkflowSnapshot.Proposed,
+        confirmerIdentityId: String,
+    ): TriageWorkflowSnapshot.Confirmed {
+        require(confirmerIdentityId.isNotBlank())
+        require(proposal.proposal.requiresHumanConfirmation)
+        return requireNotNull(persistence) { "preemption persistence is not configured" }
+            .record(proposal, confirmerIdentityId)
+    }
+
+    companion object {
+        private const val ELAPSED_MINUTES = 35
+        private const val URGENT_CARGO_ID = "cargo-medicine-p0"
+        private const val LOWER_PRIORITY_CARGO_ID = "cargo-tarpaulin-p2"
+        private const val ESTIMATED_MINUTES_GAINED = 25
+    }
+}
+
+class RoomTriageWorkflow(
+    database: DeltaDatabase,
+    nowUnixMs: () -> Long = System::currentTimeMillis,
+    eventId: () -> String = { "preemption-${UUID.randomUUID()}" },
+) : TriageWorkflow by DefaultTriageWorkflow(
+    persistence = RoomPreemptionPersistence(database, nowUnixMs, eventId),
+)
+
+private class RoomPreemptionPersistence(
+    private val database: DeltaDatabase,
+    private val nowUnixMs: () -> Long,
+    private val eventId: () -> String,
+) : PreemptionPersistence {
+    override suspend fun record(
+        proposal: TriageWorkflowSnapshot.Proposed,
+        confirmerIdentityId: String,
+    ): TriageWorkflowSnapshot.Confirmed {
+        val id = eventId()
+        val now = nowUnixMs()
+        val confirmed = PreemptionConfirmed.newBuilder()
+            .setMissionId(MISSION_ID)
+            .setUrgentCargoId(proposal.proposal.urgentCargoId)
+            .setDepositedCargoId(proposal.proposal.lowerPriorityCargoId)
+            .setWaypointNodeId(proposal.proposal.waypointId)
+            .setConfirmerIdentityId(confirmerIdentityId)
+            .setPolicyVersion(proposal.decision.policyVersion)
+            .setReasonCode(REASON_CODE)
+            .setEstimatedMinutesGained(proposal.proposal.estimatedMinutesGained)
+            .build()
+        val event = DomainEvent.newBuilder()
+            .setEventId(id)
+            .setSchemaVersion(1)
+            .setActorIdentityId(confirmerIdentityId)
+            .setOccurredAtUnixMs(now)
+            .setSimulated(true)
+            .setScenarioSeed(SCENARIO_SEED)
+            .setPreemptionConfirmed(confirmed)
+            .build()
+        database.operationLogDao().append(
+            OperationEntity(
+                eventId = id,
+                missionId = MISSION_ID,
+                eventType = "PREEMPTION_CONFIRMED",
+                payloadBytes = event.toByteArray(),
+                createdAtUnixMs = now,
+            ),
+        )
+        return TriageWorkflowSnapshot.Confirmed(
+            decision = proposal.decision,
+            proposal = proposal.proposal,
+            eventId = id,
+            confirmedAtUnixMs = now,
+        )
+    }
+
+    companion object {
+        private const val MISSION_ID = "mission-sylhet-01"
+        private const val SCENARIO_SEED = "m6-preemption-demo-v1"
+        private const val REASON_CODE = "SLA_BREACH_30_PERCENT"
+    }
+}

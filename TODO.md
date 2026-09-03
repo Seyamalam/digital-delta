@@ -136,16 +136,16 @@ This checklist tracks implementation. Milestone exit criteria live in [MILESTONE
 
 ## M6 triage and priority preemption
 
-- [ ] Implement P0, P1, P2, and P3 policy data.
-- [ ] Add SLA deadlines and countdowns.
-- [ ] Calculate baseline ETA and 30 percent slowdown ETA.
-- [ ] Flag predicted SLA breaches.
-- [ ] Define allowed preemption transitions.
-- [ ] Find a safe waypoint for lower-priority cargo.
-- [ ] Require confirmation for a real assignment change.
-- [ ] Record the reason, policy version, confirmer, and affected cargo.
-- [ ] Render the decision explanation in Bangla and English.
-- [ ] Test equal priorities, missing waypoint, stale ETA, and simultaneous P0 requests.
+- [x] Implement P0, P1, P2, and P3 policy data.
+- [ ] Add SLA deadlines and countdowns. Fixed SLA deadlines are implemented; a live countdown remains.
+- [x] Calculate baseline ETA and 30 percent slowdown ETA.
+- [x] Flag predicted SLA breaches.
+- [x] Define and test allowed transitions: only P0/P1 may preempt P2/P3; equal-priority and inverted transitions are rejected.
+- [x] Find a safe waypoint for lower-priority cargo.
+- [ ] Require confirmation for a real assignment change. Human confirmation and a durable decision event are implemented; generalized assignment projection mutation remains.
+- [x] Record the reason, policy version, confirmer, affected cargo, waypoint, and estimated gain in Protobuf.
+- [x] Render the decision explanation in Bangla and English.
+- [ ] Test equal priorities, missing waypoint, stale ETA, and simultaneous P0 requests. Equal-priority and missing-waypoint cases pass; stale ETA and simultaneous P0 arbitration remain.
 
 ## M7 predictive route decay
 

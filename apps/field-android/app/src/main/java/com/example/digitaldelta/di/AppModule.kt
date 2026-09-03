@@ -30,6 +30,8 @@ import com.example.digitaldelta.domain.sync.RoomConflictCoordinator
 import com.example.digitaldelta.domain.routing.OfflineRouteScenario
 import com.example.digitaldelta.domain.routing.RouteScenario
 import com.example.digitaldelta.domain.routing.SylhetMapParser
+import com.example.digitaldelta.domain.triage.RoomTriageWorkflow
+import com.example.digitaldelta.domain.triage.TriageWorkflow
 import com.example.digitaldelta.settings.v1.UserSettings
 import dagger.Module
 import dagger.Provides
@@ -131,4 +133,8 @@ object AppModule {
         val fixture = context.assets.open("sylhet_map.json").bufferedReader().use { it.readText() }
         return OfflineRouteScenario(SylhetMapParser().parse(fixture).graph)
     }
+
+    @Provides
+    @Singleton
+    fun provideTriageWorkflow(database: DeltaDatabase): TriageWorkflow = RoomTriageWorkflow(database)
 }

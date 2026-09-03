@@ -762,15 +762,17 @@ func (x *SlaBreachPredicted) GetPolicyVersion() string {
 }
 
 type PreemptionConfirmed struct {
-	state               protoimpl.MessageState `protogen:"open.v1"`
-	MissionId           string                 `protobuf:"bytes,1,opt,name=mission_id,json=missionId,proto3" json:"mission_id,omitempty"`
-	UrgentCargoId       string                 `protobuf:"bytes,2,opt,name=urgent_cargo_id,json=urgentCargoId,proto3" json:"urgent_cargo_id,omitempty"`
-	DepositedCargoId    string                 `protobuf:"bytes,3,opt,name=deposited_cargo_id,json=depositedCargoId,proto3" json:"deposited_cargo_id,omitempty"`
-	WaypointNodeId      string                 `protobuf:"bytes,4,opt,name=waypoint_node_id,json=waypointNodeId,proto3" json:"waypoint_node_id,omitempty"`
-	ConfirmerIdentityId string                 `protobuf:"bytes,5,opt,name=confirmer_identity_id,json=confirmerIdentityId,proto3" json:"confirmer_identity_id,omitempty"`
-	PolicyVersion       string                 `protobuf:"bytes,6,opt,name=policy_version,json=policyVersion,proto3" json:"policy_version,omitempty"`
-	unknownFields       protoimpl.UnknownFields
-	sizeCache           protoimpl.SizeCache
+	state                  protoimpl.MessageState `protogen:"open.v1"`
+	MissionId              string                 `protobuf:"bytes,1,opt,name=mission_id,json=missionId,proto3" json:"mission_id,omitempty"`
+	UrgentCargoId          string                 `protobuf:"bytes,2,opt,name=urgent_cargo_id,json=urgentCargoId,proto3" json:"urgent_cargo_id,omitempty"`
+	DepositedCargoId       string                 `protobuf:"bytes,3,opt,name=deposited_cargo_id,json=depositedCargoId,proto3" json:"deposited_cargo_id,omitempty"`
+	WaypointNodeId         string                 `protobuf:"bytes,4,opt,name=waypoint_node_id,json=waypointNodeId,proto3" json:"waypoint_node_id,omitempty"`
+	ConfirmerIdentityId    string                 `protobuf:"bytes,5,opt,name=confirmer_identity_id,json=confirmerIdentityId,proto3" json:"confirmer_identity_id,omitempty"`
+	PolicyVersion          string                 `protobuf:"bytes,6,opt,name=policy_version,json=policyVersion,proto3" json:"policy_version,omitempty"`
+	ReasonCode             string                 `protobuf:"bytes,7,opt,name=reason_code,json=reasonCode,proto3" json:"reason_code,omitempty"`
+	EstimatedMinutesGained uint32                 `protobuf:"varint,8,opt,name=estimated_minutes_gained,json=estimatedMinutesGained,proto3" json:"estimated_minutes_gained,omitempty"`
+	unknownFields          protoimpl.UnknownFields
+	sizeCache              protoimpl.SizeCache
 }
 
 func (x *PreemptionConfirmed) Reset() {
@@ -843,6 +845,20 @@ func (x *PreemptionConfirmed) GetPolicyVersion() string {
 		return x.PolicyVersion
 	}
 	return ""
+}
+
+func (x *PreemptionConfirmed) GetReasonCode() string {
+	if x != nil {
+		return x.ReasonCode
+	}
+	return ""
+}
+
+func (x *PreemptionConfirmed) GetEstimatedMinutesGained() uint32 {
+	if x != nil {
+		return x.EstimatedMinutesGained
+	}
+	return 0
 }
 
 type CustodyTransfer struct {
@@ -1302,7 +1318,7 @@ const file_digitaldelta_v1_events_proto_rawDesc = "" +
 	"\x12slowed_eta_minutes\x18\x04 \x01(\rR\x10slowedEtaMinutes\x12\x1f\n" +
 	"\vsla_minutes\x18\x05 \x01(\rR\n" +
 	"slaMinutes\x12%\n" +
-	"\x0epolicy_version\x18\x06 \x01(\tR\rpolicyVersion\"\x8f\x02\n" +
+	"\x0epolicy_version\x18\x06 \x01(\tR\rpolicyVersion\"\xea\x02\n" +
 	"\x13PreemptionConfirmed\x12\x1d\n" +
 	"\n" +
 	"mission_id\x18\x01 \x01(\tR\tmissionId\x12&\n" +
@@ -1310,7 +1326,10 @@ const file_digitaldelta_v1_events_proto_rawDesc = "" +
 	"\x12deposited_cargo_id\x18\x03 \x01(\tR\x10depositedCargoId\x12(\n" +
 	"\x10waypoint_node_id\x18\x04 \x01(\tR\x0ewaypointNodeId\x122\n" +
 	"\x15confirmer_identity_id\x18\x05 \x01(\tR\x13confirmerIdentityId\x12%\n" +
-	"\x0epolicy_version\x18\x06 \x01(\tR\rpolicyVersion\"\xf6\x03\n" +
+	"\x0epolicy_version\x18\x06 \x01(\tR\rpolicyVersion\x12\x1f\n" +
+	"\vreason_code\x18\a \x01(\tR\n" +
+	"reasonCode\x128\n" +
+	"\x18estimated_minutes_gained\x18\b \x01(\rR\x16estimatedMinutesGained\"\xf6\x03\n" +
 	"\x0fCustodyTransfer\x12\x1f\n" +
 	"\vdelivery_id\x18\x01 \x01(\tR\n" +
 	"deliveryId\x12,\n" +

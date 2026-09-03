@@ -33,12 +33,18 @@ data class DropWaypoint(
 
 data class PreemptionProposal(
     val urgentCargoId: String,
+    val urgentPriority: CargoPriority,
     val lowerPriorityCargoId: String,
+    val lowerPriority: CargoPriority,
     val waypointId: String,
+    val estimatedMinutesGained: Int = 0,
     val requiresHumanConfirmation: Boolean = true,
 )
 
 class NoSafeWaypointException : IllegalStateException("No safe drop waypoint is available")
+class InvalidPreemptionTransitionException : IllegalArgumentException(
+    "Only P0/P1 cargo may preempt P2/P3 cargo",
+)
 
 class TriageEngine {
     fun evaluate(
@@ -73,9 +79,16 @@ class TriageEngine {
 
     fun proposePreemption(
         urgentCargoId: String,
+        urgentPriority: CargoPriority,
         lowerPriorityCargoId: String,
+        lowerPriority: CargoPriority,
         candidates: List<DropWaypoint>,
     ): PreemptionProposal {
+        if (urgentPriority !in setOf(CargoPriority.P0, CargoPriority.P1) ||
+            lowerPriority !in setOf(CargoPriority.P2, CargoPriority.P3)
+        ) {
+            throw InvalidPreemptionTransitionException()
+        }
         val waypoint = candidates
             .asSequence()
             .filter(DropWaypoint::safe)
@@ -84,7 +97,9 @@ class TriageEngine {
 
         return PreemptionProposal(
             urgentCargoId = urgentCargoId,
+            urgentPriority = urgentPriority,
             lowerPriorityCargoId = lowerPriorityCargoId,
+            lowerPriority = lowerPriority,
             waypointId = waypoint.nodeId,
         )
     }

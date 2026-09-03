@@ -3,6 +3,7 @@ package com.example.digitaldelta.domain.triage
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
+import org.junit.Assert.assertThrows
 import org.junit.Test
 
 class TriageEngineTest {
@@ -37,7 +38,9 @@ class TriageEngineTest {
     fun `lower priority cargo may be deposited only at a safe waypoint`() {
         val proposal = engine.proposePreemption(
             urgentCargoId = "cargo-p0",
+            urgentPriority = CargoPriority.P0,
             lowerPriorityCargoId = "cargo-p2",
+            lowerPriority = CargoPriority.P2,
             candidates = listOf(
                 DropWaypoint("N5", safe = false, handlingMinutes = 2),
                 DropWaypoint("N4", safe = true, handlingMinutes = 12),
@@ -47,5 +50,31 @@ class TriageEngineTest {
 
         assertEquals("N3", proposal.waypointId)
         assertTrue(proposal.requiresHumanConfirmation)
+    }
+
+    @Test
+    fun `equal priority cargo cannot be preempted`() {
+        assertThrows(InvalidPreemptionTransitionException::class.java) {
+            engine.proposePreemption(
+                urgentCargoId = "cargo-p0-a",
+                urgentPriority = CargoPriority.P0,
+                lowerPriorityCargoId = "cargo-p0-b",
+                lowerPriority = CargoPriority.P0,
+                candidates = listOf(DropWaypoint("N3", safe = true, handlingMinutes = 7)),
+            )
+        }
+    }
+
+    @Test
+    fun `proposal fails when no safe waypoint exists`() {
+        assertThrows(NoSafeWaypointException::class.java) {
+            engine.proposePreemption(
+                urgentCargoId = "cargo-p0",
+                urgentPriority = CargoPriority.P0,
+                lowerPriorityCargoId = "cargo-p2",
+                lowerPriority = CargoPriority.P2,
+                candidates = listOf(DropWaypoint("N5", safe = false, handlingMinutes = 2)),
+            )
+        }
     }
 }

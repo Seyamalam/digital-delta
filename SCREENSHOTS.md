@@ -63,6 +63,8 @@ These are real emulator captures from the working application, not final submiss
 | Conflict resolved with convergence hash | Pending final pair | Captured | `artifacts/screenshots/field-en/12-field-en-conflict-resolved-1280x2856.png` |
 | Offline truck route from bundled Sylhet graph | Captured | Pending final pair | `artifacts/screenshots/field-bn/13-field-bn-route-initial-1280x2856.png` |
 | Confirmed simulated E3 failure and measured boat reroute | Captured | Captured | `artifacts/screenshots/field-bn/14-field-bn-route-rerouted-1280x2856.png`, `artifacts/screenshots/field-en/14-field-en-route-rerouted-1280x2856.png` |
+| Route-driven P0 SLA breach and safe P2 deposit proposal | Captured | Captured | `artifacts/screenshots/field-bn/15-field-bn-triage-preemption-1280x2856.png`, `artifacts/screenshots/field-en/15-field-en-triage-preemption-1280x2856.png` |
+| Coordinator-confirmed local preemption decision | Captured | Captured | `artifacts/screenshots/field-bn/16-field-bn-triage-confirmed-1280x2856.png`, `artifacts/screenshots/field-en/16-field-en-triage-confirmed-1280x2856.png` |
 
 ## Field application shots
 
@@ -79,8 +81,8 @@ These are real emulator captures from the working application, not final submiss
 - [x] Conflict-detected state in the current Android emulator build
 - [x] Human conflict resolution in the current Android emulator build; final bilingual hero pair remains
 - [x] Route and vehicle assignment in the current Android emulator build; MapLibre final map remains
-- [ ] SLA breach warning
-- [ ] Drop-and-reroute confirmation
+- [x] SLA breach warning in the current Android emulator build
+- [x] Drop-and-reroute confirmation in the current Android emulator build; physical cargo movement is simulated
 - [ ] QR handoff generation
 - [ ] Valid receipt verification
 - [ ] Tampered receipt rejection

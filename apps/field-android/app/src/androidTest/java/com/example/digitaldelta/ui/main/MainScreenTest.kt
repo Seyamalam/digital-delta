@@ -24,6 +24,8 @@ import com.example.digitaldelta.domain.routing.DynamicRouteDecision
 import com.example.digitaldelta.domain.routing.PlannedRoute
 import com.example.digitaldelta.domain.routing.RouteScenarioSnapshot
 import com.example.digitaldelta.domain.routing.VehicleType
+import com.example.digitaldelta.domain.triage.DefaultTriageWorkflow
+import com.example.digitaldelta.domain.triage.TriageWorkflowSnapshot
 import org.junit.Before
 import org.junit.Assert.assertTrue
 import org.junit.Rule
@@ -37,6 +39,7 @@ class MainScreenTest {
     private lateinit var meshState: MutableState<MeshRuntimeState>
     private lateinit var conflictState: MutableState<MissionConflictSnapshot>
     private lateinit var routeState: MutableState<RouteScenarioSnapshot>
+    private lateinit var triageState: MutableState<TriageWorkflowSnapshot>
     private var relayStartRequested = false
 
     @Before
@@ -45,6 +48,7 @@ class MainScreenTest {
         meshState = mutableStateOf(MeshRuntimeState())
         conflictState = mutableStateOf(MissionConflictSnapshot.Idle)
         routeState = mutableStateOf(routeSnapshot(flooded = false))
+        triageState = mutableStateOf(DefaultTriageWorkflow().evaluate(65))
         relayStartRequested = false
         composeTestRule.setContent {
             DigitalDeltaTheme(darkTheme = false) {
@@ -77,7 +81,19 @@ class MainScreenTest {
                     },
                     routeState = routeState.value,
                     onToggleRouteFailure = {
-                        routeState.value = routeSnapshot(flooded = "E3" !in routeState.value.failedEdgeIds)
+                        val flooded = "E3" !in routeState.value.failedEdgeIds
+                        routeState.value = routeSnapshot(flooded = flooded)
+                        triageState.value = DefaultTriageWorkflow().evaluate(if (flooded) 200 else 65)
+                    },
+                    triageState = triageState.value,
+                    onConfirmPreemption = {
+                        val proposed = triageState.value as TriageWorkflowSnapshot.Proposed
+                        triageState.value = TriageWorkflowSnapshot.Confirmed(
+                            decision = proposed.decision,
+                            proposal = proposed.proposal,
+                            eventId = "preemption-event-1",
+                            confirmedAtUnixMs = 1_800_000_000_000,
+                        )
                     },
                 )
             }
@@ -197,6 +213,24 @@ class MainScreenTest {
         composeTestRule.onNodeWithText("E3 failed • rerouted by boat").assertIsDisplayed()
         composeTestRule.onNodeWithText("Boat • N1 → N3 → N4 • E6 + E7").assertIsDisplayed()
         composeTestRule.onNodeWithText("Reset offline route").assertIsDisplayed()
+    }
+
+    @Test
+    fun routeDelayTriggersHumanConfirmedPreemptionWithoutLosingLanguageState() {
+        composeTestRule.onNodeWithText("পথ ও মেশ").performClick()
+        composeTestRule.onNode(hasScrollAction()).performTouchInput { swipeUp() }
+        composeTestRule.onNode(hasTestTag("toggle-route-failure")).performClick()
+        composeTestRule.onNode(hasScrollAction()).performTouchInput { swipeUp() }
+        composeTestRule.onNode(hasScrollAction()).performTouchInput { swipeUp() }
+
+        composeTestRule.onNodeWithText("P0 SLA ভঙ্গের পূর্বাভাস").assertIsDisplayed()
+        composeTestRule.onNodeWithText("P2 তারপলিন রেখে দিন: সুনামগঞ্জ সদর ক্যাম্প").assertIsDisplayed()
+        composeTestRule.onNode(hasTestTag("confirm-preemption")).performClick()
+        composeTestRule.onNodeWithText("অগ্রাধিকার পরিবর্তন নিশ্চিত").assertIsDisplayed()
+
+        composeTestRule.onNodeWithText("English").performClick()
+        composeTestRule.onNodeWithText("Preemption confirmed").assertIsDisplayed()
+        composeTestRule.onNodeWithText("P2 • Sunamganj Sadar Camp • P0 continues by boat").assertIsDisplayed()
     }
 
     private fun routeSnapshot(flooded: Boolean): RouteScenarioSnapshot {

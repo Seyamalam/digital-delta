@@ -142,6 +142,18 @@ Use this log for choices that affect scope, claims, compatibility, or safety.
 
 **Evidence:** `RoutePlannerTest`, `RouteScenarioTest`, `SylhetMapAssetTest`, `MainScreenTest`, and the paired reroute screenshots under `artifacts/screenshots/`.
 
+## DD-014: route-driven preemption requires human confirmation
+
+**Status:** Accepted
+
+**Decision:** Feed the selected M4 route ETA into `triage-v1`, evaluate the required 30-percent slowdown case, and treat arrival exactly at an SLA as protected. If P0 or P1 would arrive late, propose the safest deterministic lower-priority drop but do not apply it without a coordinator confirmation. Record one Protobuf decision event before displaying success.
+
+**Reason:** Route and triage demonstrations must share real state, and a prediction should not silently change custody or assignments. A deterministic proposal is explainable; a human gate preserves operational accountability.
+
+**Consequences:** The current seeded mission moves from protected to a P0 breach proposal when simulated `E3` failure changes its ETA from 65 to 200 minutes. The event records the policy version, reason code, coordinator, both cargo IDs, waypoint, and estimated time gain. Confirmation is single-flight to prevent rapid duplicate taps. The event is an auditable decision, not proof that a physical deposit occurred; generalized assignment projection and signed audit integration remain.
+
+**Evidence:** `TriageEngineTest`, `TriageWorkflowTest`, `MainScreenViewModelTest`, `RoomTriageWorkflowTest`, `MainScreenTest`, and paired proposal/confirmation screenshots under `artifacts/screenshots/`.
+
 ## New decision template
 
 ```md

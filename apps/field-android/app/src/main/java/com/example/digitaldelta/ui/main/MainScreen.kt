@@ -76,6 +76,7 @@ import androidx.compose.material3.FilledTonalIconButton
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
+import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.NavigationBar
 import androidx.compose.material3.NavigationBarItem
@@ -127,6 +128,7 @@ import com.example.digitaldelta.domain.sync.ConflictSide
 import com.example.digitaldelta.domain.sync.MissionConflictSnapshot
 import com.example.digitaldelta.domain.routing.RouteScenarioSnapshot
 import com.example.digitaldelta.domain.routing.VehicleType
+import com.example.digitaldelta.domain.triage.TriageWorkflowSnapshot
 import com.example.digitaldelta.theme.AlertCoral
 import com.example.digitaldelta.theme.DeltaTeal
 import com.example.digitaldelta.theme.DigitalDeltaTheme
@@ -183,6 +185,8 @@ fun DigitalDeltaApp(
     onResolveConflict: ((String, ConflictSide) -> Unit)? = null,
     routeState: RouteScenarioSnapshot? = null,
     onToggleRouteFailure: (() -> Unit)? = null,
+    triageState: TriageWorkflowSnapshot? = null,
+    onConfirmPreemption: (() -> Unit)? = null,
 ) {
     var booting by rememberSaveable { mutableStateOf(showBootSequence) }
     LaunchedEffect(showBootSequence) {
@@ -218,6 +222,8 @@ fun DigitalDeltaApp(
                 onResolveConflict = onResolveConflict,
                 routeState = routeState,
                 onToggleRouteFailure = onToggleRouteFailure,
+                triageState = triageState,
+                onConfirmPreemption = onConfirmPreemption,
             )
         }
     }
@@ -319,6 +325,8 @@ private fun DeltaShell(
     onResolveConflict: ((String, ConflictSide) -> Unit)?,
     routeState: RouteScenarioSnapshot?,
     onToggleRouteFailure: (() -> Unit)?,
+    triageState: TriageWorkflowSnapshot?,
+    onConfirmPreemption: (() -> Unit)?,
 ) {
     var destination by rememberSaveable { mutableStateOf(DeltaDestination.OPERATIONS) }
     var identityOpen by rememberSaveable { mutableStateOf(false) }
@@ -403,6 +411,8 @@ private fun DeltaShell(
                     onRejectPeer = onRejectPeer,
                     routeState = routeState,
                     onToggleRouteFailure = onToggleRouteFailure,
+                    triageState = triageState,
+                    onConfirmPreemption = onConfirmPreemption,
                 )
                 DeltaDestination.HANDOFF -> HandoffScreen(language)
             }
@@ -1125,6 +1135,8 @@ private fun RouteAndMeshScreen(
     onRejectPeer: ((String) -> Unit)?,
     routeState: RouteScenarioSnapshot?,
     onToggleRouteFailure: (() -> Unit)?,
+    triageState: TriageWorkflowSnapshot?,
+    onConfirmPreemption: (() -> Unit)?,
 ) {
     val flooded = routeState?.failedEdgeIds?.contains("E3") == true
     val decision = routeState?.decision
@@ -1203,7 +1215,125 @@ private fun RouteAndMeshScreen(
                             modifier = Modifier.testTag("route-latency"),
                         )
                     }
+                    triageState?.let { state ->
+                        TriageCard(
+                            language = language,
+                            state = state,
+                            onConfirm = onConfirmPreemption,
+                        )
+                    }
                     InfoRow(Icons.Default.Info, text(R.string.weather_simulated, language))
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun TriageCard(
+    language: AppLanguage,
+    state: TriageWorkflowSnapshot,
+    onConfirm: (() -> Unit)?,
+) {
+    val urgent = state is TriageWorkflowSnapshot.Proposed || state is TriageWorkflowSnapshot.Confirming
+    val confirmed = state is TriageWorkflowSnapshot.Confirmed
+    val color = when {
+        urgent -> AlertCoral
+        confirmed -> VerifiedGreen
+        else -> DeltaTeal
+    }
+    Surface(
+        color = color.copy(alpha = .09f),
+        shape = RoundedCornerShape(16.dp),
+        modifier = Modifier.fillMaxWidth().testTag("triage-card"),
+    ) {
+        Column(Modifier.padding(14.dp), verticalArrangement = Arrangement.spacedBy(9.dp)) {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Icon(
+                    if (urgent) Icons.Default.Warning else Icons.Default.CheckCircle,
+                    contentDescription = null,
+                    tint = color,
+                )
+                Spacer(Modifier.width(9.dp))
+                Column(Modifier.weight(1f)) {
+                    Text(
+                        text(
+                            when {
+                                urgent -> R.string.sla_breach_predicted
+                                confirmed -> R.string.preemption_confirmed
+                                else -> R.string.sla_protected
+                            },
+                            language,
+                        ),
+                        fontWeight = FontWeight.Bold,
+                    )
+                    Text(
+                        "30% • ${state.decision.slowedArrivalMinutes} / ${state.decision.priority.slaMinutes} ${text(R.string.minutes_short, language)}",
+                        style = MaterialTheme.typography.bodySmall,
+                    )
+                }
+                SimulationPill(language)
+            }
+            Text(
+                "${text(R.string.baseline_arrival, language)} • ${state.decision.baselineArrivalMinutes} ${text(R.string.minutes_short, language)}",
+                style = MaterialTheme.typography.bodySmall,
+            )
+            when (state) {
+                is TriageWorkflowSnapshot.Protected -> Text(
+                    text(R.string.sla_protected_reason, language),
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+                is TriageWorkflowSnapshot.Warning -> Text(
+                    text(R.string.sla_warning_reason, language),
+                    style = MaterialTheme.typography.bodySmall,
+                    color = RiskAmber,
+                )
+                is TriageWorkflowSnapshot.Proposed -> {
+                    Text(
+                        "${text(R.string.deposit_p2_at, language)} ${locationName(state.proposal.waypointId, language)}",
+                        fontWeight = FontWeight.SemiBold,
+                    )
+                    Text(
+                        "${text(R.string.estimated_time_gained, language)} • ${state.proposal.estimatedMinutesGained} ${text(R.string.minutes_short, language)}",
+                        style = MaterialTheme.typography.bodySmall,
+                    )
+                    Text(
+                        text(R.string.coordinator_confirmation_required, language),
+                        style = MaterialTheme.typography.bodySmall,
+                        color = AlertCoral,
+                    )
+                    Button(
+                        onClick = { onConfirm?.invoke() },
+                        modifier = Modifier.fillMaxWidth().testTag("confirm-preemption"),
+                    ) {
+                        Icon(Icons.Default.CheckCircle, null)
+                        Spacer(Modifier.width(8.dp))
+                        Text(text(R.string.confirm_preemption, language))
+                    }
+                }
+                is TriageWorkflowSnapshot.Confirming -> {
+                    Text(
+                        "${text(R.string.deposit_p2_at, language)} ${locationName(state.proposal.waypointId, language)}",
+                        fontWeight = FontWeight.SemiBold,
+                    )
+                    Text(
+                        text(R.string.recording_preemption_locally, language),
+                        style = MaterialTheme.typography.bodySmall,
+                        color = AlertCoral,
+                    )
+                    LinearProgressIndicator(Modifier.fillMaxWidth())
+                }
+                is TriageWorkflowSnapshot.Confirmed -> {
+                    Text(
+                        "P2 • ${locationName(state.proposal.waypointId, language)} • P0 ${text(R.string.continues, language)}",
+                        fontWeight = FontWeight.SemiBold,
+                    )
+                    Text(
+                        "${text(R.string.local_event, language)} • ${state.eventId.takeLast(10)}",
+                        style = MaterialTheme.typography.labelSmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
                 }
             }
         }
