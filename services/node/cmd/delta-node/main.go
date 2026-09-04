@@ -30,6 +30,8 @@ type config struct {
 	dashboardOrigins      string
 }
 
+const defaultDashboardOrigins = "http://127.0.0.1:3000,http://localhost:3000"
+
 func main() {
 	configuration := parseFlags()
 	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
@@ -48,7 +50,7 @@ func parseFlags() config {
 	flag.StringVar(&configuration.nodeID, "node", "command-sylhet", "stable node identifier")
 	flag.StringVar(&configuration.observerListenAddress, "observer-listen", "127.0.0.1:7071", "local SSE observer listen address")
 	flag.StringVar(&configuration.observerDataPath, "observer-data", "data/observer.db", "durable observer event store path")
-	flag.StringVar(&configuration.dashboardOrigins, "dashboard-origins", "http://127.0.0.1:5173,http://localhost:5173", "comma-separated browser origins allowed to observe events")
+	flag.StringVar(&configuration.dashboardOrigins, "dashboard-origins", defaultDashboardOrigins, "comma-separated browser origins allowed to observe events")
 	flag.Parse()
 	return configuration
 }

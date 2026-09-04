@@ -42,6 +42,9 @@ if [[ -f "${android_map_dir}/sylhet_osm_basemap.geojson" ]]; then
   fi
 fi
 
+echo "[scenario] compile simulated chaos fixture"
+python3 -m py_compile "${repo_dir}/packages/scenario/chaos_server.py"
+
 if rg -n '(^|[^A-Za-z])json([^A-Za-z]|$)' \
   "${repo_dir}/apps/field-android/app/src/main/java/com/example/digitaldelta/domain/mesh" \
   "${repo_dir}/services/node/internal/mesh" >/dev/null; then

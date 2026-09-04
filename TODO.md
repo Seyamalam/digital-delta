@@ -11,21 +11,21 @@ This checklist tracks implementation. Milestone exit criteria live in [MILESTONE
 - [ ] Confirm the fair participation status, date, booth rules, and pitch duration.
 - [ ] Record available Android phones, operating-system versions, laptops, and projector resolution.
 - [x] Confirm the implementation stack in `docs/DECISIONS.md`.
-- [ ] Decide whether strict HackFusion gRPC transport compliance is a target for this fair build.
-- [ ] Define measurable targets for latency, memory, battery, relay success, and load.
+- [x] Decide whether strict HackFusion gRPC transport compliance is a target for this fair build. DD-006 records gRPC for supported IP links and framed Protobuf for Nearby instead of making a false transport claim.
+- [x] Define measurable targets for latency, memory, battery, relay success, and load in `docs/ACCEPTANCE_TARGETS.md`.
 
 ## Repository foundation
 
-- [ ] Create the monorepo folders described in `README.md`.
+- [x] Create the monorepo folders described in `README.md`.
 - [x] Add root setup, format, lint, test, seed, recoverable reset, and demo commands through the Makefile and local scripts.
 - [x] Add an environment example with the local observer URL and no secrets.
 - [x] Scaffold the Android project with Gradle Kotlin DSL and a version catalog.
 - [x] Add the complete Android dependency set. Compose, Material 3, Navigation 3, ZXing, Protobuf Lite, gRPC OkHttp, Hilt, Room, DataStore, Nearby Connections, WorkManager, ONNX Runtime, CameraX, bundled ML Kit, MapLibre Native, and test dependencies are present. Direct audited JCA primitives replace Tink.
 - [x] Add a local Kotlin and Android verification runner; extend it for Go, TypeScript, and Protobuf compatibility as those projects land. Hosted CI and GitHub Actions are deliberately excluded.
-- [ ] Add deterministic clocks, random seeds, and device IDs for demo scenarios.
+- [x] Add deterministic clocks, random seeds, and device IDs for demo scenarios. The fixed drill, scenario reducer, injectable route clock, stable event IDs, and test fixtures cover the demo paths.
 - [x] Add a fixture validator for node and edge references through `SylhetMapParser` and the bundled-asset connected test.
-- [ ] Correct the supplied chaos-server formatting and keep it as a development fixture only.
-- [ ] Add structured logs with event ID, node ID, mission ID, and correlation ID.
+- [x] Correct the supplied chaos-server formatting and keep it as a visibly simulated development fixture only under `packages/scenario/`.
+- [x] Add structured logs with event ID, node ID, mission ID, and correlation ID. The observer logs visible domain identifiers; mesh logs mark event and mission contents as encrypted instead of opening payloads.
 - [ ] Add feature flags for each unfinished module.
 
 ## Protocol and domain contracts
@@ -37,7 +37,7 @@ This checklist tracks implementation. Milestone exit criteria live in [MILESTONE
 - [ ] Generate Kotlin/Java Lite gRPC and Go clients. TypeScript generation remains.
 - [ ] Add backward-compatibility tests for stored fixtures.
 - [x] Ban JSON serialization from the mesh package through the local verification script.
-- [ ] Document gRPC links and framed-Protobuf links separately.
+- [x] Document gRPC links and framed-Protobuf links separately in the README, architecture, stack, and DD-006.
 
 ## Bangla and English foundation
 
@@ -195,9 +195,9 @@ This checklist tracks implementation. Milestone exit criteria live in [MILESTONE
 
 ## Testing, evidence, and submission
 
-- [ ] Create module unit tests and contract fixtures.
-- [ ] Create integration tests for the full event lifecycle.
-- [ ] Create a three-phone manual test sheet.
+- [x] Create module unit tests and contract fixtures across Android, Go, dashboard, archive, Protobuf, routing, ML, and deterministic scenario layers.
+- [x] Create integration tests for the event lifecycle, including encrypted request persistence, durable relay, convergence, rerouting, triage assignment, observer replay, and signed custody.
+- [x] Create a three-phone manual test sheet in `docs/PHYSICAL_DEVICE_TEST.md`.
 - [x] Run the automated fault-injection baseline and record its limits. Physical three-phone, process-kill, storage-pressure, and booth-power rehearsals remain manual release gates.
 - [x] Run 10,000 simulated connections against the Go service and record the conditions. All 10,000 independent gRPC streams received durable acknowledgements and remained open together for five seconds; measured limitations are recorded in `artifacts/reports/load/2026-09-04-go-10000.md`.
 - [ ] Measure route recomputation on target hardware.

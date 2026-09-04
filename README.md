@@ -110,6 +110,8 @@ research/                 Source-backed problem and fair research
 - [Bundled font and license](docs/THIRD_PARTY_FONTS.md)
 - [Security model](docs/SECURITY.md)
 - [Testing strategy](docs/TESTING.md)
+- [Measured acceptance targets](docs/ACCEPTANCE_TARGETS.md)
+- [Three-phone offline acceptance sheet](docs/PHYSICAL_DEVICE_TEST.md)
 - [Requirements traceability](docs/TRACEABILITY.md)
 - [Architecture decisions](docs/DECISIONS.md)
 - [Offline provisioning runbook](docs/PROVISIONING.md)

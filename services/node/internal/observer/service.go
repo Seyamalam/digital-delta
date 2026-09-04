@@ -2,6 +2,7 @@ package observer
 
 import (
 	"context"
+	"log/slog"
 	"sync"
 
 	deltav1 "github.com/Seyamalam/digital-delta/services/node/gen/digitaldelta/v1"
@@ -55,6 +56,16 @@ func (s *Service) Publish(_ context.Context, request *deltav1.ObserverServicePub
 	if err != nil {
 		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}
+	event := request.GetEvent()
+	slog.Info(
+		"observer event published",
+		"event_id", event.GetEventId(),
+		"node_id", request.GetSourceNodeId(),
+		"mission_id", missionID(event),
+		"correlation_id", event.GetEventId(),
+		"sequence", response.GetSequence(),
+		"simulated", event.GetSimulated(),
+	)
 	return &deltav1.ObserverServicePublishResponse{Sequence: response.GetSequence()}, nil
 }
 
@@ -83,3 +94,25 @@ func (s *Service) Observe(request *deltav1.ObserveRequest, stream grpc.ServerStr
 }
 
 var _ deltav1.ObserverServiceServer = (*Service)(nil)
+
+func missionID(event *deltav1.DomainEvent) string {
+	if event == nil {
+		return ""
+	}
+	switch body := event.GetBody().(type) {
+	case *deltav1.DomainEvent_RoutePlanned:
+		return body.RoutePlanned.GetMissionId()
+	case *deltav1.DomainEvent_MissionFieldUpdated:
+		return body.MissionFieldUpdated.GetMissionId()
+	case *deltav1.DomainEvent_ConflictRaised:
+		return body.ConflictRaised.GetMissionId()
+	case *deltav1.DomainEvent_SlaBreachPredicted:
+		return body.SlaBreachPredicted.GetMissionId()
+	case *deltav1.DomainEvent_PreemptionConfirmed:
+		return body.PreemptionConfirmed.GetMissionId()
+	case *deltav1.DomainEvent_RendezvousPlanned:
+		return body.RendezvousPlanned.GetMissionId()
+	default:
+		return ""
+	}
+}
