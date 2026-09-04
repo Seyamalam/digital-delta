@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-import { addProtocol, AttributionControl, GeoJSONSource, Map as MapLibreMap, Marker, setWorkerUrl } from "maplibre-gl";
+import { addProtocol, AttributionControl, GeoJSONSource, Map as MapLibreMap, Marker, NavigationControl, setWorkerUrl } from "maplibre-gl";
 import { PMTiles, Protocol } from "pmtiles";
 import { buildMissionGeoJson, createOfflineStyle, missionBounds, offlineMapRevision, sylhetNodes } from "./offlineMap";
 
@@ -37,14 +37,15 @@ export function OfflineDeltaMap({ useWaterRoute, showRisk, simulated, language }
       minZoom: 6,
       maxZoom: 14,
       attributionControl: false,
-      dragPan: false,
+      dragPan: true,
       dragRotate: false,
       scrollZoom: false,
-      keyboard: false,
+      keyboard: true,
       pitchWithRotate: false,
       touchZoomRotate: false,
     });
     instance.addControl(new AttributionControl({ compact: true }), "bottom-right");
+    instance.addControl(new NavigationControl({ showCompass: false, visualizePitch: false }), "top-right");
     instance.on("error", (event) => {
       console.warn("offline map failed to render", event.error);
       setStatus((current) => current === "ready" ? current : "unavailable");

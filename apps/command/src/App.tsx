@@ -1,6 +1,27 @@
 "use client";
 
 import { lazy, Suspense, useEffect, useMemo, useReducer, useState } from "react";
+import {
+  Activity,
+  CircleAlert,
+  CloudOff,
+  Database,
+  Languages,
+  MapPinned,
+  Pause,
+  Play,
+  RadioTower,
+  RotateCcw,
+  Route,
+  ShieldCheck,
+  Siren,
+  Waves,
+} from "lucide-react";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Progress } from "@/components/ui/progress";
+import { ScrollArea } from "@/components/ui/scroll-area";
 import { connectObserver, type ObserverConnectOptions, type ObserverStatus, type PresentationObservation } from "./observer";
 import { projectObservations } from "./projection";
 
@@ -106,6 +127,19 @@ export function scenarioReducer(state: ScenarioState, action: Action): ScenarioS
 const copy = {
   bn: {
     command: "ডেল্টা কমান্ড",
+    headquarters: "অপারেশন সদরদপ্তর",
+    overview: "সাধারণ কার্যচিত্র",
+    liveMap: "লাইভ সিলেট অপারেশন মানচিত্র",
+    activeMission: "সক্রিয় মিশন",
+    situation: "পরিস্থিতি",
+    fieldLink: "ফিল্ড লিংক",
+    archive: "D1 আর্কাইভ ঐচ্ছিক",
+    localTruth: "স্থানীয় প্রোটোবাফ উৎস",
+    incidentBoard: "ঘটনা বোর্ড",
+    commandActions: "কমান্ড অ্যাকশন",
+    openIncidents: "৩টি খোলা ঘটনা",
+    fleet: "বহর ও হ্যান্ডঅফ",
+    operational: "অপারেশনাল",
     subtitle: "সিলেট দুর্যোগ সমন্বয় • স্থানীয় পর্যবেক্ষণ",
     offline: "বাণিজ্যিক ইন্টারনেট নেই",
     observer: "লাইভ পর্যবেক্ষক সংযুক্ত",
@@ -164,6 +198,19 @@ const copy = {
   },
   en: {
     command: "Delta Command",
+    headquarters: "Operations headquarters",
+    overview: "Common operating picture",
+    liveMap: "Live Sylhet operations map",
+    activeMission: "Active mission",
+    situation: "Situation",
+    fieldLink: "Field link",
+    archive: "D1 archive optional",
+    localTruth: "Local Protobuf source",
+    incidentBoard: "Incident board",
+    commandActions: "Command actions",
+    openIncidents: "3 open incidents",
+    fleet: "Fleet & handoff",
+    operational: "Operational",
     subtitle: "Sylhet disaster coordination • local observer",
     offline: "Commercial internet unavailable",
     observer: "Live observer connected",
@@ -304,123 +351,164 @@ export function App({ observerConnect: injectedObserverConnect, observerUrl = pr
     ? `${projection.rendezvous.latitudeDegrees.toFixed(4)}, ${projection.rendezvous.longitudeDegrees.toFixed(4)}`
     : "25.0200, 91.7000";
 
+  const etaMinutes = liveEta ?? ((displayState.failedRoad ? 45 : 65) + (displayState.vehicleDelayed ? 18 : 0));
+
   return (
     <main className="command-shell" data-language={language}>
-      <header className="topbar">
-        <div className="brand-lockup">
-          <DeltaMark />
-          <div><h1>{t.command}</h1><p>{t.subtitle}</p></div>
+      <aside className="command-spine" aria-label={t.headquarters}>
+        <div className="spine-brand"><DeltaMark /><span>DD</span></div>
+        <nav className="spine-nav" aria-label={t.overview}>
+          <button className="is-current" aria-label={t.overview}><Activity /></button>
+          <button aria-label={t.liveMap}><MapPinned /></button>
+          <button aria-label={t.route}><Route /></button>
+          <button aria-label={t.proof}><ShieldCheck /></button>
+        </nav>
+        <div className={`delta-spine ${state.nodeOffline ? "is-broken" : ""}`} aria-label={t.mesh}>
+          <span>A</span><i /><span>B</span><i /><span>C</span>
+          <b className="mesh-packet" />
         </div>
-        <div className="top-status">
-          <span className="pill offline"><i />{t.offline}</span>
-          <span className={`pill ${observerTone}`}>
-            <i />{observerLabel}
-          </span>
-          <button className="language" onClick={() => setLanguage(language === "bn" ? "en" : "bn")}>
-            {language === "bn" ? "English" : "বাংলা"}
-          </button>
-        </div>
-      </header>
+        <div className="spine-foot"><CloudOff /><span>LOCAL<br />FIRST</span></div>
+      </aside>
 
-      <section className="mission-strip" aria-label={t.mission}>
-        <div className="priority">P0</div>
-        <div className="mission-title"><span>{t.simulated}</span><strong>{t.mission}</strong></div>
-        <div className="mission-metric"><small>{t.eta}</small><strong>{liveEta ?? ((displayState.failedRoad ? 45 : 65) + (displayState.vehicleDelayed ? 18 : 0))}<em> min</em></strong></div>
-        <div className="mission-alert"><small>{t.droneRequired}</small><strong>{displayState.failedRoad ? t.warning : t.fieldSafe}</strong></div>
+      <section className="operations-canvas">
+        <header className="command-header">
+          <div className="command-title">
+            <p><span className="live-dot" />{t.headquarters} / SYLHET-01</p>
+            <h1>{t.command}</h1>
+            <span>{t.subtitle}</span>
+          </div>
+          <div className="header-status">
+            <Badge className="status-badge offline-status"><CloudOff />{t.offline}</Badge>
+            <Badge className={`status-badge observer-status ${observerTone}`}><RadioTower />{observerLabel}</Badge>
+            <Badge className="status-badge archive-status"><Database />{t.archive}</Badge>
+            <Button className="language" variant="outline" onClick={() => setLanguage(language === "bn" ? "en" : "bn")}>
+              <Languages />{language === "bn" ? "English" : "বাংলা"}
+            </Button>
+          </div>
+        </header>
+
+        <section className="mission-ribbon" aria-label={t.mission}>
+          <div className="mission-priority"><Siren /><strong>P0</strong></div>
+          <div className="mission-name"><span>{t.activeMission} · {t.simulated}</span><strong>{t.mission}</strong></div>
+          <Metric label={t.eta} value={`${etaMinutes}`} suffix="MIN" tone={etaMinutes > 120 ? "danger" : "signal"} />
+          <Metric label={t.network} value={state.nodeOffline ? "2/3" : "3/3"} suffix="NODES" tone={state.nodeOffline ? "danger" : "good"} />
+          <Metric label={t.mesh} value={state.nodeOffline ? "04" : "00"} suffix="QUEUED" tone={state.nodeOffline ? "signal" : "good"} />
+          <div className={`mission-decision ${displayState.failedRoad ? "is-alert" : ""}`}>
+            <span>{t.droneRequired}</span>
+            <strong>{displayState.failedRoad ? t.warning : t.fieldSafe}</strong>
+          </div>
+        </section>
+
+        <div className="operations-grid">
+          <Card className="map-panel ops-card">
+            <CardHeader className="ops-card-header">
+              <div><span className="module-label">M4 · M7 · M8</span><CardTitle>{t.liveMap}</CardTitle></div>
+              <div className="map-meta"><span className="live-dot" />{t.localTruth}<code>24.8949°N / 91.8687°E</code></div>
+            </CardHeader>
+            <CardContent className="map-card-content">
+              <Suspense fallback={<OfflineMapModuleFallback language={language} />}>
+                <OfflineDeltaMap useWaterRoute={useFallbackRoute} showRisk={displayState.predictedRisk} simulated={liveRoute?.simulated ?? true} language={language} />
+              </Suspense>
+            </CardContent>
+            <div className="route-caption">
+              <div><span>{t.route}</span><strong>{routeLabel}</strong></div>
+              <div className="route-proof"><span>{rendezvousLabel} RENDEZVOUS</span><strong>{rendezvousCoordinates}</strong></div>
+            </div>
+          </Card>
+
+          <div className="situation-stack">
+            <Card className="ops-card incident-card">
+              <CardHeader className="ops-card-header compact"><div><span className="module-label">OPS · NOW</span><CardTitle>{t.incidentBoard}</CardTitle></div><Badge className="count-badge">{t.openIncidents}</Badge></CardHeader>
+              <CardContent className="incident-list">
+                <Incident tone="critical" code="P0" title={displayState.failedRoad ? t.warning : t.mission} detail={`ROUTE · ${routeLabel}`} />
+                <Incident tone="warning" code="M7" title={language === "bn" ? "E3 পথ ঝুঁকি" : "E3 route risk"} detail={`${state.rainfallMmPerHour} mm/h · ${state.soilSaturationPercent}%`} />
+                <Incident tone={state.conflict ? "critical" : "stable"} code="M2" title={language === "bn" ? "CRDT দ্বন্দ্ব পর্যবেক্ষণ" : "CRDT conflict watch"} detail={state.conflict ? (language === "bn" ? "মানব সিদ্ধান্ত প্রয়োজন" : "Human review required") : (language === "bn" ? "কনভার্জড" : "Converged")} />
+              </CardContent>
+            </Card>
+
+            <Card className="ops-card mesh-card">
+              <CardHeader className="ops-card-header compact"><div><span className="module-label">M3</span><CardTitle>{t.network}</CardTitle></div><code>{state.nodeOffline ? "2 / 3" : "3 / 3"}</code></CardHeader>
+              <CardContent className="node-list">
+                <Node id="A" role={t.clinic} battery={82} status={t.p0Ready} />
+                <Node id="B" role={t.boatRelay} battery={58} status={state.nodeOffline ? t.offlineQueued : t.queued} offline={state.nodeOffline} />
+                <Node id="C" role={t.droneOperator} battery={state.droneBattery} status={state.droneBattery < 30 ? t.throttled : t.ready} />
+              </CardContent>
+            </Card>
+
+            <Card className={`ops-card custody-panel ${state.custodyVerified ? "is-verified" : ""}`}>
+              <CardContent className="custody-content">
+                <div className="custody-seal">{state.custodyVerified ? <ShieldCheck /> : <Waves />}</div>
+                <div><span>M5 · {t.proof}</span><strong>{state.custodyVerified ? t.verified : t.awaiting}</strong><p>Boat-02 → simulated-drone-07</p></div>
+                <code>{state.custodyVerified ? "925E4120" : "PENDING"}</code>
+              </CardContent>
+            </Card>
+          </div>
+
+          <Card className="ops-card inventory-panel">
+            <CardHeader className="ops-card-header compact"><div><span className="module-label">M6 · P0 FIRST</span><CardTitle>{t.inventory}</CardTitle></div><CircleAlert /></CardHeader>
+            <CardContent className="inventory-content">
+              <Inventory label={t.bloodCooler} amount="1 / 1" level={100} critical />
+              <Inventory label={t.medicine} amount="4 / 6" level={66} critical />
+              <Inventory label="ORS" amount="120 / 200" level={60} />
+              <Inventory label={t.tarpaulin} amount="P2 • N3" level={35} />
+            </CardContent>
+          </Card>
+
+          <Card className="ops-card event-panel" aria-live="polite">
+            <CardHeader className="ops-card-header compact"><div><span className="module-label">PROTOBUF · ORDERED</span><CardTitle>{t.events}</CardTitle></div><code>{projection.latestSequence > 0 ? `SEQ ${projection.latestSequence}` : "SEED 20260412"}</code></CardHeader>
+            <CardContent className="event-content">
+              <ScrollArea className="event-scroll"><ol>{events.map((event) => <li key={event.id}><time>{event.time}</time><i className={event.tone} /><div><strong>{event.title}</strong><span>{event.detail}</span></div><code>{event.id}</code></li>)}</ol></ScrollArea>
+            </CardContent>
+          </Card>
+
+          <Card className="ops-card control-panel">
+            <CardHeader className="ops-card-header compact"><div><span className="module-label">LOCAL · {t.simulated}</span><CardTitle>{t.commandActions}</CardTitle></div><Badge className="drill-badge">DRILL 0{state.step + 1}/06</Badge></CardHeader>
+            <CardContent className="control-content">
+              <div className="control-tabs" role="tablist" aria-label={t.controls}>
+                <button role="tab" aria-selected={controlMode === "core"} onClick={() => setControlMode("core")}>{t.core}</button>
+                <button role="tab" aria-selected={controlMode === "faults"} onClick={() => setControlMode("faults")}>{t.faults}</button>
+              </div>
+              {controlMode === "core" ? <div className="tab-content">
+                  <div className="environment-controls">
+                    <EnvironmentControl label={t.rainfall} valueLabel={`${state.rainfallMmPerHour} mm/h`} value={state.rainfallMmPerHour} max={140} onChange={(value) => dispatch({ type: "RAINFALL", value })} />
+                    <EnvironmentControl label={t.saturation} valueLabel={`${state.soilSaturationPercent}%`} value={state.soilSaturationPercent} max={100} onChange={(value) => dispatch({ type: "SATURATION", value })} />
+                  </div>
+                  <div className="control-grid">
+                    <Control active={state.failedRoad} onClick={() => dispatch({ type: "FLOOD" })} label={t.road} code="M4" />
+                    <Control active={state.conflict} onClick={() => dispatch({ type: "CONFLICT" })} label={t.conflict} code="M2" />
+                    <Control active={state.droneBattery < 30} onClick={() => dispatch({ type: "BATTERY" })} label={t.battery} code="M3" />
+                    <Control active={state.custodyVerified} onClick={() => dispatch({ type: "VERIFY" })} label={t.verify} code="M5" />
+                  </div>
+                </div> : <div className="tab-content">
+                  <div className="control-grid fault-grid">
+                    <Control active={state.syncing} onClick={() => dispatch({ type: "SYNC" })} label={t.showSync} code="SYNC" />
+                    <Control active={state.nodeOffline} onClick={() => dispatch({ type: "NODE" })} label={t.nodeOffline} code="M3" />
+                    <Control active={state.vehicleDelayed} onClick={() => dispatch({ type: "DELAY" })} label={t.delayBoat} code="M8" />
+                    <Control active={state.duplicateRejected} onClick={() => dispatch({ type: "DUPLICATE" })} label={t.rejectDuplicate} code="M3" />
+                    <Control active={state.tamperRejected} onClick={() => dispatch({ type: "TAMPER" })} label={t.rejectTamper} code="M5" />
+                    <Control active={!state.observerConnected} onClick={() => dispatch({ type: "TOGGLE_OBSERVER" })} label={state.observerConnected ? t.disconnect : t.reconnect} code="SYS" />
+                  </div>
+                </div>}
+              <div className="primary-controls">
+                <Button className="advance" onClick={() => dispatch({ type: "STEP" })}><Play />{t.step}<span>0{state.step + 1} / 06</span></Button>
+                <Button className={`replay ${isReplaying ? "active" : ""}`} variant="outline" aria-pressed={isReplaying} onClick={() => setIsReplaying(!isReplaying)}>{isReplaying ? <Pause /> : <Activity />}{isReplaying ? t.pauseReplay : t.autoReplay}</Button>
+                <Button className="reset" variant="ghost" onClick={reset}><RotateCcw />{t.reset}</Button>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
       </section>
-
-      <div className="dashboard-grid">
-        <section className="map-panel panel">
-          <PanelHeading eyebrow="M4 + M7 + M8" title={t.route} meta="24.8949°N / 91.8687°E" />
-          <Suspense fallback={<OfflineMapModuleFallback language={language} />}>
-            <OfflineDeltaMap useWaterRoute={useFallbackRoute} showRisk={displayState.predictedRisk} simulated={liveRoute?.simulated ?? true} language={language} />
-          </Suspense>
-          <div className="route-caption">
-            <div><span>{t.route}</span><strong>{routeLabel}</strong></div>
-            <div className="route-proof"><span>{rendezvousLabel} RENDEZVOUS</span><strong>{rendezvousCoordinates}</strong></div>
-          </div>
-        </section>
-
-        <aside className="right-rail">
-          <section className="panel nodes-panel">
-            <PanelHeading eyebrow="M3" title={t.network} meta="3 / 3" />
-            <Node id="A" role={t.clinic} battery={82} status={t.p0Ready} />
-            <Node id="B" role={t.boatRelay} battery={58} status={state.nodeOffline ? t.offlineQueued : t.queued} offline={state.nodeOffline} />
-            <Node id="C" role={t.droneOperator} battery={state.droneBattery} status={state.droneBattery < 30 ? t.throttled : t.ready} />
-            <div className="mesh-line"><span>A</span><b /><span>B</span><b /><span>C</span></div>
-          </section>
-          <section className={`panel custody-panel ${state.custodyVerified ? "is-verified" : ""}`}>
-            <PanelHeading eyebrow="M5" title={t.proof} meta={state.custodyVerified ? "SHA 925E4120" : "PENDING"} />
-            <div className="custody-seal">{state.custodyVerified ? "✓" : "⌁"}</div>
-            <strong>{state.custodyVerified ? t.verified : t.awaiting}</strong>
-            <p>Boat-02 → simulated-drone-07</p>
-          </section>
-        </aside>
-
-        <section className="panel inventory-panel">
-          <PanelHeading eyebrow="M6" title={t.inventory} meta="P0 FIRST" />
-          <Inventory label={t.bloodCooler} amount="1 / 1" level={100} critical />
-          <Inventory label={t.medicine} amount="4 / 6" level={66} critical />
-          <Inventory label="ORS" amount="120 / 200" level={60} />
-          <Inventory label={t.tarpaulin} amount="P2 • N3" level={35} />
-        </section>
-
-        <section className="panel event-panel" aria-live="polite">
-          <PanelHeading eyebrow="PROTOBUF LEDGER" title={t.events} meta={projection.latestSequence > 0 ? `LIVE SEQ ${projection.latestSequence} • ${events.length}` : `SEED 20260412 • ${events.length}`} />
-          <ol>{events.map((event) => <li key={event.id}><time>{event.time}</time><i className={event.tone} /><div><strong>{event.title}</strong><span>{event.detail}</span></div><code>{event.id}</code></li>)}</ol>
-        </section>
-
-        <section className="panel control-panel">
-          <PanelHeading eyebrow="LOCAL ONLY" title={t.controls} meta="SIMULATION" />
-          <div className="control-tabs" role="tablist" aria-label={t.controls}>
-            <button role="tab" aria-selected={controlMode === "core"} onClick={() => setControlMode("core")}>{t.core}</button>
-            <button role="tab" aria-selected={controlMode === "faults"} onClick={() => setControlMode("faults")}>{t.faults}</button>
-          </div>
-          {controlMode === "core" && <div className="environment-controls">
-            <EnvironmentControl
-              label={t.rainfall}
-              valueLabel={`${state.rainfallMmPerHour} mm/h`}
-              value={state.rainfallMmPerHour}
-              max={140}
-              onChange={(value) => dispatch({ type: "RAINFALL", value })}
-            />
-            <EnvironmentControl
-              label={t.saturation}
-              valueLabel={`${state.soilSaturationPercent}%`}
-              value={state.soilSaturationPercent}
-              max={100}
-              onChange={(value) => dispatch({ type: "SATURATION", value })}
-            />
-          </div>}
-          <div className="control-grid">
-            {controlMode === "core" ? <>
-              <Control active={state.failedRoad} onClick={() => dispatch({ type: "FLOOD" })} label={t.road} code="M4" />
-              <Control active={state.conflict} onClick={() => dispatch({ type: "CONFLICT" })} label={t.conflict} code="M2" />
-              <Control active={state.droneBattery < 30} onClick={() => dispatch({ type: "BATTERY" })} label={t.battery} code="M3" />
-              <Control active={state.custodyVerified} onClick={() => dispatch({ type: "VERIFY" })} label={t.verify} code="M5" />
-            </> : <>
-              <Control active={state.syncing} onClick={() => dispatch({ type: "SYNC" })} label={t.showSync} code="SYNC" />
-              <Control active={state.nodeOffline} onClick={() => dispatch({ type: "NODE" })} label={t.nodeOffline} code="M3" />
-              <Control active={state.vehicleDelayed} onClick={() => dispatch({ type: "DELAY" })} label={t.delayBoat} code="M8" />
-              <Control active={state.duplicateRejected} onClick={() => dispatch({ type: "DUPLICATE" })} label={t.rejectDuplicate} code="M3" />
-              <Control active={state.tamperRejected} onClick={() => dispatch({ type: "TAMPER" })} label={t.rejectTamper} code="M5" />
-              <Control active={!state.observerConnected} onClick={() => dispatch({ type: "TOGGLE_OBSERVER" })} label={state.observerConnected ? t.disconnect : t.reconnect} code="SYS" />
-            </>}
-          </div>
-          <div className="primary-controls">
-            <button className="advance" onClick={() => dispatch({ type: "STEP" })}>{t.step}<span>0{state.step + 1} / 06</span></button>
-            <button className={`replay ${isReplaying ? "active" : ""}`} aria-pressed={isReplaying} onClick={() => setIsReplaying(!isReplaying)}>{isReplaying ? t.pauseReplay : t.autoReplay}</button>
-            <button className="reset" onClick={reset}>{t.reset}</button>
-          </div>
-        </section>
-      </div>
       {!state.observerConnected && <div className="disconnect-banner" role="status"><strong>{t.observerLost}</strong><span>{t.fieldSafe}</span></div>}
     </main>
   );
 }
 
-function PanelHeading({ eyebrow, title, meta }: { eyebrow: string; title: string; meta: string }) {
-  return <div className="panel-heading"><div><span>{eyebrow}</span><h2>{title}</h2></div><code>{meta}</code></div>;
+function Metric({ label, value, suffix, tone }: { label: string; value: string; suffix: string; tone: "signal" | "good" | "danger" }) {
+  return <div className={`mission-metric ${tone}`}><span>{label}</span><strong>{value}<em>{suffix}</em></strong></div>;
+}
+
+function Incident({ tone, code, title, detail }: { tone: "critical" | "warning" | "stable"; code: string; title: string; detail: string }) {
+  return <div className={`incident-row ${tone}`}><span>{code}</span><div><strong>{title}</strong><small>{detail}</small></div><i /></div>;
 }
 
 function OfflineMapModuleFallback({ language }: { language: Language }) {
@@ -436,15 +524,15 @@ function OfflineMapModuleFallback({ language }: { language: Language }) {
 function DeltaMark() { return <svg className="delta-mark" viewBox="0 0 58 58" aria-hidden="true"><path d="M29 5 52 50H6L29 5Z" /><path d="M29 17v27M18 29l11 8 11-8" /></svg>; }
 
 function Node({ id, role, battery, status, offline = false }: { id: string; role: string; battery: number; status: string; offline?: boolean }) {
-  return <div className={`node-row ${offline ? "is-offline" : ""}`}><span className="node-id">{id}</span><div><strong>{role}</strong><small>{status}</small></div><div className="battery"><span style={{ width: `${battery}%` }} /><em>{battery}%</em></div></div>;
+  return <div className={`node-row ${offline ? "is-offline" : ""}`}><span className="node-id">{id}</span><div><strong>{role}</strong><small>{status}</small></div><div className="battery"><Progress value={battery} /><em>{battery}%</em></div></div>;
 }
 
 function Inventory({ label, amount, level, critical = false }: { label: string; amount: string; level: number; critical?: boolean }) {
-  return <div className="inventory-row"><div><strong>{label}</strong><span>{amount}</span></div><div className="inventory-track"><i className={critical ? "critical" : ""} style={{ width: `${level}%` }} /></div></div>;
+  return <div className={`inventory-row ${critical ? "critical" : ""}`}><div><strong>{label}</strong><span>{amount}</span></div><Progress value={level} /></div>;
 }
 
 function Control({ active, onClick, label, code }: { active: boolean; onClick: () => void; label: string; code: string }) {
-  return <button className={`control ${active ? "active" : ""}`} aria-pressed={active} onClick={onClick}><code>{code}</code><span>{label}</span><i /></button>;
+  return <Button variant="outline" className={`control ${active ? "active" : ""}`} aria-pressed={active} onClick={onClick}><code>{code}</code><span>{label}</span><i /></Button>;
 }
 
 function EnvironmentControl({ label, valueLabel, value, max, onChange }: { label: string; valueLabel: string; value: number; max: number; onChange: (value: number) => void }) {
