@@ -1655,8 +1655,40 @@ private fun MeshRelayCard(
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
-                if (nearby.connectedNodeIds.isEmpty() && nearby.pendingCandidates.isEmpty()) {
+                if (nearby.connectedNodeIds.isEmpty() &&
+                    nearby.pendingCandidates.isEmpty() &&
+                    nearby.authenticatingNodeIds.isEmpty()
+                ) {
                     Text(text(R.string.scanning_for_peers, language), style = MaterialTheme.typography.bodySmall)
+                }
+                nearby.authenticatingNodeIds.forEach { nodeId ->
+                    Surface(
+                        color = RiskAmber.copy(alpha = .12f),
+                        shape = RoundedCornerShape(12.dp),
+                        modifier = Modifier.fillMaxWidth().testTag("authenticating-peer-$nodeId"),
+                    ) {
+                        Text(
+                            "${text(R.string.authenticating_peer, language)} • $nodeId",
+                            Modifier.padding(12.dp),
+                            fontWeight = FontWeight.Bold,
+                        )
+                    }
+                }
+                nearby.authenticatedPeerKeyIds.forEach { (nodeId, keyId) ->
+                    Surface(
+                        color = VerifiedGreen.copy(alpha = .12f),
+                        shape = RoundedCornerShape(12.dp),
+                        modifier = Modifier.fillMaxWidth().testTag("verified-peer-$nodeId"),
+                    ) {
+                        Column(Modifier.padding(12.dp)) {
+                            Text("${text(R.string.verified_peer, language)} • $nodeId", fontWeight = FontWeight.Bold)
+                            Text(
+                                "${text(R.string.signing_key, language)} • $keyId",
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            )
+                        }
+                    }
                 }
             }
             nearby.pendingCandidates.forEach { candidate ->

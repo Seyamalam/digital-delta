@@ -19,6 +19,7 @@ import com.example.digitaldelta.domain.mesh.MeshOutboxDispatcher
 import com.example.digitaldelta.domain.mesh.MeshPolicy
 import com.example.digitaldelta.domain.mesh.MeshRuntimeStateStore
 import com.example.digitaldelta.domain.mesh.AndroidMeshAcknowledgementSigner
+import com.example.digitaldelta.domain.mesh.AndroidPeerIdentityAuthenticator
 import com.example.digitaldelta.domain.mesh.DirectoryMeshAcknowledgementVerifier
 import com.example.digitaldelta.domain.mesh.NearbyConnectionsPeerTransport
 import com.example.digitaldelta.domain.mesh.NearbyMeshController
@@ -61,6 +62,12 @@ class MeshRelayService : Service() {
                 database = graph.database(),
                 localNodeId = LOCAL_NODE_ID,
                 acknowledgementSigner = acknowledgementSigner,
+            ),
+            identityAuthenticator = AndroidPeerIdentityAuthenticator(
+                localNodeId = LOCAL_NODE_ID,
+                deviceKeys = graph.deviceIdentityKeyStore(),
+                recipientKeys = graph.database().recipientKeyDao(),
+                trustAnchors = graph.trustAnchorRepository(),
             ),
         )
         scope.launch {

@@ -41,7 +41,9 @@ data class NearbyMeshState(
     val running: Boolean = false,
     val discoveredNodeIds: Set<String> = emptySet(),
     val pendingCandidates: List<NearbyPeerCandidate> = emptyList(),
+    val authenticatingNodeIds: Set<String> = emptySet(),
     val connectedNodeIds: Set<String> = emptySet(),
+    val authenticatedPeerKeyIds: Map<String, String> = emptyMap(),
     val lastError: String? = null,
 )
 
@@ -62,14 +64,18 @@ class NearbyConnectionsPeerTransport(
     context: Context,
     private val localNodeId: String,
     private val ingress: RoomMeshIngress,
+    private val identityAuthenticator: PeerIdentityAuthenticator,
     private val client: ConnectionsClient = Nearby.getConnectionsClient(context.applicationContext),
     private val scope: CoroutineScope = CoroutineScope(SupervisorJob() + Dispatchers.IO),
 ) : NearbyMeshController {
     private val mutableState = MutableStateFlow(NearbyMeshState())
     override val state: StateFlow<NearbyMeshState> = mutableState.asStateFlow()
     private val candidates = ConcurrentHashMap<String, NearbyPeerCandidate>()
+    private val acceptedEndpoints = ConcurrentHashMap<String, String>()
     private val connectedEndpoints = ConcurrentHashMap<String, String>()
     private val endpointNodeIds = ConcurrentHashMap<String, String>()
+    private val authenticatedPeerKeyIds = ConcurrentHashMap<String, String>()
+    private val pendingChallenges = PendingPeerChallenges()
     private val pendingAcknowledgements = ConcurrentHashMap<String, CompletableDeferred<com.example.digitaldelta.proto.v1.Acknowledgement>>()
 
     private val payloadCallback = object : PayloadCallback() {
@@ -77,24 +83,47 @@ class NearbyConnectionsPeerTransport(
             if (payload.type != Payload.Type.BYTES) return
             val bytes = payload.asBytes() ?: return
             scope.launch {
-                runCatching { PeerFrameCodec.decode(bytes) }
-                    .onSuccess { body ->
-                        when (body) {
-                            is PeerFrameBody.EnvelopeBytes -> {
-                                val acknowledgement = ingress.receive(body.wireBytes)
-                                client.sendPayload(
-                                    endpointId,
-                                    Payload.fromBytes(PeerFrameCodec.encodeAcknowledgement(acknowledgement)),
-                                ).addOnFailureListener { recordError(it) }
+                try {
+                    when (val body = PeerFrameCodec.decode(bytes)) {
+                        is PeerFrameBody.IdentityChallengeMessage -> {
+                            val expectedNodeId = endpointNodeIds[endpointId]
+                            if (expectedNodeId == null || body.challenge.challengerNodeId != expectedNodeId) {
+                                rejectAuthentication(endpointId, "PEER_CHALLENGE_NODE_MISMATCH")
+                                return@launch
                             }
+                            val proof = identityAuthenticator.createProof(body.challenge)
+                            client.sendPayload(
+                                endpointId,
+                                Payload.fromBytes(PeerFrameCodec.encodeIdentityProof(proof)),
+                            ).addOnFailureListener { recordError(it) }
+                        }
 
-                            is PeerFrameBody.AcknowledgementMessage -> {
-                                pendingAcknowledgements.remove(body.acknowledgement.messageId)
-                                    ?.complete(body.acknowledgement)
+                        is PeerFrameBody.IdentityProofMessage -> authenticateProof(endpointId, body)
+
+                        is PeerFrameBody.EnvelopeBytes -> {
+                            if (!isAuthenticated(endpointId)) {
+                                rejectAuthentication(endpointId, "UNAUTHENTICATED_ENVELOPE")
+                                return@launch
                             }
+                            val acknowledgement = ingress.receive(body.wireBytes)
+                            client.sendPayload(
+                                endpointId,
+                                Payload.fromBytes(PeerFrameCodec.encodeAcknowledgement(acknowledgement)),
+                            ).addOnFailureListener { recordError(it) }
+                        }
+
+                        is PeerFrameBody.AcknowledgementMessage -> {
+                            if (!isAuthenticated(endpointId)) {
+                                rejectAuthentication(endpointId, "UNAUTHENTICATED_ACKNOWLEDGEMENT")
+                                return@launch
+                            }
+                            pendingAcknowledgements.remove(body.acknowledgement.messageId)
+                                ?.complete(body.acknowledgement)
                         }
                     }
-                    .onFailure { recordError(it) }
+                } catch (error: Throwable) {
+                    rejectAuthentication(endpointId, error.message ?: error.javaClass.simpleName)
+                }
             }
         }
 
@@ -116,9 +145,23 @@ class NearbyConnectionsPeerTransport(
         override fun onConnectionResult(endpointId: String, resolution: ConnectionResolution) {
             val nodeId = endpointNodeIds[endpointId]
             if (resolution.status.statusCode == ConnectionsStatusCodes.STATUS_OK && nodeId != null) {
-                connectedEndpoints[nodeId] = endpointId
+                val existingEndpoint = acceptedEndpoints.putIfAbsent(nodeId, endpointId)
+                if (existingEndpoint != null && existingEndpoint != endpointId) {
+                    rejectAuthentication(endpointId, "DUPLICATE_NODE_CONNECTION")
+                    return
+                }
                 candidates.remove(endpointId)
                 publishPeers()
+                scope.launch {
+                    runCatching {
+                        val challenge = identityAuthenticator.createChallenge()
+                        pendingChallenges.put(endpointId, challenge)
+                        client.sendPayload(
+                            endpointId,
+                            Payload.fromBytes(PeerFrameCodec.encodeIdentityChallenge(challenge)),
+                        ).awaitSuccess()
+                    }.onFailure { rejectAuthentication(endpointId, it.message ?: "PEER_CHALLENGE_FAILED") }
+                }
             } else {
                 candidates.remove(endpointId)
                 endpointNodeIds.remove(endpointId)
@@ -128,7 +171,13 @@ class NearbyConnectionsPeerTransport(
 
         override fun onDisconnected(endpointId: String) {
             val nodeId = endpointNodeIds.remove(endpointId)
-            if (nodeId != null) connectedEndpoints.remove(nodeId)
+            if (nodeId != null) {
+                acceptedEndpoints.remove(nodeId, endpointId)
+                if (connectedEndpoints.remove(nodeId, endpointId)) {
+                    authenticatedPeerKeyIds.remove(nodeId)
+                }
+            }
+            pendingChallenges.remove(endpointId)
             candidates.remove(endpointId)
             publishPeers()
         }
@@ -146,7 +195,7 @@ class NearbyConnectionsPeerTransport(
 
         override fun onEndpointLost(endpointId: String) {
             val nodeId = endpointNodeIds[endpointId] ?: return
-            if (!connectedEndpoints.containsKey(nodeId)) {
+            if (!connectedEndpoints.containsKey(nodeId) && !acceptedEndpoints.containsKey(nodeId)) {
                 endpointNodeIds.remove(endpointId)
                 mutableState.update { it.copy(discoveredNodeIds = it.discoveredNodeIds - nodeId) }
             }
@@ -203,7 +252,10 @@ class NearbyConnectionsPeerTransport(
         pendingAcknowledgements.values.forEach { it.cancel() }
         pendingAcknowledgements.clear()
         candidates.clear()
+        acceptedEndpoints.clear()
         connectedEndpoints.clear()
+        authenticatedPeerKeyIds.clear()
+        pendingChallenges.clear()
         endpointNodeIds.clear()
         mutableState.value = NearbyMeshState()
         scope.cancel()
@@ -213,9 +265,46 @@ class NearbyConnectionsPeerTransport(
         mutableState.update {
             it.copy(
                 pendingCandidates = candidates.values.sortedBy(NearbyPeerCandidate::nodeId),
+                authenticatingNodeIds = (acceptedEndpoints.keys - connectedEndpoints.keys).toSortedSet(),
                 connectedNodeIds = connectedEndpoints.keys.toSortedSet(),
+                authenticatedPeerKeyIds = authenticatedPeerKeyIds.toSortedMap(),
             )
         }
+    }
+
+    private suspend fun authenticateProof(endpointId: String, body: PeerFrameBody.IdentityProofMessage) {
+        val expectedNodeId = endpointNodeIds[endpointId]
+        val challenge = pendingChallenges.expected(endpointId)
+        if (expectedNodeId == null || challenge == null ||
+            !identityAuthenticator.verifyProof(body.proof, challenge, expectedNodeId) ||
+            !pendingChallenges.consume(endpointId, challenge)
+        ) {
+            rejectAuthentication(endpointId, "PEER_IDENTITY_REJECTED")
+            return
+        }
+        connectedEndpoints[expectedNodeId] = endpointId
+        authenticatedPeerKeyIds[expectedNodeId] = body.proof.nodeSignature.keyId
+        mutableState.update { it.copy(lastError = null) }
+        publishPeers()
+    }
+
+    private fun isAuthenticated(endpointId: String): Boolean {
+        val nodeId = endpointNodeIds[endpointId] ?: return false
+        return connectedEndpoints[nodeId] == endpointId
+    }
+
+    private fun rejectAuthentication(endpointId: String, reason: String) {
+        pendingChallenges.remove(endpointId)
+        endpointNodeIds[endpointId]?.let { nodeId ->
+            acceptedEndpoints.remove(nodeId, endpointId)
+            if (connectedEndpoints.remove(nodeId, endpointId)) {
+                authenticatedPeerKeyIds.remove(nodeId)
+            }
+        }
+        candidates.remove(endpointId)
+        client.disconnectFromEndpoint(endpointId)
+        recordError(SecurityException(reason))
+        publishPeers()
     }
 
     private fun recordError(error: Throwable) {

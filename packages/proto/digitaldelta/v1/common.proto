@@ -88,7 +88,24 @@ message PeerFrame {
   oneof body {
     Envelope envelope = 1;
     Acknowledgement acknowledgement = 2;
+    PeerIdentityChallenge identity_challenge = 3;
+    PeerIdentityProof identity_proof = 4;
   }
+}
+
+message PeerIdentityChallenge {
+  string challenger_node_id = 1;
+  bytes nonce = 2;
+  int64 issued_at_unix_ms = 3;
+  int64 expires_at_unix_ms = 4;
+}
+
+message PeerIdentityProof {
+  PeerIdentityChallenge challenge = 1;
+  string prover_node_id = 2;
+  IdentityProvisioningCredential credential = 3;
+  int64 signed_at_unix_ms = 4;
+  Signature node_signature = 5;
 }
 
 enum IdentityRole {

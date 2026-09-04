@@ -105,6 +105,9 @@
     <string name="battery">Battery</string>
     <string name="broadcast_every">Broadcast every</string>
     <string name="scanning_for_peers">Scanning for provisioned phones nearby…</string>
+    <string name="authenticating_peer">Verifying signed device credential</string>
+    <string name="verified_peer">Provisioned peer verified</string>
+    <string name="signing_key">Signing key</string>
     <string name="connection_request">Connection request</string>
     <string name="compare_code">Compare on both phones:</string>
     <string name="accept">Accept</string>

@@ -105,6 +105,9 @@
     <string name="battery">ব্যাটারি</string>
     <string name="broadcast_every">সম্প্রচার বিরতি</string>
     <string name="scanning_for_peers">নিকটবর্তী নিবন্ধিত ফোন খোঁজা হচ্ছে…</string>
+    <string name="authenticating_peer">স্বাক্ষরিত ডিভাইস পরিচয় যাচাই হচ্ছে</string>
+    <string name="verified_peer">নিবন্ধিত পিয়ার যাচাইকৃত</string>
+    <string name="signing_key">স্বাক্ষর কী</string>
     <string name="connection_request">সংযোগ অনুরোধ</string>
     <string name="compare_code">দুই ফোনে কোড মিলান:</string>
     <string name="accept">গ্রহণ করুন</string>

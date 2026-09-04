@@ -68,7 +68,7 @@ For an incoming envelope:
 9. Append accepted event and rebuild affected projections.
 10. Record rejection or acceptance without exposing protected content.
 
-Nearby's connection comparison digits are displayed to both operators before a candidate is accepted. They help detect a transport-level man-in-the-middle during pairing, but they do not bind the peer to a Digital Delta provisioning credential. Durable and rejected acknowledgements are now signed with the receiving phone's RSA-PSS Keystore key. The sender verifies the complete acknowledgement against the active provisioned peer key and refuses to advance its outbox on any mismatch. Mutual application-layer challenge-response is still required before the interface may label the connection itself as authenticated.
+Nearby's connection comparison digits are displayed to both operators before a candidate is accepted. After acceptance, both phones independently issue a fresh 32-byte nonce challenge. The response binds the exact challenge, Nearby node name, administrator-signed provisioning credential, validity time, and device signing key under RSA-PSS. A successfully verified challenge is consumed once; replay, mutation, expiry, unknown issuer, key mismatch, and endpoint-name mismatch fail closed. Envelopes and acknowledgements are rejected before ingress unless that endpoint completed verification. Durable and rejected acknowledgements are additionally signed with the receiving phone's RSA-PSS Keystore key, and the sender refuses to advance its outbox on any mismatch.
 
 ## Proof-of-delivery verification
 
@@ -139,7 +139,6 @@ The final policy will use explicit permissions rather than hard-coded screen nam
 - Physical possession of a provisioned unlocked phone may authorize actions until it locks.
 - Offline revocation cannot reach a disconnected device until contact occurs.
 - Nearby transport security does not replace application-layer recipient encryption.
-- Nearby comparison digits are not yet bound to signed Digital Delta peer identity.
-- Signed acknowledgements prevent forged delivery confirmation but do not, by themselves, authenticate a connection before it sends its first envelope.
+- The signed Nearby identity exchange has automated protocol evidence but still requires a multi-phone adversarial rehearsal.
 - The demo has not undergone an independent security audit.
 - Load simulation does not prove production behavior across real disaster geography.

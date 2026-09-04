@@ -142,6 +142,8 @@ Use gRPC with Protocol Buffers between nodes where a direct local IP connection 
 
 Use the selected Android nearby transport to move framed Protocol Buffer envelopes. Store-and-forward, acknowledgement, TTL, hop limit, deduplication, and recipient encryption live in the application layer.
 
+Nearby comparison digits require an explicit operator decision, then both accepted endpoints issue independent 32-byte nonce challenges. Each response carries the administrator-signed provisioning credential and a device RSA-PSS signature over the complete challenge, claimed node, credential, and signing time. A proof must match the locally pending challenge, Nearby endpoint name, credential node and signing key, validity window, and pinned administrator key. The challenge is consumed once. Until both phones independently complete this exchange, the endpoint remains `Authenticating` and cannot send an envelope or acknowledgement into the field workflow.
+
 This path must not be described as gRPC unless it actually carries a valid gRPC transport. All mesh payloads remain Protobuf.
 
 Payload encryption is hybrid: each message receives a random AES-256-GCM content key, and that key is wrapped with the final recipient's provisioned RSA-2048 public key using OAEP with SHA-256. Android private encryption and signing keys remain non-exportable in Android Keystore. The Protobuf envelope carries the recipient key ID, nonce, associated-data hash, wrapped content key, and explicit algorithm identifiers so relays can route bytes without opening the domain payload.

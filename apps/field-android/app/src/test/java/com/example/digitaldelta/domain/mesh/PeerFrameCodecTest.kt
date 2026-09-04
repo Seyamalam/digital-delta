@@ -3,6 +3,9 @@ package com.example.digitaldelta.domain.mesh
 import com.example.digitaldelta.proto.v1.Acknowledgement
 import com.example.digitaldelta.proto.v1.AcknowledgementStatus
 import com.example.digitaldelta.proto.v1.PriorityClass
+import com.example.digitaldelta.proto.v1.PeerIdentityChallenge
+import com.example.digitaldelta.proto.v1.PeerIdentityProof
+import com.google.protobuf.ByteString
 import org.junit.Assert.assertEquals
 import org.junit.Test
 
@@ -26,6 +29,17 @@ class PeerFrameCodecTest {
             .setNodeId("B")
             .setStatus(AcknowledgementStatus.ACKNOWLEDGEMENT_STATUS_DURABLY_STORED)
             .build()
+        val challenge = PeerIdentityChallenge.newBuilder()
+            .setChallengerNodeId("A")
+            .setNonce(ByteString.copyFrom(ByteArray(32) { 1 }))
+            .setIssuedAtUnixMs(100)
+            .setExpiresAtUnixMs(130)
+            .build()
+        val proof = PeerIdentityProof.newBuilder()
+            .setChallenge(challenge)
+            .setProverNodeId("B")
+            .setSignedAtUnixMs(101)
+            .build()
 
         assertEquals(
             PeerFrameBody.EnvelopeBytes(envelope.toByteArray()),
@@ -34,6 +48,14 @@ class PeerFrameCodecTest {
         assertEquals(
             PeerFrameBody.AcknowledgementMessage(acknowledgement),
             PeerFrameCodec.decode(PeerFrameCodec.encodeAcknowledgement(acknowledgement)),
+        )
+        assertEquals(
+            PeerFrameBody.IdentityChallengeMessage(challenge),
+            PeerFrameCodec.decode(PeerFrameCodec.encodeIdentityChallenge(challenge)),
+        )
+        assertEquals(
+            PeerFrameBody.IdentityProofMessage(proof),
+            PeerFrameCodec.decode(PeerFrameCodec.encodeIdentityProof(proof)),
         )
     }
 }

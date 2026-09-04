@@ -340,7 +340,29 @@ class MainScreenTest {
         composeTestRule.onNodeWithText("দুই ফোনে কোড মিলান: 482 193").assertIsDisplayed()
         composeTestRule.onNodeWithText("English").performClick()
         composeTestRule.onNodeWithText("Compare on both phones: 482 193").assertIsDisplayed()
-        composeTestRule.onNodeWithText("Stop nearby relay").assertIsDisplayed()
+        composeTestRule.runOnIdle {
+            meshState.value = meshState.value.copy(
+                nearby = NearbyMeshState(
+                    running = true,
+                    authenticatingNodeIds = setOf("N6"),
+                ),
+            )
+        }
+        composeTestRule.onNodeWithText("Verifying signed device credential • N6").assertIsDisplayed()
+        composeTestRule.runOnIdle {
+            meshState.value = meshState.value.copy(
+                nearby = NearbyMeshState(
+                    running = true,
+                    connectedNodeIds = setOf("N6"),
+                    authenticatedPeerKeyIds = mapOf("N6" to "rsa-n6-signing"),
+                ),
+            )
+        }
+        composeTestRule.onNodeWithText("Provisioned peer verified • N6").assertIsDisplayed()
+        composeTestRule.onNodeWithText("Signing key • rsa-n6-signing").assertIsDisplayed()
+        composeTestRule.onNodeWithText("বাংলা").performClick()
+        composeTestRule.onNodeWithText("নিবন্ধিত পিয়ার যাচাইকৃত • N6").assertIsDisplayed()
+        composeTestRule.onNodeWithText("নিকটবর্তী রিলে বন্ধ করুন").assertIsDisplayed()
     }
 
     @Test
