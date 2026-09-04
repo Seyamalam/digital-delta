@@ -23,6 +23,7 @@ Geometry: `packages/scenario/sylhet_route_geometry.json`
 - E6 and E7 use connected OpenStreetMap waterway centerlines from the pinned offline basemap.
 - A1 and A2 remain two-point direct lines and carry `simulated: true`.
 - The local gate verifies the route file checksum and its scenario and basemap source hashes.
+- The local gate byte-compares the Vercel dashboard build copy with the canonical route file.
 - Android verifies the route file checksum before MapLibre receives the mission source.
 - The dashboard has no runtime route API or public tile request.
 

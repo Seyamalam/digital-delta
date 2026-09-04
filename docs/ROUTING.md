@@ -43,6 +43,6 @@ scripts/verify-local.sh --connected
 - `MainScreenViewModelTest`: state transition from assigned truck to boat fallback.
 - `MainScreenTest`: small-screen interaction, route facts, latency visibility, and language parity.
 
-Regenerate water geometry and reuse the committed road export with `pnpm --dir apps/command export:route-geometry`. Pass `-- --refresh-roads` only when intentionally replacing the road export through the external OSRM service. Review the diff and update `packages/scenario/SHA256SUMS` plus `OfflineMapContract.ROUTE_GEOMETRY_SHA256` after an accepted change. The fair runtime never invokes OSRM.
+Regenerate water geometry, the canonical file, and the byte-identical dashboard build copy with `pnpm --dir apps/command export:route-geometry`. Pass `-- --refresh-roads` only when intentionally replacing the road export through the external OSRM service. Review the diff and update `packages/scenario/SHA256SUMS` plus `OfflineMapContract.ROUTE_GEOMETRY_SHA256` after an accepted change. The fair runtime never invokes OSRM.
 
 Record the under-two-second target on the actual fair phone before using it as a performance claim.

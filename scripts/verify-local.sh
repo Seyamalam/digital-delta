@@ -64,6 +64,7 @@ fi
 
 echo "[map] verify committed OSM-following mission geometry"
 (cd "${scenario_dir}" && shasum -a 256 -c SHA256SUMS)
+cmp "${scenario_dir}/sylhet_route_geometry.json" "${repo_dir}/apps/command/src/data/sylhet_route_geometry.json"
 scenario_sha="$(shasum -a 256 "${scenario_dir}/sylhet_map.json" | cut -d ' ' -f 1)"
 route_scenario_sha="$(jq -r '.metadata.scenario_sha256' "${scenario_dir}/sylhet_route_geometry.json")"
 route_basemap_sha="$(jq -r '.metadata.basemap_sha256' "${scenario_dir}/sylhet_route_geometry.json")"

@@ -8,6 +8,7 @@ const repoDir = resolve(scriptDir, "../../..");
 const scenarioPath = resolve(repoDir, "packages/scenario/sylhet_map.json");
 const basemapPath = resolve(repoDir, "apps/field-android/app/src/main/assets/maps/sylhet_osm_basemap.geojson");
 const outputPath = resolve(repoDir, "packages/scenario/sylhet_route_geometry.json");
+const webOutputPath = resolve(repoDir, "apps/command/src/data/sylhet_route_geometry.json");
 const refreshRoads = process.argv.includes("--refresh-roads");
 
 class MinHeap {
@@ -127,8 +128,11 @@ const output = {
   features,
 };
 
-await writeFile(outputPath, `${JSON.stringify(output, null, 2)}\n`);
+const serialized = `${JSON.stringify(output, null, 2)}\n`;
+await writeFile(outputPath, serialized);
+await writeFile(webOutputPath, serialized);
 console.log(`Wrote ${features.length} route geometries to ${outputPath}`);
+console.log(`Wrote byte-identical dashboard geometry to ${webOutputPath}`);
 for (const feature of features) {
   console.log(`${feature.properties.id}: ${feature.geometry.coordinates.length} points, ${feature.properties.routed_distance_m} m, ${feature.properties.geometry_source}`);
 }

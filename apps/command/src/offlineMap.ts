@@ -1,6 +1,6 @@
 import { layers, namedFlavor } from "@protomaps/basemaps";
 import type { StyleSpecification } from "maplibre-gl";
-import routeGeometry from "../../../packages/scenario/sylhet_route_geometry.json";
+import routeGeometry from "./data/sylhet_route_geometry.json";
 
 type Coordinate = [number, number];
 export const offlineMapRevision = "f45649f195b99106";
