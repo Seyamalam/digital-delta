@@ -1,18 +1,20 @@
-// delta-drill publishes a deterministic, explicitly simulated exercise over
-// the same Protobuf ObserverService used by field nodes.
+// delta-drill converts deterministic Protobuf exercise events into the
+// allowlisted Hono presentation API. JSON never enters the field mesh.
 package main
 
 import (
-	"context"
+	"bytes"
+	"encoding/json"
 	"flag"
 	"fmt"
+	"io"
+	"net/http"
+	"net/url"
 	"os"
 	"time"
 
-	deltav1 "github.com/Seyamalam/digital-delta/services/node/gen/digitaldelta/v1"
 	"github.com/Seyamalam/digital-delta/services/node/internal/drill"
-	"google.golang.org/grpc"
-	"google.golang.org/grpc/credentials/insecure"
+	"github.com/Seyamalam/digital-delta/services/node/internal/observer"
 )
 
 func main() {
@@ -24,7 +26,7 @@ func main() {
 
 func run(args []string) error {
 	flags := flag.NewFlagSet("delta-drill", flag.ContinueOnError)
-	observerAddress := flags.String("observer", "127.0.0.1:7070", "local ObserverService gRPC address")
+	observerAddress := flags.String("observer", "http://127.0.0.1:7071/v1/observations", "Hono sanitized presentation endpoint")
 	sourceNodeID := flags.String("source", "simulator-local-drill", "source node identifier")
 	seed := flags.String("seed", "fair-pass-01", "stable scenario seed")
 	interval := flags.Duration("interval", 700*time.Millisecond, "delay between events")
@@ -35,28 +37,48 @@ func run(args []string) error {
 	if *sourceNodeID == "" || *seed == "" {
 		return fmt.Errorf("source and seed are required")
 	}
+	endpoint, err := url.Parse(*observerAddress)
+	if err != nil || endpoint.User != nil || endpoint.Host == "" || (endpoint.Scheme != "https" && !(endpoint.Scheme == "http" && (endpoint.Hostname() == "127.0.0.1" || endpoint.Hostname() == "localhost" || endpoint.Hostname() == "::1"))) {
+		return fmt.Errorf("observer requires HTTPS, except for local loopback development")
+	}
 	start, err := time.Parse(time.RFC3339, *startValue)
 	if err != nil {
 		return fmt.Errorf("parse start: %w", err)
 	}
-	connection, err := grpc.NewClient(*observerAddress, grpc.WithTransportCredentials(insecure.NewCredentials()))
-	if err != nil {
-		return fmt.Errorf("create observer connection: %w", err)
+	token := os.Getenv("DELTA_OBSERVER_PUBLISHER_TOKEN")
+	if len(token) < 32 {
+		return fmt.Errorf("DELTA_OBSERVER_PUBLISHER_TOKEN must contain the enrolled source token")
 	}
-	defer connection.Close()
-	client := deltav1.NewObserverServiceClient(connection)
+	client := &http.Client{Timeout: 5 * time.Second, CheckRedirect: func(_ *http.Request, _ []*http.Request) error { return http.ErrUseLastResponse }}
 
 	for index, event := range drill.Scenario(*seed, start) {
-		ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
-		response, publishErr := client.Publish(ctx, &deltav1.ObserverServicePublishRequest{
-			SourceNodeId: *sourceNodeID,
-			Event:        event,
-		})
-		cancel()
-		if publishErr != nil {
-			return fmt.Errorf("publish %s: %w", event.GetEventId(), publishErr)
+		body, err := observer.PublicObservationJSON(*sourceNodeID, event)
+		if err != nil {
+			return err
 		}
-		fmt.Printf("sequence=%d event=%s simulated=true\n", response.GetSequence(), event.GetEventId())
+		request, err := http.NewRequest(http.MethodPost, *observerAddress, bytes.NewReader(body))
+		if err != nil {
+			return err
+		}
+		request.Header.Set("Content-Type", "application/json")
+		request.Header.Set("Authorization", "Bearer "+token)
+		request.Header.Set("X-Source-Node", *sourceNodeID)
+		response, err := client.Do(request)
+		if err != nil {
+			return fmt.Errorf("publish %s: %w", event.GetEventId(), err)
+		}
+		var receipt struct {
+			Sequence uint64 `json:"sequence"`
+		}
+		decodeErr := json.NewDecoder(io.LimitReader(response.Body, 4096)).Decode(&receipt)
+		response.Body.Close()
+		if response.StatusCode < 200 || response.StatusCode >= 300 {
+			return fmt.Errorf("publish %s: HTTP %d", event.GetEventId(), response.StatusCode)
+		}
+		if decodeErr != nil {
+			return decodeErr
+		}
+		fmt.Printf("sequence=%d event=%s simulated=true\n", receipt.Sequence, event.GetEventId())
 		if index < 6 && *interval > 0 {
 			time.Sleep(*interval)
 		}

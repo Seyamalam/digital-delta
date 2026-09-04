@@ -23,7 +23,7 @@ format:
 	cd services/node && gofmt -w $$(rg --files -g '*.go')
 
 seed:
-	cd services/node && go run ./cmd/delta-drill --seed fair-pass-01
+	node scripts/observer-local.mjs seed
 
 reset:
 	scripts/reset-demo-local.sh

@@ -16,18 +16,16 @@
 flowchart LR
     A[Clinic phone\nBangla or English] <-->|Nearby encrypted messages| B[Relay and boat phone\nBangla or English]
     B <-->|Nearby encrypted messages| C[Hospital or operator phone\nBangla or English]
-    A -. optional observer feed .-> D[Delta Command\nLaptop and projector]
-    B -. optional observer feed .-> D
-    C -. optional observer feed .-> D
-    E[Disaster Control\nLaptop] -->|Signed simulated events| A
-    E -->|Signed simulated events| B
-    E -->|Signed simulated events| C
-    E --> D
-    D -. optional sanitized summaries .-> F[Cloudflare Worker + D1\nnon-authoritative archive]
-    G[Vercel\npublic Next.js presentation] -. reads optional archive .-> F
+    A -. planned signed-event collector .-> P[Sanitized publisher]
+    B -. planned signed-event collector .-> P
+    C -. planned signed-event collector .-> P
+    E[Deterministic drill\nLaptop] -->|Allow-listed simulated observations| P
+    P -->|Authenticated presentation HTTP| F[Hono Worker + D1\nlocal Wrangler or optional cloud]
+    F -->|Read-only SSE replay| D[Delta Command\nLaptop and projector]
+    F -. optional public feed .-> G[Vercel\nNext.js presentation]
 ```
 
-Every dotted link can fail without stopping the field mission. Disaster Control events use the same event pipeline as field changes and carry an explicit simulation marker. Vercel and D1 never sit between field phones.
+Every observer link can fail without stopping the field mission. The drill-to-observer path is implemented; the phone collector links are planned, not live evidence. Vercel and D1 never sit between field phones.
 
 ## Components
 
@@ -57,7 +55,7 @@ Responsibilities:
 - gRPC service definitions and generated Go implementations;
 - deterministic scenario events;
 - load and fault simulation;
-- optional local observer aggregation;
+- legacy observer comparison harness (disabled by default);
 - route and CRDT reference implementations for cross-checking mobile results;
 - test evidence export.
 
@@ -75,13 +73,13 @@ Responsibilities:
 
 The Next.js dashboard holds a disposable projection. Rebuilding it from signed events must yield the same visible mission. The fair runs it locally; the Vercel copy is an optional public presentation.
 
-### Sanitized headquarters archive
+### Hono headquarters observer
 
 Responsibilities:
 
-- accept only allow-listed presentation metadata;
+- authenticate source-bound publishers and accept only allow-listed presentation metadata;
 - retain an ordered public-demo history in Cloudflare D1;
-- reject unknown, malformed, oversized, or sensitive-labelled summaries;
+- reject unknown, malformed, oversized or out-of-range presentation fields;
 - remain optional and visibly non-authoritative.
 
 The archive cannot issue commands, authenticate field operators, route cargo, accept custody, or decrypt any mesh content.
@@ -173,11 +171,11 @@ For a non-simulated handoff, the QR's sender key is accepted only when it matche
 
 ### Dashboard observation
 
-Field nodes publish `DomainEvent` messages to the Go `ObserverService` over local gRPC when the laptop is reachable. The Go service assigns a durable ordered sequence and supports cursor replay. A server-sent event bridge converts each stored event into a strict allow-listed JSON presentation object for the browser. It never serializes mesh envelopes, encrypted payloads, wrapped content keys, or signature bytes. JSON exists only across this laptop-local presentation boundary and must never be confused with the Protobuf mesh format.
+The active observer uses Hono on Cloudflare Workers and ordered D1 storage. An enrolled collector converts domain events to allow-listed presentation JSON and publishes with a source-bound bearer token. Hono assigns sequences, rejects duplicate-ID content changes, and provides cursor replay through SSE. JSON exists only outside the mesh at this presentation boundary. No envelopes, ciphertext, credentials, signatures, arbitrary summaries or medical payload details are accepted. The Android signed-event collector is not yet connected; collector authentication must not be described as end-to-end field-event verification.
 
-The Next.js headquarters dashboard is a disposable projection and starts from the deterministic seed if the observer is unavailable. When events are available it rebuilds hazard, route, rendezvous, vehicle, and ledger state in sequence order. Closing either the SSE connection or the entire laptop cannot block Room operations, routing, triage, queueing, or custody workflows on a field phone. Observer publication remains on the controlled local network until signed peer authentication is completed.
+The Next.js headquarters dashboard is a disposable projection. Its root provider survives navigation across seven App Router workspaces; observer and exercise state are kept separate. When events arrive it rebuilds route, risk, rendezvous and vehicle state in sequence order. The visible recent log is bounded without discarding accumulated projections. A simulated observation remains labelled even over a live stream. Closing the SSE connection or laptop cannot block phone Room, routing, triage, queueing or custody. See docs/OBSERVER.md for the migration and remaining publisher gap.
 
-The public Vercel deployment is a presentation surface, not the live fair control plane. The local Next.js process can consume the laptop's Go observer directly. A browser viewing the public deployment uses the deterministic, visibly simulated fallback unless it can reach an explicitly configured local observer. An optional Cloudflare Worker stores only allow-listed event metadata and a short operational summary in D1. It does not receive encrypted mesh envelopes, ciphertext, wrapped keys, signatures, credentials, medical details, or authoritative field state. Losing Vercel, the Worker, D1, or the entire internet leaves every field workflow unchanged.
+The Vercel deployment is a presentation surface, not the fair control plane. Locally, Wrangler runs Hono and persisted D1 on the laptop without cloud access. A hosted Hono instance is optional; its publisher credentials belong in Worker secrets, never the browser. Losing Vercel, Workers, D1, the laptop or internet does not stop field workflows. The old Go observer is available only with --legacy-observer for comparison. Local test evidence does not certify a production deployment.
 
 The projector map does not fetch public raster tiles at runtime. MapLibre GL reads the reviewed `public/maps/sylhet.pmtiles` archive over the laptop's local HTTP server; its SHA-256 is checked by the local verification gate. The vector archive supplies real OpenStreetMap-derived geography and attribution. The route renderer resolves graph edge IDs against a build copy of `packages/scenario/sylhet_route_geometry.json`; the local gate requires this copy to be byte-identical because the Vercel project root contains only `apps/command`. Road edges are committed multi-point OpenStreetMap routes exported through OSRM, water edges follow connected OpenStreetMap waterway centerlines from the pinned basemap, and only simulated airways use direct dashed lines. Risk, active-route, node, rendezvous, and vehicle facts remain in a separate mission GeoJSON source so rehearsed state cannot be mistaken for map observations.
 

@@ -6,8 +6,13 @@ repo_dir="$(cd "${script_dir}/.." && pwd)"
 state_dir="${repo_dir}/.demo-state"
 node_pid=""
 dashboard_pid=""
+observer_pid=""
 
 cleanup() {
+  if [[ -n "${observer_pid}" ]]; then
+    kill "${observer_pid}" 2>/dev/null || true
+    wait "${observer_pid}" 2>/dev/null || true
+  fi
   if [[ -n "${dashboard_pid}" ]]; then
     kill "${dashboard_pid}" 2>/dev/null || true
     wait "${dashboard_pid}" 2>/dev/null || true
@@ -27,12 +32,22 @@ for port in 7070 7071 3000; do
 done
 mkdir -p "${state_dir}"
 
-echo "[demo] start Go gRPC node and local SSE observer"
+node "${repo_dir}/scripts/observer-local.mjs" setup
+(
+  cd "${repo_dir}/services/headquarters-archive"
+  pnpm exec wrangler d1 migrations apply digital-delta-hq --local --persist-to "${state_dir}/observer"
+)
+echo "[demo] start Hono observer with local D1 (no commercial internet)"
+(
+  cd "${repo_dir}/services/headquarters-archive"
+  exec pnpm exec wrangler dev --local --ip 127.0.0.1 --port 7071 --persist-to "${state_dir}/observer"
+) &
+observer_pid="$!"
+echo "[demo] start Go gRPC mesh harness"
 (
   cd "${repo_dir}/services/node"
   exec go run ./cmd/delta-node \
-    --data "${state_dir}/mesh.db" \
-    --observer-data "${state_dir}/observer.db"
+    --data "${state_dir}/mesh.db"
 ) &
 node_pid="$!"
 
@@ -58,13 +73,10 @@ for port in 7070 7071 3000; do
   fi
 done
 
-echo "[demo] publish deterministic, visibly simulated Protobuf drill"
-(
-  cd "${repo_dir}/services/node"
-  go run ./cmd/delta-drill --seed fair-pass-01 --interval 120ms
-)
+echo "[demo] publish allowlisted, visibly simulated observations to Hono"
+node "${repo_dir}/scripts/observer-local.mjs" seed
 
 echo ""
 echo "Digital Delta is ready at http://127.0.0.1:3000/"
 echo "Commercial internet is not required. Press Ctrl-C to stop the local services."
-wait "${node_pid}" "${dashboard_pid}"
+wait "${node_pid}" "${observer_pid}" "${dashboard_pid}"

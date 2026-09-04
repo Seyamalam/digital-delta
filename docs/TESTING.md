@@ -1,5 +1,16 @@
 # Testing and evidence strategy
 
+## September 5 migration checkpoint
+
+The current observer is Hono/Workers with D1, not the legacy Go observer. Its local
+runtime tests cover publisher authentication/source binding, D1 sequencing and
+replay, event-ID collisions, SSE cancellation, exact CORS and actual request-byte
+limits. The local gate passed after the migration and dashboard routing redesign:
+19 dashboard tests and 9 Worker tests, plus Android builds/unit tests, Go
+race/vet/build checks, schema, model and map checks. Connected Android checks for
+the current hardening are recorded separately; older counts below are dated
+baselines, not current certification. See [OBSERVER.md](OBSERVER.md).
+
 ## Principle
 
 A working screen is not enough. Each public claim needs a repeatable test, measured result, or visible simulation label.

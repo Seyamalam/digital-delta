@@ -2,11 +2,12 @@
   "$schema": "node_modules/wrangler/config-schema.json",
   "name": "digital-delta-headquarters-archive",
   "main": "src/index.ts",
-  "compatibility_date": "2026-09-04",
+  "compatibility_date": "2026-09-03",
   "compatibility_flags": ["nodejs_compat"],
   "observability": { "enabled": true },
+  "secrets": { "required": ["PUBLISHER_KEYS"] },
   "vars": {
-    "ALLOWED_ORIGINS": "http://localhost:3000,https://digital-delta-headquarters.vercel.app"
+    "ALLOWED_ORIGINS": "http://localhost:3000,http://127.0.0.1:3000,http://localhost:3100,http://127.0.0.1:3100,https://digital-delta-headquarters.vercel.app"
   },
   "d1_databases": [
     {

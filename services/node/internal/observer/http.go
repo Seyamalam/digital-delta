@@ -94,7 +94,7 @@ func requestedSequence(request *http.Request) (uint64, error) {
 }
 
 type presentationEvent struct {
-	Sequence     uint64         `json:"sequence"`
+	Sequence     uint64         `json:"sequence,omitempty"`
 	SourceNodeID string         `json:"sourceNodeId"`
 	EventID      string         `json:"eventId"`
 	Kind         string         `json:"kind"`
@@ -102,6 +102,13 @@ type presentationEvent struct {
 	Simulated    bool           `json:"simulated"`
 	ScenarioSeed string         `json:"scenarioSeed,omitempty"`
 	Presentation map[string]any `json:"presentation,omitempty"`
+}
+
+// PublicObservationJSON is an allowlisted presentation adapter for the Hono
+// observer. It deliberately excludes cargo contents, signatures and ciphertext.
+// Sequence numbers are assigned by D1, not this publisher.
+func PublicObservationJSON(source string, event *deltav1.DomainEvent) ([]byte, error) {
+	return json.Marshal(toPresentationEvent(&deltav1.ObserveResponse{SourceNodeId: source, Event: event}))
 }
 
 func toPresentationEvent(response *deltav1.ObserveResponse) presentationEvent {

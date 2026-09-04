@@ -31,9 +31,7 @@ echo "[load] build isolated server and client"
 
 "${load_tmp}/delta-node" \
   --listen 127.0.0.1:27070 \
-  --observer-listen 127.0.0.1:27071 \
   --data "${load_tmp}/mesh.db" \
-  --observer-data "${load_tmp}/observer.db" \
   --node load-sink >"${load_tmp}/server.log" 2>&1 &
 server_pid="$!"
 

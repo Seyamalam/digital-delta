@@ -22,6 +22,7 @@ import (
 )
 
 type config struct {
+	legacyObserver        bool
 	listenAddress         string
 	dataPath              string
 	nodeID                string
@@ -45,6 +46,7 @@ func main() {
 
 func parseFlags() config {
 	var configuration config
+	flag.BoolVar(&configuration.legacyObserver, "legacy-observer", false, "enable retired Go observer for migration comparison only")
 	flag.StringVar(&configuration.listenAddress, "listen", "127.0.0.1:7070", "gRPC listen address")
 	flag.StringVar(&configuration.dataPath, "data", "data/mesh.db", "durable mesh store path")
 	flag.StringVar(&configuration.nodeID, "node", "command-sylhet", "stable node identifier")
@@ -56,6 +58,9 @@ func parseFlags() config {
 }
 
 func run(ctx context.Context, configuration config) error {
+	if !configuration.legacyObserver {
+		return runMeshOnly(ctx, configuration)
+	}
 	if configuration.nodeID == "" {
 		return errors.New("node id is required")
 	}
@@ -133,6 +138,45 @@ func run(ctx context.Context, configuration config) error {
 		server.Stop()
 	}
 	return runError
+}
+
+// The headquarters observer runs in Hono/Workers. This process owns only the Go
+// mesh load-test harness unless the explicit legacy comparison flag is selected.
+func runMeshOnly(ctx context.Context, configuration config) error {
+	if configuration.nodeID == "" {
+		return errors.New("node id is required")
+	}
+	if err := os.MkdirAll(filepath.Dir(configuration.dataPath), 0o750); err != nil {
+		return err
+	}
+	store, err := mesh.OpenStore(mesh.StoreOptions{Path: configuration.dataPath, NodeID: configuration.nodeID})
+	if err != nil {
+		return err
+	}
+	defer store.Close()
+	listener, err := net.Listen("tcp", configuration.listenAddress)
+	if err != nil {
+		return err
+	}
+	defer listener.Close()
+	server := grpc.NewServer(grpc.MaxRecvMsgSize(2*1024*1024), grpc.MaxSendMsgSize(2*1024*1024))
+	deltav1.RegisterNodeMeshServiceServer(server, mesh.NewService(store))
+	serveError := make(chan error, 1)
+	go func() { serveError <- server.Serve(listener) }()
+	slog.Info("mesh node ready; observer is Hono", "node_id", configuration.nodeID, "listen", listener.Addr().String())
+	select {
+	case err := <-serveError:
+		return err
+	case <-ctx.Done():
+	}
+	done := make(chan struct{})
+	go func() { server.GracefulStop(); close(done) }()
+	select {
+	case <-done:
+	case <-time.After(5 * time.Second):
+		server.Stop()
+	}
+	return nil
 }
 
 func splitOrigins(value string) []string {
