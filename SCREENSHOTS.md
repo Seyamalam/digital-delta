@@ -103,23 +103,24 @@ These are real emulator captures from the working application, not final submiss
 
 ## Command dashboard shots
 
-The layout has been live-inspected at both target viewports in Bangla and English. Repository PNG capture remains unchecked until the evidence files are written under `artifacts/screenshots/command-bn/` and `artifacts/screenshots/command-en/`; a visual inspection alone is not treated as a stored screenshot.
+The layout is stored as lossless PNG evidence at both target viewports in Bangla and English. Each capture shows `LIVE SEQ 7` from the running Go observer bridge and the checksum-pinned local PMTiles map with OpenStreetMap attribution; these are working local-system captures, while all drill inputs remain visibly labelled simulated.
 
-- [ ] Full network overview at 1920 by 1080
-- [ ] Full network overview at 1366 by 768
-- [ ] Offline map with road, water, and air legend
-- [ ] Node status and battery panel
-- [ ] Mesh queue and relay topology
-- [ ] Supply inventory panel
+- [x] Full network overview at 1920 by 1080
+- [x] Full network overview at 1366 by 768
+- [x] Offline map with road, water, and air legend
+- [x] Node status and battery panel
+- [x] Mesh queue and relay topology
+- [x] Supply inventory panel
 - [ ] Before-and-after route comparison
 - [ ] Risk overlay with prediction legend
 - [ ] SLA and triage queue
 - [ ] Conflict convergence inspector
 - [ ] Receipt-chain audit view
-- [ ] Disaster Control console
+- [x] Disaster Control console
+- [x] Dashboard-disconnected state with retained field projection
 - [ ] Scenario reset confirmation
-- [ ] Bangla projector layout
-- [ ] English projector layout
+- [x] Bangla projector layout
+- [x] English projector layout
 
 ## Engineering evidence shots
 

@@ -201,7 +201,7 @@ This checklist tracks implementation. Milestone exit criteria live in [MILESTONE
 - [ ] Measure field-app RAM on target hardware.
 - [ ] Measure relay recovery and duplicate rejection.
 - [ ] Complete the bilingual and accessibility matrices.
-- [ ] Capture every required item in `SCREENSHOTS.md`.
+- [ ] Capture every required item in `SCREENSHOTS.md`. The live observer dashboard overview is now stored in both languages at 1366x768 and 1920x1080; remaining field, fault-state, and physical-device evidence stays listed there.
 - [ ] Rehearse the ten-minute script twenty times.
 - [ ] Record three unchanged successful final passes.
 - [ ] Create the architecture diagram, model card, deck, and backup video.
