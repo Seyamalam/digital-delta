@@ -1,5 +1,6 @@
 import { layers, namedFlavor } from "@protomaps/basemaps";
 import type { StyleSpecification } from "maplibre-gl";
+import routeGeometry from "../../../packages/scenario/sylhet_route_geometry.json";
 
 type Coordinate = [number, number];
 export const offlineMapRevision = "f45649f195b99106";
@@ -11,6 +12,7 @@ type MissionProperties = {
   failed?: boolean;
   simulated: boolean;
   edgeId?: string;
+  geometrySource?: string;
 };
 export type MissionFeature = {
   type: "Feature";
@@ -35,27 +37,57 @@ export const sylhetNodes: Record<string, Coordinate> = {
 
 export const missionBounds: [Coordinate, Coordinate] = [[91.30, 24.30], [92.36, 25.19]];
 
-const edges: Array<[string, string, string, "road" | "water" | "air"]> = [
-  ["E1", "N1", "N2", "road"],
-  ["E3", "N2", "N4", "road"],
-  ["E6", "N1", "N3", "water"],
-  ["E7", "N3", "N4", "water"],
-  ["A1", "R3", "N7", "air"],
-];
+type RouteGeometryFeature = {
+  type: "Feature";
+  properties: {
+    id: string;
+    source: string;
+    target: string;
+    transport: "road" | "water" | "air";
+    simulated: boolean;
+    geometry_source: string;
+  };
+  geometry: { type: "LineString"; coordinates: Coordinate[] };
+};
+
+const visibleEdgeIds = new Set(["E1", "E3", "E6", "E7", "A2"]);
+const routeFeatures = routeGeometry.features.map((feature): RouteGeometryFeature => {
+  const transport = feature.properties.transport;
+  if (transport !== "road" && transport !== "water" && transport !== "air") {
+    throw new Error(`Unsupported transport geometry ${transport}`);
+  }
+  const coordinates = feature.geometry.coordinates.map((point) => {
+    if (point.length !== 2 || !point.every(Number.isFinite)) throw new Error(`Invalid coordinates for ${feature.properties.id}`);
+    return [point[0], point[1]] as Coordinate;
+  });
+  if (coordinates.length < 2) throw new Error(`Route geometry ${feature.properties.id} is too short`);
+  return {
+    type: "Feature",
+    properties: { ...feature.properties, transport },
+    geometry: { type: "LineString", coordinates },
+  };
+})
+  .filter((feature) => visibleEdgeIds.has(feature.properties.id));
+
+export const routeGeometryMetadata = routeGeometry.metadata;
 
 export function buildMissionGeoJson(useWaterRoute: boolean, showRisk: boolean, simulated = true): MissionFeatureCollection {
-  const features: MissionFeature[] = edges.map(([id, source, target, transport]) => ({
-    type: "Feature",
-    properties: {
-      id,
-      kind: "route",
-      transport,
-      active: transport === "road" ? !useWaterRoute : useWaterRoute,
-      failed: id === "E3" && useWaterRoute,
-      simulated,
-    },
-    geometry: { type: "LineString", coordinates: [sylhetNodes[source], sylhetNodes[target]] },
-  }));
+  const features: MissionFeature[] = routeFeatures.map((feature) => {
+    const { id, transport, geometry_source: geometrySource } = feature.properties;
+    return {
+      type: "Feature",
+      properties: {
+        id,
+        kind: "route",
+        transport,
+        active: transport === "road" ? !useWaterRoute : transport === "water" && useWaterRoute,
+        failed: id === "E3" && useWaterRoute,
+        simulated: simulated || feature.properties.simulated,
+        geometrySource,
+      },
+      geometry: feature.geometry,
+    };
+  });
   for (const [id, coordinate] of Object.entries(sylhetNodes)) {
     features.push({
       type: "Feature",
@@ -64,10 +96,12 @@ export function buildMissionGeoJson(useWaterRoute: boolean, showRisk: boolean, s
     });
   }
   if (showRisk) {
+    const riskyEdge = routeFeatures.find((feature) => feature.properties.id === "E3");
+    if (!riskyEdge) throw new Error("Missing E3 route geometry");
     features.push({
       type: "Feature",
       properties: { id: "risk-E3", kind: "risk", edgeId: "E3", simulated },
-      geometry: { type: "Point", coordinates: midpoint(sylhetNodes.N2, sylhetNodes.N4) },
+      geometry: { type: "Point", coordinates: pointAlongLine(riskyEdge.geometry.coordinates, 0.5) },
     });
   }
   return { type: "FeatureCollection", features };
@@ -133,6 +167,27 @@ export function createOfflineStyle(archiveUrl: string, missionData: MissionFeatu
   };
 }
 
-function midpoint(left: Coordinate, right: Coordinate): Coordinate {
-  return [(left[0] + right[0]) / 2, (left[1] + right[1]) / 2];
+function pointAlongLine(line: Coordinate[], progress: number): Coordinate {
+  const lengths = line.slice(1).map((point, index) => distance(line[index], point));
+  const target = lengths.reduce((sum, length) => sum + length, 0) * progress;
+  let travelled = 0;
+  for (let index = 0; index < lengths.length; index += 1) {
+    const next = travelled + lengths[index];
+    if (next >= target) {
+      const amount = lengths[index] === 0 ? 0 : (target - travelled) / lengths[index];
+      return [
+        line[index][0] + (line[index + 1][0] - line[index][0]) * amount,
+        line[index][1] + (line[index + 1][1] - line[index][1]) * amount,
+      ];
+    }
+    travelled = next;
+  }
+  return line.at(-1) ?? line[0];
+}
+
+function distance(left: Coordinate, right: Coordinate): number {
+  const latitude = (left[1] + right[1]) * Math.PI / 360;
+  const dx = (left[0] - right[0]) * Math.cos(latitude);
+  const dy = left[1] - right[1];
+  return Math.hypot(dx, dy);
 }

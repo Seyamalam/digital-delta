@@ -81,8 +81,8 @@ export function OfflineDeltaMap({ useWaterRoute, showRisk, simulated, language }
   }, [showRisk, simulated, useWaterRoute]);
 
   const labels = language === "bn"
-    ? { road: "সড়ক", water: "নৌপথ", air: "সিমুলেটেড আকাশপথ", loading: "অফলাইন মানচিত্র প্রস্তুত হচ্ছে", unavailable: "মানচিত্র রেন্ডারার অনুপলব্ধ", local: "স্থানীয় PMTiles" }
-    : { road: "Road", water: "Waterway", air: "Simulated airway", loading: "Preparing offline map", unavailable: "Map renderer unavailable", local: "LOCAL PMTILES" };
+    ? { road: "সড়ক", water: "নৌপথ", air: "সিমুলেটেড আকাশপথ", loading: "অফলাইন মানচিত্র প্রস্তুত হচ্ছে", unavailable: "মানচিত্র রেন্ডারার অনুপলব্ধ", local: "স্থানীয় PMTiles • OSM পথরেখা" }
+    : { road: "Road", water: "Waterway", air: "Simulated airway", loading: "Preparing offline map", unavailable: "Map renderer unavailable", local: "LOCAL PMTILES • OSM ROUTE GEOMETRY" };
 
   return <div className="delta-map geographic-map" aria-label={language === "bn" ? "সিলেটের অফলাইন ভৌগোলিক মানচিত্র" : "Offline geographic map of Sylhet"}>
     <div ref={host} className="maplibre-host" />

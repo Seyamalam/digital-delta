@@ -79,7 +79,7 @@ import org.maplibre.android.style.sources.GeoJsonSource
 
 private sealed interface BasemapState {
     data object Loading : BasemapState
-    data class Ready(val geoJson: String) : BasemapState
+    data class Ready(val geoJson: String, val routeGeometryGeoJson: String) : BasemapState
     data class Failed(val reason: String) : BasemapState
 }
 
@@ -108,12 +108,14 @@ internal fun OfflineGeographicMap(
     val basemapState by produceState<BasemapState>(BasemapState.Loading, context) {
         value = withContext(Dispatchers.IO) {
             runCatching {
-                val bytes = context.assets.open(OfflineMapContract.BASEMAP_ASSET).use { it.readBytes() }
-                val digest = MessageDigest.getInstance("SHA-256")
-                    .digest(bytes)
-                    .joinToString("") { "%02x".format(it) }
-                check(digest == OfflineMapContract.BASEMAP_SHA256) { "offline basemap checksum mismatch" }
-                BasemapState.Ready(bytes.toString(Charsets.UTF_8))
+                val basemapBytes = context.assets.open(OfflineMapContract.BASEMAP_ASSET).use { it.readBytes() }
+                val routeGeometryBytes = context.assets.open(OfflineMapContract.ROUTE_GEOMETRY_ASSET).use { it.readBytes() }
+                check(sha256(basemapBytes) == OfflineMapContract.BASEMAP_SHA256) { "offline basemap checksum mismatch" }
+                check(sha256(routeGeometryBytes) == OfflineMapContract.ROUTE_GEOMETRY_SHA256) { "offline route geometry checksum mismatch" }
+                BasemapState.Ready(
+                    geoJson = basemapBytes.toString(Charsets.UTF_8),
+                    routeGeometryGeoJson = routeGeometryBytes.toString(Charsets.UTF_8),
+                )
             }.getOrElse { BasemapState.Failed(it.message ?: "offline basemap unavailable") }
         }
     }
@@ -139,6 +141,7 @@ internal fun OfflineGeographicMap(
                     vehicle = routeVehicle,
                     failedRoad = showFailure,
                     predictedRisk = showRisk,
+                    routeGeometryGeoJson = state.routeGeometryGeoJson,
                     routeProgress = routeProgress,
                 ),
                 contentDescription = contentDescription,
@@ -149,6 +152,10 @@ internal fun OfflineGeographicMap(
         }
     }
 }
+
+private fun sha256(bytes: ByteArray): String = MessageDigest.getInstance("SHA-256")
+    .digest(bytes)
+    .joinToString("") { "%02x".format(it) }
 
 @Composable
 private fun NativeOfflineMap(

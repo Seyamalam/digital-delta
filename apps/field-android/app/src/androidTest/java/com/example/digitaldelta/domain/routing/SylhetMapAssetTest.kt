@@ -8,6 +8,7 @@ import org.junit.Assert.assertTrue
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.json.JSONObject
+import java.security.MessageDigest
 
 @RunWith(AndroidJUnit4::class)
 class SylhetMapAssetTest {
@@ -60,4 +61,35 @@ class SylhetMapAssetTest {
         assertTrue(bounds.getDouble(2) >= 92.2611)
         assertTrue(bounds.getDouble(3) >= 25.1200)
     }
+
+    @Test
+    fun bundledRouteGeometryUsesOsmLinesAndKeepsOnlyAirwaysDirect() {
+        val context = ApplicationProvider.getApplicationContext<Context>()
+        val bytes = context.assets.open(OfflineMapContract.ROUTE_GEOMETRY_ASSET).use { it.readBytes() }
+        val root = JSONObject(bytes.toString(Charsets.UTF_8))
+        val features = root.getJSONArray("features")
+        val byId = (0 until features.length()).associate { index ->
+            val feature = features.getJSONObject(index)
+            feature.getJSONObject("properties").getString("id") to feature
+        }
+
+        assertEquals(OfflineMapContract.ROUTE_GEOMETRY_SHA256, sha256(bytes))
+        assertTrue(root.getJSONObject("metadata").getString("attribution").contains("OpenStreetMap contributors"))
+        assertTrue(byId.getValue("E1").getJSONObject("geometry").getJSONArray("coordinates").length() > 2)
+        assertTrue(byId.getValue("E6").getJSONObject("geometry").getJSONArray("coordinates").length() > 2)
+        assertEquals(
+            "openstreetmap-osrm",
+            byId.getValue("E3").getJSONObject("properties").getString("geometry_source"),
+        )
+        assertEquals(
+            "openstreetmap-offline-waterway",
+            byId.getValue("E7").getJSONObject("properties").getString("geometry_source"),
+        )
+        assertEquals(2, byId.getValue("A2").getJSONObject("geometry").getJSONArray("coordinates").length())
+        assertTrue(byId.getValue("A2").getJSONObject("properties").getBoolean("simulated"))
+    }
+
+    private fun sha256(bytes: ByteArray): String = MessageDigest.getInstance("SHA-256")
+        .digest(bytes)
+        .joinToString("") { "%02x".format(it) }
 }

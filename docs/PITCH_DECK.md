@@ -84,7 +84,7 @@ The system never silently moves cargo. It calculates the consequence, explains i
 - RSA-OAEP wrapped AES-256-GCM payload.
 - Atomic nonce claim and linked receipt hash.
 - Signed durable acknowledgements.
-- 60 connected Android journeys on Android 15 and 16.
+- 61 connected Android journeys on Android 15 and 16.
 - 10,000 acknowledged gRPC streams in the recorded load run.
 - 17 headquarters tests and a production build.
 

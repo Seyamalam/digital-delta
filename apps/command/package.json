@@ -12,6 +12,7 @@
     "capture:dashboard": "node scripts/capture-dashboard.mjs",
     "start": "next start --hostname 0.0.0.0",
     "export:android-map": "node scripts/export-android-map.mjs",
+    "export:route-geometry": "node scripts/generate-route-geometry.mjs",
     "test": "vitest",
     "typecheck": "tsc --noEmit"
   },

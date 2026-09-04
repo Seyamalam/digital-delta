@@ -7,6 +7,7 @@ android_dir="${repo_dir}/apps/field-android"
 model_dir="${repo_dir}/models/route-decay"
 map_dir="${repo_dir}/apps/command/public/maps"
 android_map_dir="${android_dir}/app/src/main/assets/maps"
+scenario_dir="${repo_dir}/packages/scenario"
 java_runtime="${JAVA_HOME:-/opt/homebrew/opt/openjdk@17/libexec/openjdk.jdk/Contents/Home}"
 
 echo "[proto] lint shared wire contract"
@@ -59,6 +60,24 @@ if [[ -f "${android_map_dir}/sylhet_osm_basemap.geojson" ]]; then
     echo "Android map provenance does not match the reviewed PMTiles archive." >&2
     exit 1
   fi
+fi
+
+echo "[map] verify committed OSM-following mission geometry"
+(cd "${scenario_dir}" && shasum -a 256 -c SHA256SUMS)
+scenario_sha="$(shasum -a 256 "${scenario_dir}/sylhet_map.json" | cut -d ' ' -f 1)"
+route_scenario_sha="$(jq -r '.metadata.scenario_sha256' "${scenario_dir}/sylhet_route_geometry.json")"
+route_basemap_sha="$(jq -r '.metadata.basemap_sha256' "${scenario_dir}/sylhet_route_geometry.json")"
+basemap_sha="$(shasum -a 256 "${android_map_dir}/sylhet_osm_basemap.geojson" | cut -d ' ' -f 1)"
+if [[ "${scenario_sha}" != "${route_scenario_sha}" || "${route_basemap_sha}" != "${basemap_sha}" ]]; then
+  echo "Mission route geometry provenance is stale." >&2
+  exit 1
+fi
+if ! jq -e '
+  ([.features[] | select((.properties.transport == "road" or .properties.transport == "water") and (.geometry.coordinates | length) <= 2)] | length) == 0 and
+  ([.features[] | select(.properties.transport == "air" and ((.geometry.coordinates | length) != 2 or .properties.simulated != true))] | length) == 0
+' "${scenario_dir}/sylhet_route_geometry.json" >/dev/null; then
+  echo "Road and water routes must follow multi-point OSM geometry; only simulated airways may remain direct." >&2
+  exit 1
 fi
 
 echo "[scenario] compile simulated chaos fixture"

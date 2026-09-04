@@ -94,6 +94,7 @@ These are real emulator captures from the working application, not final submiss
 - [x] Conflict-detected state in the current Android emulator build
 - [x] Human conflict resolution in the current Android emulator build; final bilingual hero pair remains
 - [x] Route and vehicle assignment on the checksum-pinned MapLibre Native geographic map in both languages
+- [x] OSM-following truck geometry and waterway-following boat fallback on Android 15 (`field-en/24-field-en-osm-route-geometry-1280x2856.png` and `field-en/25-field-en-osm-waterway-reroute-1280x2856.png`)
 - [x] SLA breach warning in the current Android emulator build
 - [x] Drop-and-reroute confirmation in the current Android emulator build; physical cargo movement is simulated
 - [x] QR handoff generation in the current Android emulator build
@@ -109,7 +110,7 @@ These are real emulator captures from the working application, not final submiss
 
 ## Command dashboard shots
 
-The redesigned Next.js operational-headquarters layout is stored as lossless PNG evidence at both target viewports in Bangla and English. Each local capture shows `LIVE SEQ 7` from the Go observer bridge and the checksum-pinned PMTiles map with OpenStreetMap attribution; all drill inputs remain visibly labelled simulated. The reproducible capture command is `cd apps/command && pnpm capture:dashboard` while `make demo` is running.
+The redesigned Next.js operational-headquarters layout is stored as lossless PNG evidence at both target viewports in Bangla and English. Each local capture shows the checksum-pinned PMTiles map with OpenStreetMap attribution and the shared multi-point route geometry; all drill inputs remain visibly labelled simulated. The reproducible capture command is `cd apps/command && pnpm capture:dashboard` while the command app is running. A live observer run adds the current `LIVE SEQ` badge; the seeded public fallback remains clearly identified when that local service is absent.
 
 - [x] Redesigned Next.js full network overview at 1920 by 1080
 - [x] Redesigned Next.js full network overview at 1366 by 768

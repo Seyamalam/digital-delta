@@ -89,7 +89,7 @@ The deterministic and connected tests cover interrupted sends, forged acknowledg
 
 The routing engine validates a directed graph with road, waterway, and airway edges. It normalizes the supplied `river` value to `WATERWAY`. Deterministic Dijkstra routing enforces vehicle constraints and excludes failed edges. For the seeded mission, a truck uses E1 and E3. When simulated flooding closes E3, the truck path fails and the engine selects boat edges E6 and E7.
 
-MapLibre Native renders a local Sylhet extract with 1,576 OpenStreetMap-derived features. The Next.js dashboard reads a local PMTiles archive. Both packages retain attribution and checksum verification. Route calculation records monotonic latency, but the final median and p95 measurement must run on the target phones.
+MapLibre Native renders a local Sylhet extract with 1,576 OpenStreetMap-derived features. The Next.js dashboard reads a local PMTiles archive. Both renderers resolve the route engine's edge IDs against one checksum-pinned geometry file. Road edges use committed multi-point OpenStreetMap routes, water edges follow OpenStreetMap waterway centerlines, and only the explicitly simulated airways remain direct. Both packages retain attribution and checksum verification. Route calculation records monotonic latency, but the final median and p95 measurement must run on the target phones.
 
 ### Module 5 signed proof of delivery
 

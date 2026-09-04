@@ -9,6 +9,6 @@ cd apps/command
 pnpm export:android-map
 ```
 
-The export records the source archive SHA-256, zoom, bounds, and attribution inside the GeoJSON. `scripts/verify-local.sh` checks both the asset checksum and its source-archive binding. MapLibre Native receives this file as a local source and receives route, risk, node, and simulated-airway state through a separate generated source. The Android style has no online tile, glyph, or sprite URL.
+The export records the source archive SHA-256, zoom, bounds, and attribution inside the GeoJSON. `scripts/verify-local.sh` checks both the asset checksum and its source-archive binding. MapLibre Native receives this file as a local source. It resolves mission edge IDs against the canonical `packages/scenario/sylhet_route_geometry.json` asset, which contains committed OSM road and waterway polylines. Only simulated airways remain direct. The Android style has no online tile, glyph, sprite, or routing URL.
 
 Map data is © OpenStreetMap contributors and is distributed under the Open Database License.
