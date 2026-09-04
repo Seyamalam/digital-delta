@@ -1442,6 +1442,15 @@ private fun TriageCard(
     state: TriageWorkflowSnapshot,
     onConfirm: (() -> Unit)?,
 ) {
+    var remainingSlaSeconds by remember(state.decision) {
+        mutableIntStateOf(state.decision.remainingSlaMinutes * 60)
+    }
+    LaunchedEffect(state.decision) {
+        while (remainingSlaSeconds > 0) {
+            delay(1_000)
+            remainingSlaSeconds -= 1
+        }
+    }
     val urgent = state is TriageWorkflowSnapshot.Proposed || state is TriageWorkflowSnapshot.Confirming
     val confirmed = state is TriageWorkflowSnapshot.Confirmed
     val color = when {
@@ -1484,6 +1493,17 @@ private fun TriageCard(
             Text(
                 "${text(R.string.baseline_arrival, language)} • ${state.decision.baselineArrivalMinutes} ${text(R.string.minutes_short, language)}",
                 style = MaterialTheme.typography.bodySmall,
+            )
+            val countdownHours = remainingSlaSeconds / 3_600
+            val countdownMinutes = (remainingSlaSeconds % 3_600) / 60
+            val countdownSeconds = remainingSlaSeconds % 60
+            Text(
+                "${text(R.string.sla_time_remaining, language)} • " +
+                    "%02d:%02d:%02d".format(Locale.US, countdownHours, countdownMinutes, countdownSeconds),
+                style = MaterialTheme.typography.labelLarge,
+                color = if (remainingSlaSeconds <= 30 * 60) AlertCoral else DeltaTeal,
+                fontWeight = FontWeight.Bold,
+                modifier = Modifier.testTag("sla-countdown"),
             )
             when (state) {
                 is TriageWorkflowSnapshot.Protected -> Text(

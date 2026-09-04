@@ -71,6 +71,7 @@
     <string name="sla_breach_predicted">P0 SLA breach predicted</string>
     <string name="preemption_confirmed">Preemption confirmed</string>
     <string name="baseline_arrival">Baseline arrival</string>
+    <string name="sla_time_remaining">SLA time remaining</string>
     <string name="sla_protected_reason" formatted="false">Even with a 30% slowdown, arrival remains within the 2-hour P0 SLA.</string>
     <string name="sla_warning_reason">This lower-priority delivery may miss its SLA; no automatic preemption is allowed.</string>
     <string name="deposit_p2_at">Deposit P2 tarpaulin at</string>

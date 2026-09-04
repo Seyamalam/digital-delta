@@ -18,6 +18,7 @@ class TriageEngineTest {
         )
 
         assertEquals(98, result.slowedEtaMinutes)
+        assertEquals(85, result.remainingSlaMinutes)
         assertTrue(result.willBreachSla)
         assertEquals(TriageAction.PREEMPT_LOWER_PRIORITY, result.action)
     }

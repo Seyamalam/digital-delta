@@ -17,6 +17,7 @@ enum class TriageAction {
 
 data class TriageDecision(
     val priority: CargoPriority,
+    val remainingSlaMinutes: Int,
     val baselineArrivalMinutes: Int,
     val slowedEtaMinutes: Int,
     val slowedArrivalMinutes: Int,
@@ -69,6 +70,7 @@ class TriageEngine {
 
         return TriageDecision(
             priority = priority,
+            remainingSlaMinutes = (priority.slaMinutes - elapsedMinutes).coerceAtLeast(0),
             baselineArrivalMinutes = elapsedMinutes + etaMinutes,
             slowedEtaMinutes = slowedEta,
             slowedArrivalMinutes = slowedArrival,

@@ -138,7 +138,7 @@ This checklist tracks implementation. Milestone exit criteria live in [MILESTONE
 ## M6 triage and priority preemption
 
 - [x] Implement P0, P1, P2, and P3 policy data.
-- [ ] Add SLA deadlines and countdowns. Fixed SLA deadlines are implemented; a live countdown remains.
+- [x] Add SLA deadlines and a live countdown derived from the remaining P0 SLA window.
 - [x] Calculate baseline ETA and 30 percent slowdown ETA.
 - [x] Flag predicted SLA breaches.
 - [x] Define and test allowed transitions: only P0/P1 may preempt P2/P3; equal-priority and inverted transitions are rejected.
