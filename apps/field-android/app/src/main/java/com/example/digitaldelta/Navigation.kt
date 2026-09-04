@@ -77,6 +77,10 @@ fun MainNavigation(meshRuntimeStateStore: MeshRuntimeStateStore) {
     identityState = identityState,
     onPinAdministrator = viewModel::pinAdministrator,
     onImportRecipientCredential = viewModel::importRecipientCredential,
+    onSelectDeviceProfile = { profileCode ->
+      context.stopService(MeshRelayService.intent(context, MeshRelayService.ACTION_STOP))
+      viewModel.selectDeviceProfile(profileCode)
+    },
     meshRuntimeState = meshRuntimeState,
     onStartRelay = ::startRelay,
     onStopRelay = { context.startService(MeshRelayService.intent(context, MeshRelayService.ACTION_STOP)) },

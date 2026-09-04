@@ -132,6 +132,11 @@
     <string name="demo_identity">Coordinator • SYL-01</string>
     <string name="identity_and_keys">Identity and offline keys</string>
     <string name="identity_offline_subtitle">Provision devices without internet</string>
+    <string name="device_profile">This phone’s field role</string>
+    <string name="device_profile_help">Stop the relay before changing roles. Each phone must be provisioned with the QR generated for its selected role.</string>
+    <string name="profile_clinic">Companyganj clinic</string>
+    <string name="profile_hospital">Habiganj hospital</string>
+    <string name="profile_relay">Sunamganj relay</string>
     <string name="back">Back</string>
     <string name="device_key_ready">Device-bound keys ready</string>
     <string name="enrollment_qr">Device enrollment</string>
@@ -142,9 +147,9 @@
     <string name="trust_code">Administrator trust code</string>
     <string name="pin_administrator">Pin administrator key</string>
     <string name="trusted">Trusted administrator</string>
-    <string name="recipient_credential">Recipient credential</string>
+    <string name="recipient_credential">This device or peer credential</string>
     <string name="credential_code">Signed recipient credential</string>
-    <string name="verify_add_recipient">Verify and add recipient</string>
+    <string name="verify_add_recipient">Verify and install credential</string>
     <string name="identity_keystore_failed">Device keys could not be prepared. Restart and try again.</string>
     <string name="invalid_trust_code">Administrator code is invalid. Check the fingerprint with the administrator.</string>
     <string name="invalid_credential">Credential rejected: invalid signature, key, or validity time.</string>

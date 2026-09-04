@@ -125,6 +125,7 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.digitaldelta.R
+import com.example.digitaldelta.domain.identity.DeviceProfiles
 import com.example.digitaldelta.domain.mesh.MeshRuntimeState
 import com.example.digitaldelta.domain.sync.ConflictSide
 import com.example.digitaldelta.domain.sync.MissionConflictSnapshot
@@ -182,6 +183,7 @@ fun DigitalDeltaApp(
     identityState: IdentityUiState = IdentityUiState.Loading,
     onPinAdministrator: ((String) -> Unit)? = null,
     onImportRecipientCredential: ((String) -> Unit)? = null,
+    onSelectDeviceProfile: ((String) -> Unit)? = null,
     meshRuntimeState: MeshRuntimeState = MeshRuntimeState(),
     onStartRelay: (() -> Unit)? = null,
     onStopRelay: (() -> Unit)? = null,
@@ -229,6 +231,7 @@ fun DigitalDeltaApp(
                 identityState = identityState,
                 onPinAdministrator = onPinAdministrator,
                 onImportRecipientCredential = onImportRecipientCredential,
+                onSelectDeviceProfile = onSelectDeviceProfile,
                 meshRuntimeState = meshRuntimeState,
                 onStartRelay = onStartRelay,
                 onStopRelay = onStopRelay,
@@ -342,6 +345,7 @@ private fun DeltaShell(
     identityState: IdentityUiState,
     onPinAdministrator: ((String) -> Unit)?,
     onImportRecipientCredential: ((String) -> Unit)?,
+    onSelectDeviceProfile: ((String) -> Unit)?,
     meshRuntimeState: MeshRuntimeState,
     onStartRelay: (() -> Unit)?,
     onStopRelay: (() -> Unit)?,
@@ -424,6 +428,7 @@ private fun DeltaShell(
                     onBack = { identityOpen = false },
                     onPinAdministrator = onPinAdministrator,
                     onImportRecipientCredential = onImportRecipientCredential,
+                    onSelectDeviceProfile = onSelectDeviceProfile,
                 )
                 return@AnimatedContent
             }
@@ -517,6 +522,7 @@ private fun IdentityScreen(
     onBack: () -> Unit,
     onPinAdministrator: ((String) -> Unit)?,
     onImportRecipientCredential: ((String) -> Unit)?,
+    onSelectDeviceProfile: ((String) -> Unit)?,
 ) {
     var trustCode by rememberSaveable { mutableStateOf("") }
     var credentialCode by rememberSaveable { mutableStateOf("") }
@@ -573,6 +579,35 @@ private fun IdentityScreen(
                             Text("${ready.localNodeId} • ${ready.localEncryptionKeyId.takeLast(12)}")
                         }
                     }
+                }
+            }
+            item {
+                SectionLabel(text(R.string.device_profile, language))
+                Spacer(Modifier.height(8.dp))
+                Text(
+                    text(R.string.device_profile_help, language),
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+                Spacer(Modifier.height(8.dp))
+                DeviceProfiles.all.forEach { profile ->
+                    val selected = ready.profileCode == profile.code
+                    OutlinedButton(
+                        onClick = { onSelectDeviceProfile?.invoke(profile.code) },
+                        enabled = !selected && state !is IdentityUiState.Working,
+                        modifier = Modifier.fillMaxWidth().height(48.dp).testTag("profile-${profile.code}"),
+                    ) {
+                        Icon(if (selected) Icons.Default.CheckCircle else Icons.Default.Hub, null)
+                        Spacer(Modifier.width(8.dp))
+                        Text(
+                            when (profile.code) {
+                                DeviceProfiles.HOSPITAL -> text(R.string.profile_hospital, language)
+                                DeviceProfiles.RELAY -> text(R.string.profile_relay, language)
+                                else -> text(R.string.profile_clinic, language)
+                            } + " • ${profile.nodeId}",
+                        )
+                    }
+                    Spacer(Modifier.height(6.dp))
                 }
             }
             item {

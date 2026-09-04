@@ -2,7 +2,7 @@
 
 Digital Delta provisions devices through signed Protocol Buffer codes. The flow needs no commercial internet: a field phone creates an enrollment request, a trusted laptop signs it, and phones validate the resulting credential with a pinned administrator public key.
 
-The current UI renders enrollment QR codes and supports copy/paste for trust and credential codes in Bangla and English. Camera scanning is still pending and must not be described as complete.
+The current UI renders enrollment QR codes and supports CameraX scanning or copy/paste for trust and credential codes in Bangla and English. The ML Kit barcode model is bundled in the APK; a physical airplane-mode camera rehearsal remains required evidence.
 
 ## One-time administrator setup
 
@@ -19,8 +19,9 @@ The command refuses to overwrite either file. Keep `admin-private.pem` on the ad
 ## Enroll a field device
 
 1. On the phone, open the shield icon and select **Identity and offline keys** / **পরিচয় ও অফলাইন কী**.
-2. Copy the `DIGITALDELTA:ENROLLMENT:...` code or scan the displayed QR with an external test scanner.
-3. On the laptop, issue a signed credential:
+2. Choose that phone's allow-listed role: N4 clinic, N6 hospital, or RLY-01 relay. Changing roles stops the existing relay and creates a distinct Keystore identity.
+3. Copy the resulting `DIGITALDELTA:ENROLLMENT:...` code or scan its displayed QR.
+4. On the laptop, issue a signed credential:
 
 ```bash
 go run ./cmd/delta-provision issue \
@@ -31,14 +32,14 @@ go run ./cmd/delta-provision issue \
   --enrollment-code 'DIGITALDELTA:ENROLLMENT:...'
 ```
 
-4. On the receiving phone, paste the administrator `DIGITALDELTA:TRUST:...` code and choose **Pin administrator** / **প্রশাসককে বিশ্বাস করুন**.
-5. Paste the issued `DIGITALDELTA:CREDENTIAL:...` code and choose **Verify and add recipient** / **যাচাই করে প্রাপক যোগ করুন**.
+5. On the receiving phone, scan or paste the administrator `DIGITALDELTA:TRUST:...` code and choose **Pin administrator** / **প্রশাসককে বিশ্বাস করুন**.
+6. Scan or paste that phone's issued `DIGITALDELTA:CREDENTIAL:...` code and choose **Verify and install credential** / **যাচাই করে পরিচয়পত্র ইনস্টল করুন**.
 
 The phone verifies the administrator signature and validity window offline, then stores only the recipient public keys and signed credential in Room. Its own RSA private keys remain non-exportable in Android Keystore.
 
 ## Multi-phone demo order
 
-For a request from N4 to N6, first enroll the N6 phone and import its signed credential on the N4 phone. Repeat in the opposite direction only if N6 must encrypt a response for N4. Each phone pins the same administrator public key independently.
+Enroll all three profiles independently and install each phone's own credential on that phone. Each phone pins the same administrator public key. During Nearby pairing, the signed challenge-response carries and verifies the remote public credential, then stores it in the local directory; no private key ever leaves its originating phone.
 
 ## Failure proofs
 

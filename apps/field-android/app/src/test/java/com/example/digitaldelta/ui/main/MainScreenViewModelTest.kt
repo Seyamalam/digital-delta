@@ -8,6 +8,7 @@ import com.example.digitaldelta.domain.request.ReliefRequestSubmission
 import com.example.digitaldelta.domain.identity.AcceptedRecipient
 import com.example.digitaldelta.domain.identity.IdentityProvisioningCoordinator
 import com.example.digitaldelta.domain.identity.IdentityProvisioningSnapshot
+import com.example.digitaldelta.domain.identity.DeviceProfiles
 import com.example.digitaldelta.domain.mesh.RecipientKeyUnavailableException
 import com.example.digitaldelta.domain.sync.ConflictCoordinator
 import com.example.digitaldelta.domain.sync.ConflictSide
@@ -147,6 +148,27 @@ class MainScreenViewModelTest {
         val ready = viewModel.identityState.value as IdentityUiState.Ready
         assertEquals("Habiganj Medical", ready.acceptedRecipient?.displayName)
         assertEquals("credential-code", coordinator.importedCode)
+    }
+
+    @Test
+    fun `selecting a field profile regenerates identity for a distinct mesh node`() = runTest(dispatcher) {
+        val coordinator = FakeIdentityCoordinator()
+        val viewModel = MainScreenViewModel(
+            FakeSettingsRepository(),
+            FakeRequestSubmission(),
+            coordinator,
+            FakeConflictCoordinator(),
+            FakeRouteScenario(),
+        )
+        advanceUntilIdle()
+
+        viewModel.selectDeviceProfile(DeviceProfiles.HOSPITAL)
+        advanceUntilIdle()
+
+        val ready = viewModel.identityState.value as IdentityUiState.Ready
+        assertEquals(DeviceProfiles.HOSPITAL, ready.profileCode)
+        assertEquals("N6", ready.localNodeId)
+        assertEquals("hospital-habiganj-01", ready.localIdentityId)
     }
 
     @Test
@@ -492,13 +514,23 @@ private class FakeRequestSubmission(private val failure: Throwable? = null) : Re
 private class FakeIdentityCoordinator : IdentityProvisioningCoordinator {
     var importedCode: String? = null
     private var fingerprint: String? = null
+    private var profile = DeviceProfiles.all.first()
 
     override suspend fun snapshot(): IdentityProvisioningSnapshot = IdentityProvisioningSnapshot(
-        localNodeId = "N4",
+        profileCode = profile.code,
+        localNodeId = profile.nodeId,
+        localIdentityId = profile.identityId,
+        localDisplayName = profile.displayName,
+        localRole = profile.role,
         localEncryptionKeyId = "rsa-local-1",
         enrollmentCode = "enrollment-code",
         trustedIssuerFingerprint = fingerprint,
     )
+
+    override suspend fun selectProfile(profileCode: String): IdentityProvisioningSnapshot {
+        profile = DeviceProfiles.require(profileCode)
+        return snapshot()
+    }
 
     override suspend fun pinTrustAnchor(code: String): IdentityProvisioningSnapshot {
         require(code == "trust-code")

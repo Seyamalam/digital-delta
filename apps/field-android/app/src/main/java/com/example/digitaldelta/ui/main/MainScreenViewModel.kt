@@ -9,6 +9,7 @@ import com.example.digitaldelta.domain.request.ReliefRequestDraft
 import com.example.digitaldelta.domain.request.ReliefRequestSubmission
 import com.example.digitaldelta.domain.identity.AcceptedRecipient
 import com.example.digitaldelta.domain.identity.IdentityProvisioningCoordinator
+import com.example.digitaldelta.domain.identity.DeviceProfiles
 import com.example.digitaldelta.domain.mesh.RecipientKeyUnavailableException
 import com.example.digitaldelta.domain.sync.ConflictCoordinator
 import com.example.digitaldelta.domain.sync.ConflictSide
@@ -104,13 +105,14 @@ class MainScreenViewModel @Inject constructor(
 
     fun queueRequest(medicine: Int, ors: Int, tarpaulin: Int, priorityCode: String) {
         if (mutableRequestQueueState.value == RequestQueueUiState.Submitting) return
+        val localIdentity = mutableIdentityState.value.readySnapshot()
         viewModelScope.launch {
             mutableRequestQueueState.value = RequestQueueUiState.Submitting
             runCatching {
                 requestSubmission.submit(
                     ReliefRequestDraft(
-                        requesterNodeId = "clinic-sylhet-01",
-                        originNodeId = "N4",
+                        requesterNodeId = localIdentity?.localIdentityId ?: "clinic-sylhet-01",
+                        originNodeId = localIdentity?.localNodeId ?: "N4",
                         destinationNodeId = "N6",
                         cargo = listOf(
                             CargoDraft("medicine", medicine, "pack"),
@@ -133,6 +135,17 @@ class MainScreenViewModel @Inject constructor(
                     },
                 )
             }
+        }
+    }
+
+    fun selectDeviceProfile(profileCode: String) {
+        DeviceProfiles.require(profileCode)
+        val previous = mutableIdentityState.value.readySnapshot()
+        viewModelScope.launch {
+            mutableIdentityState.value = IdentityUiState.Working(previous)
+            runCatching { identityCoordinator.selectProfile(profileCode) }
+                .onSuccess { snapshot -> mutableIdentityState.value = snapshot.toUiState() }
+                .onFailure { mutableIdentityState.value = IdentityUiState.Failed(previous, IdentityFailure.KEYSTORE) }
         }
     }
 
@@ -406,7 +419,11 @@ private object UnavailableHybridFleetWorkflow : HybridFleetWorkflow {
 private fun com.example.digitaldelta.domain.identity.IdentityProvisioningSnapshot.toUiState(
     acceptedRecipient: AcceptedRecipient? = this.acceptedRecipient,
 ): IdentityUiState.Ready = IdentityUiState.Ready(
+    profileCode = profileCode,
     localNodeId = localNodeId,
+    localIdentityId = localIdentityId,
+    localDisplayName = localDisplayName,
+    localRole = localRole,
     localEncryptionKeyId = localEncryptionKeyId,
     enrollmentCode = enrollmentCode,
     trustedIssuerFingerprint = trustedIssuerFingerprint,
@@ -435,7 +452,11 @@ sealed interface IdentityUiState {
     data object Loading : IdentityUiState
     data class Working(val previous: Ready?) : IdentityUiState
     data class Ready(
+        val profileCode: String,
         val localNodeId: String,
+        val localIdentityId: String,
+        val localDisplayName: String,
+        val localRole: com.example.digitaldelta.proto.v1.IdentityRole,
         val localEncryptionKeyId: String,
         val enrollmentCode: String,
         val trustedIssuerFingerprint: String?,

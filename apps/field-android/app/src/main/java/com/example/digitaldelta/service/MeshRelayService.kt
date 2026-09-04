@@ -23,6 +23,7 @@ import com.example.digitaldelta.domain.mesh.AndroidPeerIdentityAuthenticator
 import com.example.digitaldelta.domain.mesh.DirectoryMeshAcknowledgementVerifier
 import com.example.digitaldelta.domain.mesh.NearbyConnectionsPeerTransport
 import com.example.digitaldelta.domain.mesh.NearbyMeshController
+import com.example.digitaldelta.domain.mesh.NearbyMeshState
 import com.example.digitaldelta.domain.mesh.RoomMeshIngress
 import com.example.digitaldelta.domain.mesh.RoomPeerSigningIdentityDirectory
 import kotlinx.coroutines.CoroutineScope
@@ -34,12 +35,16 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.withLock
 
 class MeshRelayService : Service() {
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
-    private lateinit var controller: NearbyMeshController
+    private var controller: NearbyMeshController? = null
     private lateinit var runtimeState: MeshRuntimeStateStore
     private lateinit var graph: DigitalDeltaGraphEntryPoint
+    private val controllerMutex = Mutex()
     private var dispatchJob: Job? = null
     private var batteryPercent = 100
     private var intervalMillis = 10_000L
@@ -51,37 +56,28 @@ class MeshRelayService : Service() {
             DigitalDeltaGraphEntryPoint::class.java,
         )
         runtimeState = graph.meshRuntimeStateStore()
-        val acknowledgementSigner = AndroidMeshAcknowledgementSigner(
-            nodeId = LOCAL_NODE_ID,
-            deviceKeys = graph.deviceIdentityKeyStore(),
-        )
-        controller = NearbyConnectionsPeerTransport(
-            context = applicationContext,
-            localNodeId = LOCAL_NODE_ID,
-            ingress = RoomMeshIngress(
-                database = graph.database(),
-                localNodeId = LOCAL_NODE_ID,
-                acknowledgementSigner = acknowledgementSigner,
-            ),
-            identityAuthenticator = AndroidPeerIdentityAuthenticator(
-                localNodeId = LOCAL_NODE_ID,
-                deviceKeys = graph.deviceIdentityKeyStore(),
-                recipientKeys = graph.database().recipientKeyDao(),
-                trustAnchors = graph.trustAnchorRepository(),
-            ),
-        )
-        scope.launch {
-            controller.state.collectLatest { state ->
-                runtimeState.publish(state, batteryPercent, intervalMillis)
-            }
-        }
     }
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
         when (intent?.action ?: ACTION_START) {
-            ACTION_START -> startRelay()
-            ACTION_ACCEPT -> intent?.getStringExtra(EXTRA_ENDPOINT_ID)?.let(controller::acceptCandidate)
-            ACTION_REJECT -> intent?.getStringExtra(EXTRA_ENDPOINT_ID)?.let(controller::rejectCandidate)
+            ACTION_START -> {
+                startForegroundImmediately()
+                scope.launch {
+                    runCatching { activateRelay() }.onFailure { error ->
+                        runtimeState.publish(
+                            NearbyMeshState(lastError = error.message ?: error.javaClass.simpleName),
+                            batteryPercent,
+                            intervalMillis,
+                        )
+                    }
+                }
+            }
+            ACTION_ACCEPT -> intent?.getStringExtra(EXTRA_ENDPOINT_ID)?.let { endpointId ->
+                controller?.acceptCandidate(endpointId)
+            }
+            ACTION_REJECT -> intent?.getStringExtra(EXTRA_ENDPOINT_ID)?.let { endpointId ->
+                controller?.rejectCandidate(endpointId)
+            }
             ACTION_STOP -> stopSelf()
         }
         return START_STICKY
@@ -91,13 +87,13 @@ class MeshRelayService : Service() {
 
     override fun onDestroy() {
         dispatchJob?.cancel()
-        controller.stop()
+        controller?.stop()
         runtimeState.reset()
         scope.cancel()
         super.onDestroy()
     }
 
-    private fun startRelay() {
+    private fun startForegroundImmediately() {
         createNotificationChannel()
         val notification = NotificationCompat.Builder(this, CHANNEL_ID)
             .setSmallIcon(R.drawable.ic_launcher_foreground)
@@ -118,16 +114,20 @@ class MeshRelayService : Service() {
         } else {
             startForeground(NOTIFICATION_ID, notification)
         }
-        controller.start()
+    }
+
+    private suspend fun activateRelay() {
+        val activeController = ensureController()
+        activeController.start()
         if (dispatchJob?.isActive != true) {
-            dispatchJob = scope.launch { dispatchLoop() }
+            dispatchJob = scope.launch { dispatchLoop(activeController) }
         }
     }
 
-    private suspend fun dispatchLoop() {
+    private suspend fun dispatchLoop(activeController: NearbyMeshController) {
         val dispatcher = MeshOutboxDispatcher(
             database = graph.database(),
-            transport = controller,
+            transport = activeController,
             acknowledgementVerifier = DirectoryMeshAcknowledgementVerifier(
                 RoomPeerSigningIdentityDirectory(graph.database().recipientKeyDao()),
             ),
@@ -138,11 +138,42 @@ class MeshRelayService : Service() {
             batteryPercent = readBatteryPercent()
             val urgent = graph.database().outboxDao().hasUrgentPending(now)
             intervalMillis = policy.broadcastIntervalMillis(batteryPercent, urgent)
-            runtimeState.publish(controller.state.value, batteryPercent, intervalMillis)
-            controller.state.value.connectedNodeIds.forEach { peerId ->
+            runtimeState.publish(activeController.state.value, batteryPercent, intervalMillis)
+            activeController.state.value.connectedNodeIds.forEach { peerId ->
                 dispatcher.dispatch(peerId)
             }
             delay(intervalMillis)
+        }
+    }
+
+    private suspend fun ensureController(): NearbyMeshController = controllerMutex.withLock {
+        controller?.let { return@withLock it }
+        val profile = graph.deviceProfileRepository().profile.first()
+        val acknowledgementSigner = AndroidMeshAcknowledgementSigner(
+            nodeId = profile.nodeId,
+            deviceKeys = graph.deviceIdentityKeyStore(),
+        )
+        NearbyConnectionsPeerTransport(
+            context = applicationContext,
+            localNodeId = profile.nodeId,
+            ingress = RoomMeshIngress(
+                database = graph.database(),
+                localNodeId = profile.nodeId,
+                acknowledgementSigner = acknowledgementSigner,
+            ),
+            identityAuthenticator = AndroidPeerIdentityAuthenticator(
+                localNodeId = profile.nodeId,
+                deviceKeys = graph.deviceIdentityKeyStore(),
+                recipientKeys = graph.database().recipientKeyDao(),
+                trustAnchors = graph.trustAnchorRepository(),
+            ),
+        ).also { created ->
+            controller = created
+            scope.launch {
+                created.state.collectLatest { state ->
+                    runtimeState.publish(state, batteryPercent, intervalMillis)
+                }
+            }
         }
     }
 
@@ -163,7 +194,6 @@ class MeshRelayService : Service() {
     }
 
     companion object {
-        private const val LOCAL_NODE_ID = "N4"
         private const val CHANNEL_ID = "digital_delta_mesh_relay"
         private const val NOTIFICATION_ID = 4104
         private const val EXTRA_ENDPOINT_ID = "endpoint_id"

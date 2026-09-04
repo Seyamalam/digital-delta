@@ -9,7 +9,11 @@ import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.withContext
 
 data class IdentityProvisioningSnapshot(
+    val profileCode: String,
     val localNodeId: String,
+    val localIdentityId: String,
+    val localDisplayName: String,
+    val localRole: IdentityRole,
     val localEncryptionKeyId: String,
     val enrollmentCode: String,
     val trustedIssuerFingerprint: String?,
@@ -24,6 +28,7 @@ data class AcceptedRecipient(
 
 interface IdentityProvisioningCoordinator {
     suspend fun snapshot(): IdentityProvisioningSnapshot
+    suspend fun selectProfile(profileCode: String): IdentityProvisioningSnapshot
     suspend fun pinTrustAnchor(code: String): IdentityProvisioningSnapshot
     suspend fun acceptRecipientCredential(code: String): AcceptedRecipient
 }
@@ -32,11 +37,17 @@ class DefaultIdentityProvisioningCoordinator(
     private val deviceKeys: AndroidDeviceIdentityKeyStore,
     private val trustAnchors: TrustAnchorRepository,
     private val recipients: RecipientProvisioningRepository,
+    private val deviceProfiles: DeviceProfileRepository,
     private val enrollmentRequests: EnrollmentRequestService = EnrollmentRequestService(),
     private val nowUnixMs: () -> Long = System::currentTimeMillis,
     private val secureRandom: SecureRandom = SecureRandom(),
 ) : IdentityProvisioningCoordinator {
     override suspend fun snapshot(): IdentityProvisioningSnapshot = withContext(Dispatchers.IO) {
+        snapshotInternal()
+    }
+
+    override suspend fun selectProfile(profileCode: String): IdentityProvisioningSnapshot = withContext(Dispatchers.IO) {
+        deviceProfiles.select(profileCode)
         snapshotInternal()
     }
 
@@ -59,18 +70,23 @@ class DefaultIdentityProvisioningCoordinator(
     }
 
     private suspend fun snapshotInternal(): IdentityProvisioningSnapshot {
-        val publicIdentity = deviceKeys.createOrGet(LOCAL_NODE_ID)
+        val profile = deviceProfiles.profile.first()
+        val publicIdentity = deviceKeys.createOrGet(profile.nodeId)
         val nonce = ByteArray(16).also(secureRandom::nextBytes)
         val enrollment = enrollmentRequests.create(
-            identityId = LOCAL_IDENTITY_ID,
-            displayName = LOCAL_DISPLAY_NAME,
-            role = IdentityRole.IDENTITY_ROLE_CLINIC,
+            identityId = profile.identityId,
+            displayName = profile.displayName,
+            role = profile.role,
             publicIdentity = publicIdentity,
             createdAtUnixMs = nowUnixMs(),
             nonce = nonce,
         )
         return IdentityProvisioningSnapshot(
-            localNodeId = LOCAL_NODE_ID,
+            profileCode = profile.code,
+            localNodeId = profile.nodeId,
+            localIdentityId = profile.identityId,
+            localDisplayName = profile.displayName,
+            localRole = profile.role,
             localEncryptionKeyId = publicIdentity.encryptionKeyId,
             enrollmentCode = ENROLLMENT_PREFIX + Base64.getUrlEncoder().withoutPadding().encodeToString(enrollment),
             trustedIssuerFingerprint = trustAnchors.trustedIssuer.first()?.fingerprint,
@@ -88,8 +104,5 @@ class DefaultIdentityProvisioningCoordinator(
         const val ENROLLMENT_PREFIX = "DIGITALDELTA:ENROLLMENT:"
         const val TRUST_PREFIX = "DIGITALDELTA:TRUST:"
         const val CREDENTIAL_PREFIX = "DIGITALDELTA:CREDENTIAL:"
-        private const val LOCAL_NODE_ID = "N4"
-        private const val LOCAL_IDENTITY_ID = "clinic-sylhet-01"
-        private const val LOCAL_DISPLAY_NAME = "Companyganj Outpost"
     }
 }

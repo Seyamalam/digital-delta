@@ -16,4 +16,5 @@ message UserSettings {
   InterfaceLanguage interface_language = 1;
   bytes trusted_issuer_public_key_der = 2;
   string trusted_issuer_fingerprint = 3;
+  string local_device_profile_code = 4;
 }

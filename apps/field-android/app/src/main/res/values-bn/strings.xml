@@ -132,6 +132,11 @@
     <string name="demo_identity">সমন্বয়কারী • SYL-01</string>
     <string name="identity_and_keys">পরিচয় ও অফলাইন কী</string>
     <string name="identity_offline_subtitle">ইন্টারনেট ছাড়াই ডিভাইস অনুমোদন করুন</string>
+    <string name="device_profile">এই ফোনের মাঠ পর্যায়ের ভূমিকা</string>
+    <string name="device_profile_help">ভূমিকা বদলানোর আগে রিলে বন্ধ করুন। নির্বাচিত ভূমিকার QR দিয়ে প্রতিটি ফোন আলাদাভাবে নিবন্ধন করতে হবে।</string>
+    <string name="profile_clinic">কোম্পানীগঞ্জ ক্লিনিক</string>
+    <string name="profile_hospital">হবিগঞ্জ হাসপাতাল</string>
+    <string name="profile_relay">সুনামগঞ্জ রিলে</string>
     <string name="back">পেছনে</string>
     <string name="device_key_ready">ডিভাইস-সুরক্ষিত কী প্রস্তুত</string>
     <string name="enrollment_qr">ডিভাইস নিবন্ধন</string>
@@ -142,9 +147,9 @@
     <string name="trust_code">প্রশাসকের ট্রাস্ট কোড</string>
     <string name="pin_administrator">প্রশাসকের কী পিন করুন</string>
     <string name="trusted">বিশ্বস্ত প্রশাসক</string>
-    <string name="recipient_credential">প্রাপকের পরিচয়পত্র</string>
+    <string name="recipient_credential">এই ডিভাইস বা পিয়ারের পরিচয়পত্র</string>
     <string name="credential_code">স্বাক্ষরিত প্রাপক পরিচয়পত্র</string>
-    <string name="verify_add_recipient">যাচাই করে প্রাপক যোগ করুন</string>
+    <string name="verify_add_recipient">যাচাই করে পরিচয়পত্র ইনস্টল করুন</string>
     <string name="identity_keystore_failed">ডিভাইস কী প্রস্তুত করা যায়নি। পুনরায় চালু করে চেষ্টা করুন।</string>
     <string name="invalid_trust_code">প্রশাসকের কোডটি সঠিক নয়। প্রশাসকের সঙ্গে ফিঙ্গারপ্রিন্ট মিলিয়ে নিন।</string>
     <string name="invalid_credential">পরিচয়পত্র প্রত্যাখ্যাত: স্বাক্ষর, কী বা মেয়াদ সঠিক নয়।</string>

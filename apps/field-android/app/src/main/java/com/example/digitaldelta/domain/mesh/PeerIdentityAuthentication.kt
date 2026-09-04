@@ -3,6 +3,7 @@ package com.example.digitaldelta.domain.mesh
 import com.example.digitaldelta.data.local.RecipientKeyDao
 import com.example.digitaldelta.domain.identity.AndroidDeviceIdentityKeyStore
 import com.example.digitaldelta.domain.identity.ProvisioningCredentialService
+import com.example.digitaldelta.domain.identity.RecipientProvisioningRepository
 import com.example.digitaldelta.domain.identity.TrustAnchorRepository
 import com.example.digitaldelta.proto.v1.IdentityProvisioningCredential
 import com.example.digitaldelta.proto.v1.PeerIdentityChallenge
@@ -76,13 +77,21 @@ class AndroidPeerIdentityAuthenticator(
         expectedPeerNodeId: String,
     ): Boolean {
         val trustedIssuer = trustAnchors.trustedIssuer.first() ?: return false
-        return PeerIdentityAuthentication.verifyProof(
+        val now = nowUnixMs()
+        val verified = PeerIdentityAuthentication.verifyProof(
             proof = proof,
             expectedChallenge = expectedChallenge,
             expectedPeerNodeId = expectedPeerNodeId,
             trustedIssuerPublicKeyDer = trustedIssuer.publicKeyDer,
-            nowUnixMs = nowUnixMs(),
+            nowUnixMs = now,
         )
+        if (!verified) return false
+        RecipientProvisioningRepository(recipientKeys).accept(
+            credentialBytes = proof.credential.toByteArray(),
+            trustedIssuerPublicKeyDer = trustedIssuer.publicKeyDer,
+            nowUnixMs = now,
+        )
+        return true
     }
 }
 

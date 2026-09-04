@@ -265,7 +265,8 @@ class MainScreenTest {
         composeTestRule.onNodeWithText("SIMULATED • Simulated").assertIsDisplayed()
         composeTestRule.onNodeWithText("Boat → drone last-mile handoff").assertIsDisplayed()
         composeTestRule.onNodeWithText("N7 • Tanguar Haor Clinic").assertExists()
-        composeTestRule.onNode(hasTestTag("scan-handoff")).performScrollTo().assertIsDisplayed()
+        composeTestRule.onNode(hasScrollAction()).performScrollToNode(hasTestTag("scan-handoff"))
+        composeTestRule.onNode(hasTestTag("scan-handoff")).assertIsDisplayed()
 
         composeTestRule.onNode(hasTestTag("hybrid-fleet-action")).performScrollTo().performClick()
         composeTestRule.onNodeWithText("Boat arrived at rendezvous").assertExists()

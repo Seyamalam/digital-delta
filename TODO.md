@@ -91,6 +91,7 @@ This checklist tracks implementation. Milestone exit criteria live in [MILESTONE
 - [ ] Use WorkManager only for deferred retries, queue cleanup, and maintenance.
 - [x] Implement neighbor advertising and discovery with an explicit human accept or reject step.
 - [ ] Authenticate peers before accepting payloads. Nearby comparison digits are followed by mutual fresh-nonce challenge-response using administrator-signed credentials and device RSA-PSS keys; envelopes and acknowledgements are blocked until verification, and signed receipts are checked before the outbox advances. Physical multi-phone evidence remains.
+- [x] Persist distinct N4 clinic, N6 hospital, and RLY-01 relay profiles; stop the active relay before profile changes and generate role-bound enrollment identities from the selected profile.
 - [x] Build persistent Android inbox/outbox/seen-message state with bounded retry and dead-letter transitions; Go retains its durable Bolt inbox.
 - [x] Implement the store-and-forward relay engine with atomic durable receipt and connect it to the Nearby byte transport.
 - [x] Implement TTL and hop-limit enforcement in both Android and Go durable ingress.
@@ -174,7 +175,7 @@ This checklist tracks implementation. Milestone exit criteria live in [MILESTONE
 - [x] Simulate boat and drone arrival events as visibly labelled Protobuf ledger entries.
 - [x] Reuse M5 for a sender-and-recipient-signed boat-to-drone custody transfer.
 - [x] Display simulated vehicle state clearly in Bangla and English.
-- [ ] Complete fleet edge-case evidence. No feasible rendezvous, low battery, unreachable graph, changed destination, and delayed-boat R3-to-R2 replanning pass at the unit/domain layer. The bilingual connected test is compiled but still needs an emulator run and persistent screenshot.
+- [ ] Complete fleet edge-case evidence. No feasible rendezvous, low battery, unreachable graph, changed destination, and delayed-boat R3-to-R2 replanning pass at the unit/domain layer; the bilingual journey passes on Android 15 and 16 emulators. A persistent replanned-state screenshot and target-phone run remain.
 
 ## Command dashboard and Disaster Control
 
