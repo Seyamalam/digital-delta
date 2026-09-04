@@ -178,6 +178,7 @@
     <string name="authorization_action_restricted">This signed role cannot perform this action.</string>
     <string name="authorization_expired">This phone’s signed credential has expired.</string>
     <string name="authorization_revoked">This phone’s signed credential has been revoked.</string>
+    <string name="authorization_audit_recorded">Signed audit recorded</string>
     <string name="role_coordinator">Coordinator • full field authority</string>
     <string name="role_operator">Driver/operator • relay and custody</string>
     <string name="role_requester">Clinic • request authority</string>

@@ -72,6 +72,8 @@ Nearby's connection comparison digits are displayed to both operators before a c
 
 Local authorization uses the same trust boundary. Selecting an allow-listed profile does not grant its role. The phone activates permissions only after an administrator-signed credential matches the profile's node ID, identity ID, role, encryption-key ID, and signing-key ID. Credential expiry and revocation are checked again at each ViewModel action; Compose disables forbidden controls, while direct action calls independently fail closed.
 
+Each authorization decision is appended as a Protobuf `SignedAuthorizationAuditEntry`. The device signs the canonical entry with its non-exportable RSA-PSS key, and every entry commits to the SHA-256 hash of the preceding signed event. Verification checks event/entry binding, chain order, signer key ID, algorithm, and signature. The identity screen exposes the latest audit ID without displaying protected cargo data.
+
 ## Proof-of-delivery verification
 
 The verifier checks:

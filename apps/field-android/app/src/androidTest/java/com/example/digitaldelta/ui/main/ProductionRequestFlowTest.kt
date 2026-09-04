@@ -100,6 +100,10 @@ class ProductionRequestFlowTest {
 
         composeTestRule.waitUntilAtLeastOneExists(hasTestTag("request-queued"), timeoutMillis = 4_000)
         composeTestRule.onNode(hasTestTag("request-queued")).assertExists()
+        composeTestRule.onNode(hasTestTag("identity-open")).performClick()
+        composeTestRule.waitUntilAtLeastOneExists(hasTestTag("authorization-audit-id"), timeoutMillis = 4_000)
+        composeTestRule.onNode(hasTestTag("authorization-audit-id")).assertExists()
+        assertTrue(runBlocking { entryPoint.authorizationAuditTrail().verifyChain() })
 
         val envelope = runBlocking {
             entryPoint.database().outboxDao().pending(System.currentTimeMillis(), 100)

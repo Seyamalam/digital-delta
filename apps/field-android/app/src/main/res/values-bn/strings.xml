@@ -178,6 +178,7 @@
     <string name="authorization_action_restricted">এই স্বাক্ষরিত ভূমিকায় কাজটি করার অনুমতি নেই।</string>
     <string name="authorization_expired">এই ফোনের স্বাক্ষরিত পরিচয়পত্রের মেয়াদ শেষ।</string>
     <string name="authorization_revoked">এই ফোনের স্বাক্ষরিত পরিচয়পত্র বাতিল করা হয়েছে।</string>
+    <string name="authorization_audit_recorded">স্বাক্ষরিত অডিট সংরক্ষিত</string>
     <string name="role_coordinator">সমন্বয়কারী • পূর্ণ মাঠ কর্তৃত্ব</string>
     <string name="role_operator">চালক/অপারেটর • রিলে ও হেফাজত</string>
     <string name="role_requester">ক্লিনিক • অনুরোধের কর্তৃত্ব</string>

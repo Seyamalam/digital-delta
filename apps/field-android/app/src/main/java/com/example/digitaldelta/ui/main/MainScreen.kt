@@ -1045,6 +1045,13 @@ private fun AuthorizationCard(
                         style = MaterialTheme.typography.bodySmall,
                     )
                 }
+                state.lastAudit?.let { audit ->
+                    Text(
+                        "${text(R.string.authorization_audit_recorded, language)} • ${audit.auditId.takeLast(12)}",
+                        style = MaterialTheme.typography.labelSmall,
+                        modifier = Modifier.testTag("authorization-audit-id"),
+                    )
+                }
             }
         }
     }

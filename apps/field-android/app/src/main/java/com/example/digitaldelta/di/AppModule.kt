@@ -18,6 +18,8 @@ import com.example.digitaldelta.domain.mesh.DirectoryBackedMeshPayloadProtector
 import com.example.digitaldelta.domain.mesh.MeshPayloadProtector
 import com.example.digitaldelta.domain.mesh.RecipientKeyDirectory
 import com.example.digitaldelta.domain.identity.AndroidDeviceIdentityKeyStore
+import com.example.digitaldelta.domain.identity.AuthorizationAuditTrail
+import com.example.digitaldelta.domain.identity.RoomSignedAuthorizationAuditTrail
 import com.example.digitaldelta.domain.identity.DefaultIdentityProvisioningCoordinator
 import com.example.digitaldelta.domain.identity.DeviceProfileRepository
 import com.example.digitaldelta.domain.identity.IdentityProvisioningCoordinator
@@ -99,6 +101,13 @@ object AppModule {
     @Provides
     @Singleton
     fun provideDeviceIdentityKeyStore(): AndroidDeviceIdentityKeyStore = AndroidDeviceIdentityKeyStore()
+
+    @Provides
+    @Singleton
+    fun provideAuthorizationAuditTrail(
+        database: DeltaDatabase,
+        deviceKeys: AndroidDeviceIdentityKeyStore,
+    ): AuthorizationAuditTrail = RoomSignedAuthorizationAuditTrail(database, deviceKeys)
 
     @Provides
     @Singleton

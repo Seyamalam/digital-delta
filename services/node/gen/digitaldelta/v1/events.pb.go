@@ -1393,6 +1393,166 @@ func (x *RendezvousPlanned) GetSimulated() bool {
 	return false
 }
 
+type AuthorizationAuditEntry struct {
+	state                protoimpl.MessageState `protogen:"open.v1"`
+	AuditId              string                 `protobuf:"bytes,1,opt,name=audit_id,json=auditId,proto3" json:"audit_id,omitempty"`
+	ActorIdentityId      string                 `protobuf:"bytes,2,opt,name=actor_identity_id,json=actorIdentityId,proto3" json:"actor_identity_id,omitempty"`
+	ActorNodeId          string                 `protobuf:"bytes,3,opt,name=actor_node_id,json=actorNodeId,proto3" json:"actor_node_id,omitempty"`
+	Role                 IdentityRole           `protobuf:"varint,4,opt,name=role,proto3,enum=digitaldelta.v1.IdentityRole" json:"role,omitempty"`
+	PermissionCode       string                 `protobuf:"bytes,5,opt,name=permission_code,json=permissionCode,proto3" json:"permission_code,omitempty"`
+	Allowed              bool                   `protobuf:"varint,6,opt,name=allowed,proto3" json:"allowed,omitempty"`
+	ReasonCode           string                 `protobuf:"bytes,7,opt,name=reason_code,json=reasonCode,proto3" json:"reason_code,omitempty"`
+	OccurredAtUnixMs     int64                  `protobuf:"varint,8,opt,name=occurred_at_unix_ms,json=occurredAtUnixMs,proto3" json:"occurred_at_unix_ms,omitempty"`
+	PreviousRecordSha256 []byte                 `protobuf:"bytes,9,opt,name=previous_record_sha256,json=previousRecordSha256,proto3" json:"previous_record_sha256,omitempty"`
+	unknownFields        protoimpl.UnknownFields
+	sizeCache            protoimpl.SizeCache
+}
+
+func (x *AuthorizationAuditEntry) Reset() {
+	*x = AuthorizationAuditEntry{}
+	mi := &file_digitaldelta_v1_events_proto_msgTypes[15]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *AuthorizationAuditEntry) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*AuthorizationAuditEntry) ProtoMessage() {}
+
+func (x *AuthorizationAuditEntry) ProtoReflect() protoreflect.Message {
+	mi := &file_digitaldelta_v1_events_proto_msgTypes[15]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use AuthorizationAuditEntry.ProtoReflect.Descriptor instead.
+func (*AuthorizationAuditEntry) Descriptor() ([]byte, []int) {
+	return file_digitaldelta_v1_events_proto_rawDescGZIP(), []int{15}
+}
+
+func (x *AuthorizationAuditEntry) GetAuditId() string {
+	if x != nil {
+		return x.AuditId
+	}
+	return ""
+}
+
+func (x *AuthorizationAuditEntry) GetActorIdentityId() string {
+	if x != nil {
+		return x.ActorIdentityId
+	}
+	return ""
+}
+
+func (x *AuthorizationAuditEntry) GetActorNodeId() string {
+	if x != nil {
+		return x.ActorNodeId
+	}
+	return ""
+}
+
+func (x *AuthorizationAuditEntry) GetRole() IdentityRole {
+	if x != nil {
+		return x.Role
+	}
+	return IdentityRole_IDENTITY_ROLE_UNSPECIFIED
+}
+
+func (x *AuthorizationAuditEntry) GetPermissionCode() string {
+	if x != nil {
+		return x.PermissionCode
+	}
+	return ""
+}
+
+func (x *AuthorizationAuditEntry) GetAllowed() bool {
+	if x != nil {
+		return x.Allowed
+	}
+	return false
+}
+
+func (x *AuthorizationAuditEntry) GetReasonCode() string {
+	if x != nil {
+		return x.ReasonCode
+	}
+	return ""
+}
+
+func (x *AuthorizationAuditEntry) GetOccurredAtUnixMs() int64 {
+	if x != nil {
+		return x.OccurredAtUnixMs
+	}
+	return 0
+}
+
+func (x *AuthorizationAuditEntry) GetPreviousRecordSha256() []byte {
+	if x != nil {
+		return x.PreviousRecordSha256
+	}
+	return nil
+}
+
+type SignedAuthorizationAuditEntry struct {
+	state          protoimpl.MessageState   `protogen:"open.v1"`
+	Entry          *AuthorizationAuditEntry `protobuf:"bytes,1,opt,name=entry,proto3" json:"entry,omitempty"`
+	ActorSignature *Signature               `protobuf:"bytes,2,opt,name=actor_signature,json=actorSignature,proto3" json:"actor_signature,omitempty"`
+	unknownFields  protoimpl.UnknownFields
+	sizeCache      protoimpl.SizeCache
+}
+
+func (x *SignedAuthorizationAuditEntry) Reset() {
+	*x = SignedAuthorizationAuditEntry{}
+	mi := &file_digitaldelta_v1_events_proto_msgTypes[16]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *SignedAuthorizationAuditEntry) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*SignedAuthorizationAuditEntry) ProtoMessage() {}
+
+func (x *SignedAuthorizationAuditEntry) ProtoReflect() protoreflect.Message {
+	mi := &file_digitaldelta_v1_events_proto_msgTypes[16]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use SignedAuthorizationAuditEntry.ProtoReflect.Descriptor instead.
+func (*SignedAuthorizationAuditEntry) Descriptor() ([]byte, []int) {
+	return file_digitaldelta_v1_events_proto_rawDescGZIP(), []int{16}
+}
+
+func (x *SignedAuthorizationAuditEntry) GetEntry() *AuthorizationAuditEntry {
+	if x != nil {
+		return x.Entry
+	}
+	return nil
+}
+
+func (x *SignedAuthorizationAuditEntry) GetActorSignature() *Signature {
+	if x != nil {
+		return x.ActorSignature
+	}
+	return nil
+}
+
 type DomainEvent struct {
 	state            protoimpl.MessageState `protogen:"open.v1"`
 	EventId          string                 `protobuf:"bytes,1,opt,name=event_id,json=eventId,proto3" json:"event_id,omitempty"`
@@ -1415,6 +1575,7 @@ type DomainEvent struct {
 	//	*DomainEvent_MissionFieldUpdated
 	//	*DomainEvent_VehicleStateChanged
 	//	*DomainEvent_RendezvousPlanned
+	//	*DomainEvent_AuthorizationAudit
 	Body          isDomainEvent_Body `protobuf_oneof:"body"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
@@ -1422,7 +1583,7 @@ type DomainEvent struct {
 
 func (x *DomainEvent) Reset() {
 	*x = DomainEvent{}
-	mi := &file_digitaldelta_v1_events_proto_msgTypes[15]
+	mi := &file_digitaldelta_v1_events_proto_msgTypes[17]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1434,7 +1595,7 @@ func (x *DomainEvent) String() string {
 func (*DomainEvent) ProtoMessage() {}
 
 func (x *DomainEvent) ProtoReflect() protoreflect.Message {
-	mi := &file_digitaldelta_v1_events_proto_msgTypes[15]
+	mi := &file_digitaldelta_v1_events_proto_msgTypes[17]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1447,7 +1608,7 @@ func (x *DomainEvent) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use DomainEvent.ProtoReflect.Descriptor instead.
 func (*DomainEvent) Descriptor() ([]byte, []int) {
-	return file_digitaldelta_v1_events_proto_rawDescGZIP(), []int{15}
+	return file_digitaldelta_v1_events_proto_rawDescGZIP(), []int{17}
 }
 
 func (x *DomainEvent) GetEventId() string {
@@ -1607,6 +1768,15 @@ func (x *DomainEvent) GetRendezvousPlanned() *RendezvousPlanned {
 	return nil
 }
 
+func (x *DomainEvent) GetAuthorizationAudit() *SignedAuthorizationAuditEntry {
+	if x != nil {
+		if x, ok := x.Body.(*DomainEvent_AuthorizationAudit); ok {
+			return x.AuthorizationAudit
+		}
+	}
+	return nil
+}
+
 type isDomainEvent_Body interface {
 	isDomainEvent_Body()
 }
@@ -1659,6 +1829,10 @@ type DomainEvent_RendezvousPlanned struct {
 	RendezvousPlanned *RendezvousPlanned `protobuf:"bytes,31,opt,name=rendezvous_planned,json=rendezvousPlanned,proto3,oneof"`
 }
 
+type DomainEvent_AuthorizationAudit struct {
+	AuthorizationAudit *SignedAuthorizationAuditEntry `protobuf:"bytes,32,opt,name=authorization_audit,json=authorizationAudit,proto3,oneof"`
+}
+
 func (*DomainEvent_ReliefRequestCreated) isDomainEvent_Body() {}
 
 func (*DomainEvent_EdgeStatusChanged) isDomainEvent_Body() {}
@@ -1682,6 +1856,8 @@ func (*DomainEvent_MissionFieldUpdated) isDomainEvent_Body() {}
 func (*DomainEvent_VehicleStateChanged) isDomainEvent_Body() {}
 
 func (*DomainEvent_RendezvousPlanned) isDomainEvent_Body() {}
+
+func (*DomainEvent_AuthorizationAudit) isDomainEvent_Body() {}
 
 var File_digitaldelta_v1_events_proto protoreflect.FileDescriptor
 
@@ -1834,7 +2010,22 @@ const file_digitaldelta_v1_events_proto_rawDesc = "" +
 	" \x01(\rR\x1cprojectedDroneBatteryPercent\x126\n" +
 	"\x17reserve_battery_percent\x18\v \x01(\rR\x15reserveBatteryPercent\x12%\n" +
 	"\x0eobjective_code\x18\f \x01(\tR\robjectiveCode\x12\x1c\n" +
-	"\tsimulated\x18\r \x01(\bR\tsimulated\"\xf4\t\n" +
+	"\tsimulated\x18\r \x01(\bR\tsimulated\"\x80\x03\n" +
+	"\x17AuthorizationAuditEntry\x12\x19\n" +
+	"\baudit_id\x18\x01 \x01(\tR\aauditId\x12*\n" +
+	"\x11actor_identity_id\x18\x02 \x01(\tR\x0factorIdentityId\x12\"\n" +
+	"\ractor_node_id\x18\x03 \x01(\tR\vactorNodeId\x121\n" +
+	"\x04role\x18\x04 \x01(\x0e2\x1d.digitaldelta.v1.IdentityRoleR\x04role\x12'\n" +
+	"\x0fpermission_code\x18\x05 \x01(\tR\x0epermissionCode\x12\x18\n" +
+	"\aallowed\x18\x06 \x01(\bR\aallowed\x12\x1f\n" +
+	"\vreason_code\x18\a \x01(\tR\n" +
+	"reasonCode\x12-\n" +
+	"\x13occurred_at_unix_ms\x18\b \x01(\x03R\x10occurredAtUnixMs\x124\n" +
+	"\x16previous_record_sha256\x18\t \x01(\fR\x14previousRecordSha256\"\xa4\x01\n" +
+	"\x1dSignedAuthorizationAuditEntry\x12>\n" +
+	"\x05entry\x18\x01 \x01(\v2(.digitaldelta.v1.AuthorizationAuditEntryR\x05entry\x12C\n" +
+	"\x0factor_signature\x18\x02 \x01(\v2\x1a.digitaldelta.v1.SignatureR\x0eactorSignature\"\xd7\n" +
+	"\n" +
 	"\vDomainEvent\x12\x19\n" +
 	"\bevent_id\x18\x01 \x01(\tR\aeventId\x12%\n" +
 	"\x0eschema_version\x18\x02 \x01(\rR\rschemaVersion\x12*\n" +
@@ -1853,7 +2044,8 @@ const file_digitaldelta_v1_events_proto_rawDesc = "" +
 	"\x10custody_transfer\x18\x1c \x01(\v2 .digitaldelta.v1.CustodyTransferH\x00R\x0fcustodyTransfer\x12Z\n" +
 	"\x15mission_field_updated\x18\x1d \x01(\v2$.digitaldelta.v1.MissionFieldUpdatedH\x00R\x13missionFieldUpdated\x12Z\n" +
 	"\x15vehicle_state_changed\x18\x1e \x01(\v2$.digitaldelta.v1.VehicleStateChangedH\x00R\x13vehicleStateChanged\x12S\n" +
-	"\x12rendezvous_planned\x18\x1f \x01(\v2\".digitaldelta.v1.RendezvousPlannedH\x00R\x11rendezvousPlannedB\x06\n" +
+	"\x12rendezvous_planned\x18\x1f \x01(\v2\".digitaldelta.v1.RendezvousPlannedH\x00R\x11rendezvousPlanned\x12a\n" +
+	"\x13authorization_audit\x18  \x01(\v2..digitaldelta.v1.SignedAuthorizationAuditEntryH\x00R\x12authorizationAuditB\x06\n" +
 	"\x04bodyBu\n" +
 	"!com.example.digitaldelta.proto.v1H\x03P\x01ZLgithub.com/Seyamalam/digital-delta/services/node/gen/digitaldelta/v1;deltav1b\x06proto3"
 
@@ -1869,59 +2061,66 @@ func file_digitaldelta_v1_events_proto_rawDescGZIP() []byte {
 	return file_digitaldelta_v1_events_proto_rawDescData
 }
 
-var file_digitaldelta_v1_events_proto_msgTypes = make([]protoimpl.MessageInfo, 16)
+var file_digitaldelta_v1_events_proto_msgTypes = make([]protoimpl.MessageInfo, 18)
 var file_digitaldelta_v1_events_proto_goTypes = []any{
-	(*CargoItem)(nil),            // 0: digitaldelta.v1.CargoItem
-	(*ReliefRequestCreated)(nil), // 1: digitaldelta.v1.ReliefRequestCreated
-	(*EdgeStatusChanged)(nil),    // 2: digitaldelta.v1.EdgeStatusChanged
-	(*EdgeRiskPredicted)(nil),    // 3: digitaldelta.v1.EdgeRiskPredicted
-	(*RoutePlanned)(nil),         // 4: digitaldelta.v1.RoutePlanned
-	(*MissionFieldUpdated)(nil),  // 5: digitaldelta.v1.MissionFieldUpdated
-	(*ConflictRaised)(nil),       // 6: digitaldelta.v1.ConflictRaised
-	(*ConflictResolved)(nil),     // 7: digitaldelta.v1.ConflictResolved
-	(*SlaBreachPredicted)(nil),   // 8: digitaldelta.v1.SlaBreachPredicted
-	(*PreemptionConfirmed)(nil),  // 9: digitaldelta.v1.PreemptionConfirmed
-	(*DeliveryOffer)(nil),        // 10: digitaldelta.v1.DeliveryOffer
-	(*SignedDeliveryOffer)(nil),  // 11: digitaldelta.v1.SignedDeliveryOffer
-	(*CustodyTransfer)(nil),      // 12: digitaldelta.v1.CustodyTransfer
-	(*VehicleStateChanged)(nil),  // 13: digitaldelta.v1.VehicleStateChanged
-	(*RendezvousPlanned)(nil),    // 14: digitaldelta.v1.RendezvousPlanned
-	(*DomainEvent)(nil),          // 15: digitaldelta.v1.DomainEvent
-	(PriorityClass)(0),           // 16: digitaldelta.v1.PriorityClass
-	(TransportMode)(0),           // 17: digitaldelta.v1.TransportMode
-	(*VectorClock)(nil),          // 18: digitaldelta.v1.VectorClock
-	(*Signature)(nil),            // 19: digitaldelta.v1.Signature
+	(*CargoItem)(nil),                     // 0: digitaldelta.v1.CargoItem
+	(*ReliefRequestCreated)(nil),          // 1: digitaldelta.v1.ReliefRequestCreated
+	(*EdgeStatusChanged)(nil),             // 2: digitaldelta.v1.EdgeStatusChanged
+	(*EdgeRiskPredicted)(nil),             // 3: digitaldelta.v1.EdgeRiskPredicted
+	(*RoutePlanned)(nil),                  // 4: digitaldelta.v1.RoutePlanned
+	(*MissionFieldUpdated)(nil),           // 5: digitaldelta.v1.MissionFieldUpdated
+	(*ConflictRaised)(nil),                // 6: digitaldelta.v1.ConflictRaised
+	(*ConflictResolved)(nil),              // 7: digitaldelta.v1.ConflictResolved
+	(*SlaBreachPredicted)(nil),            // 8: digitaldelta.v1.SlaBreachPredicted
+	(*PreemptionConfirmed)(nil),           // 9: digitaldelta.v1.PreemptionConfirmed
+	(*DeliveryOffer)(nil),                 // 10: digitaldelta.v1.DeliveryOffer
+	(*SignedDeliveryOffer)(nil),           // 11: digitaldelta.v1.SignedDeliveryOffer
+	(*CustodyTransfer)(nil),               // 12: digitaldelta.v1.CustodyTransfer
+	(*VehicleStateChanged)(nil),           // 13: digitaldelta.v1.VehicleStateChanged
+	(*RendezvousPlanned)(nil),             // 14: digitaldelta.v1.RendezvousPlanned
+	(*AuthorizationAuditEntry)(nil),       // 15: digitaldelta.v1.AuthorizationAuditEntry
+	(*SignedAuthorizationAuditEntry)(nil), // 16: digitaldelta.v1.SignedAuthorizationAuditEntry
+	(*DomainEvent)(nil),                   // 17: digitaldelta.v1.DomainEvent
+	(PriorityClass)(0),                    // 18: digitaldelta.v1.PriorityClass
+	(TransportMode)(0),                    // 19: digitaldelta.v1.TransportMode
+	(*VectorClock)(nil),                   // 20: digitaldelta.v1.VectorClock
+	(*Signature)(nil),                     // 21: digitaldelta.v1.Signature
+	(IdentityRole)(0),                     // 22: digitaldelta.v1.IdentityRole
 }
 var file_digitaldelta_v1_events_proto_depIdxs = []int32{
-	16, // 0: digitaldelta.v1.CargoItem.priority:type_name -> digitaldelta.v1.PriorityClass
+	18, // 0: digitaldelta.v1.CargoItem.priority:type_name -> digitaldelta.v1.PriorityClass
 	0,  // 1: digitaldelta.v1.ReliefRequestCreated.cargo:type_name -> digitaldelta.v1.CargoItem
-	17, // 2: digitaldelta.v1.RoutePlanned.mode:type_name -> digitaldelta.v1.TransportMode
-	18, // 3: digitaldelta.v1.MissionFieldUpdated.vector_clock:type_name -> digitaldelta.v1.VectorClock
-	18, // 4: digitaldelta.v1.ConflictRaised.left_clock:type_name -> digitaldelta.v1.VectorClock
-	18, // 5: digitaldelta.v1.ConflictRaised.right_clock:type_name -> digitaldelta.v1.VectorClock
-	16, // 6: digitaldelta.v1.SlaBreachPredicted.priority:type_name -> digitaldelta.v1.PriorityClass
+	19, // 2: digitaldelta.v1.RoutePlanned.mode:type_name -> digitaldelta.v1.TransportMode
+	20, // 3: digitaldelta.v1.MissionFieldUpdated.vector_clock:type_name -> digitaldelta.v1.VectorClock
+	20, // 4: digitaldelta.v1.ConflictRaised.left_clock:type_name -> digitaldelta.v1.VectorClock
+	20, // 5: digitaldelta.v1.ConflictRaised.right_clock:type_name -> digitaldelta.v1.VectorClock
+	18, // 6: digitaldelta.v1.SlaBreachPredicted.priority:type_name -> digitaldelta.v1.PriorityClass
 	10, // 7: digitaldelta.v1.SignedDeliveryOffer.offer:type_name -> digitaldelta.v1.DeliveryOffer
-	19, // 8: digitaldelta.v1.SignedDeliveryOffer.sender_signature:type_name -> digitaldelta.v1.Signature
-	19, // 9: digitaldelta.v1.CustodyTransfer.sender_signature:type_name -> digitaldelta.v1.Signature
-	19, // 10: digitaldelta.v1.CustodyTransfer.recipient_signature:type_name -> digitaldelta.v1.Signature
-	17, // 11: digitaldelta.v1.VehicleStateChanged.mode:type_name -> digitaldelta.v1.TransportMode
-	1,  // 12: digitaldelta.v1.DomainEvent.relief_request_created:type_name -> digitaldelta.v1.ReliefRequestCreated
-	2,  // 13: digitaldelta.v1.DomainEvent.edge_status_changed:type_name -> digitaldelta.v1.EdgeStatusChanged
-	3,  // 14: digitaldelta.v1.DomainEvent.edge_risk_predicted:type_name -> digitaldelta.v1.EdgeRiskPredicted
-	4,  // 15: digitaldelta.v1.DomainEvent.route_planned:type_name -> digitaldelta.v1.RoutePlanned
-	6,  // 16: digitaldelta.v1.DomainEvent.conflict_raised:type_name -> digitaldelta.v1.ConflictRaised
-	7,  // 17: digitaldelta.v1.DomainEvent.conflict_resolved:type_name -> digitaldelta.v1.ConflictResolved
-	8,  // 18: digitaldelta.v1.DomainEvent.sla_breach_predicted:type_name -> digitaldelta.v1.SlaBreachPredicted
-	9,  // 19: digitaldelta.v1.DomainEvent.preemption_confirmed:type_name -> digitaldelta.v1.PreemptionConfirmed
-	12, // 20: digitaldelta.v1.DomainEvent.custody_transfer:type_name -> digitaldelta.v1.CustodyTransfer
-	5,  // 21: digitaldelta.v1.DomainEvent.mission_field_updated:type_name -> digitaldelta.v1.MissionFieldUpdated
-	13, // 22: digitaldelta.v1.DomainEvent.vehicle_state_changed:type_name -> digitaldelta.v1.VehicleStateChanged
-	14, // 23: digitaldelta.v1.DomainEvent.rendezvous_planned:type_name -> digitaldelta.v1.RendezvousPlanned
-	24, // [24:24] is the sub-list for method output_type
-	24, // [24:24] is the sub-list for method input_type
-	24, // [24:24] is the sub-list for extension type_name
-	24, // [24:24] is the sub-list for extension extendee
-	0,  // [0:24] is the sub-list for field type_name
+	21, // 8: digitaldelta.v1.SignedDeliveryOffer.sender_signature:type_name -> digitaldelta.v1.Signature
+	21, // 9: digitaldelta.v1.CustodyTransfer.sender_signature:type_name -> digitaldelta.v1.Signature
+	21, // 10: digitaldelta.v1.CustodyTransfer.recipient_signature:type_name -> digitaldelta.v1.Signature
+	19, // 11: digitaldelta.v1.VehicleStateChanged.mode:type_name -> digitaldelta.v1.TransportMode
+	22, // 12: digitaldelta.v1.AuthorizationAuditEntry.role:type_name -> digitaldelta.v1.IdentityRole
+	15, // 13: digitaldelta.v1.SignedAuthorizationAuditEntry.entry:type_name -> digitaldelta.v1.AuthorizationAuditEntry
+	21, // 14: digitaldelta.v1.SignedAuthorizationAuditEntry.actor_signature:type_name -> digitaldelta.v1.Signature
+	1,  // 15: digitaldelta.v1.DomainEvent.relief_request_created:type_name -> digitaldelta.v1.ReliefRequestCreated
+	2,  // 16: digitaldelta.v1.DomainEvent.edge_status_changed:type_name -> digitaldelta.v1.EdgeStatusChanged
+	3,  // 17: digitaldelta.v1.DomainEvent.edge_risk_predicted:type_name -> digitaldelta.v1.EdgeRiskPredicted
+	4,  // 18: digitaldelta.v1.DomainEvent.route_planned:type_name -> digitaldelta.v1.RoutePlanned
+	6,  // 19: digitaldelta.v1.DomainEvent.conflict_raised:type_name -> digitaldelta.v1.ConflictRaised
+	7,  // 20: digitaldelta.v1.DomainEvent.conflict_resolved:type_name -> digitaldelta.v1.ConflictResolved
+	8,  // 21: digitaldelta.v1.DomainEvent.sla_breach_predicted:type_name -> digitaldelta.v1.SlaBreachPredicted
+	9,  // 22: digitaldelta.v1.DomainEvent.preemption_confirmed:type_name -> digitaldelta.v1.PreemptionConfirmed
+	12, // 23: digitaldelta.v1.DomainEvent.custody_transfer:type_name -> digitaldelta.v1.CustodyTransfer
+	5,  // 24: digitaldelta.v1.DomainEvent.mission_field_updated:type_name -> digitaldelta.v1.MissionFieldUpdated
+	13, // 25: digitaldelta.v1.DomainEvent.vehicle_state_changed:type_name -> digitaldelta.v1.VehicleStateChanged
+	14, // 26: digitaldelta.v1.DomainEvent.rendezvous_planned:type_name -> digitaldelta.v1.RendezvousPlanned
+	16, // 27: digitaldelta.v1.DomainEvent.authorization_audit:type_name -> digitaldelta.v1.SignedAuthorizationAuditEntry
+	28, // [28:28] is the sub-list for method output_type
+	28, // [28:28] is the sub-list for method input_type
+	28, // [28:28] is the sub-list for extension type_name
+	28, // [28:28] is the sub-list for extension extendee
+	0,  // [0:28] is the sub-list for field type_name
 }
 
 func init() { file_digitaldelta_v1_events_proto_init() }
@@ -1930,7 +2129,7 @@ func file_digitaldelta_v1_events_proto_init() {
 		return
 	}
 	file_digitaldelta_v1_common_proto_init()
-	file_digitaldelta_v1_events_proto_msgTypes[15].OneofWrappers = []any{
+	file_digitaldelta_v1_events_proto_msgTypes[17].OneofWrappers = []any{
 		(*DomainEvent_ReliefRequestCreated)(nil),
 		(*DomainEvent_EdgeStatusChanged)(nil),
 		(*DomainEvent_EdgeRiskPredicted)(nil),
@@ -1943,6 +2142,7 @@ func file_digitaldelta_v1_events_proto_init() {
 		(*DomainEvent_MissionFieldUpdated)(nil),
 		(*DomainEvent_VehicleStateChanged)(nil),
 		(*DomainEvent_RendezvousPlanned)(nil),
+		(*DomainEvent_AuthorizationAudit)(nil),
 	}
 	type x struct{}
 	out := protoimpl.TypeBuilder{
@@ -1950,7 +2150,7 @@ func file_digitaldelta_v1_events_proto_init() {
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_digitaldelta_v1_events_proto_rawDesc), len(file_digitaldelta_v1_events_proto_rawDesc)),
 			NumEnums:      0,
-			NumMessages:   16,
+			NumMessages:   18,
 			NumExtensions: 0,
 			NumServices:   0,
 		},

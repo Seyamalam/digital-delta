@@ -14,6 +14,8 @@ import com.example.digitaldelta.domain.identity.AcceptedRecipient
 import com.example.digitaldelta.domain.identity.IdentityProvisioningCoordinator
 import com.example.digitaldelta.domain.identity.DeviceProfiles
 import com.example.digitaldelta.domain.identity.AuthorizationPolicy
+import com.example.digitaldelta.domain.identity.AuthorizationAuditRecord
+import com.example.digitaldelta.domain.identity.AuthorizationAuditTrail
 import com.example.digitaldelta.domain.identity.DenialReason
 import com.example.digitaldelta.domain.identity.Permission
 import com.example.digitaldelta.domain.identity.Role
@@ -66,6 +68,7 @@ class MainScreenViewModel @Inject constructor(
     private val hybridFleetWorkflow: HybridFleetWorkflow = UnavailableHybridFleetWorkflow,
     private val offlinePinRepository: OfflinePinRepository = UnavailableOfflinePinRepository,
     private val authorizationPolicy: AuthorizationPolicy = AuthorizationPolicy(),
+    private val authorizationAuditTrail: AuthorizationAuditTrail = UnavailableAuthorizationAuditTrail,
 ) : ViewModel() {
     val language: StateFlow<LanguagePreference> = settingsRepository.language.stateIn(
         scope = viewModelScope,
@@ -428,6 +431,12 @@ class MainScreenViewModel @Inject constructor(
         val ready = mutableIdentityState.value.readySnapshot()
         val credential = ready?.localCredential
         if (ready == null || credential == null) {
+            if (ready != null) recordAuthorization(
+                ready = ready,
+                permission = permission,
+                allowed = false,
+                reasonCode = AuthorizationFailure.CREDENTIAL_REQUIRED.name,
+            )
             mutableAuthorizationState.value = mutableAuthorizationState.value.copy(
                 denial = AuthorizationDenial(permission, AuthorizationFailure.CREDENTIAL_REQUIRED),
             )
@@ -435,16 +444,41 @@ class MainScreenViewModel @Inject constructor(
         }
         val decision = authorizationPolicy.authorize(credential, permission, System.currentTimeMillis())
         if (!decision.allowed) {
+            val failure = decision.denialReason.toAuthorizationFailure()
+            recordAuthorization(ready, permission, false, failure.name)
             mutableAuthorizationState.value = mutableAuthorizationState.value.copy(
                 denial = AuthorizationDenial(
                     permission,
-                    decision.denialReason.toAuthorizationFailure(),
+                    failure,
                 ),
             )
             return null
         }
+        recordAuthorization(ready, permission, true, "AUTHORIZED")
         mutableAuthorizationState.value = mutableAuthorizationState.value.copy(denial = null)
         return ready
+    }
+
+    private fun recordAuthorization(
+        ready: IdentityUiState.Ready,
+        permission: Permission,
+        allowed: Boolean,
+        reasonCode: String,
+    ) {
+        viewModelScope.launch {
+            runCatching {
+                authorizationAuditTrail.record(
+                    actorIdentityId = ready.localIdentityId,
+                    actorNodeId = ready.localNodeId,
+                    role = ready.localRole,
+                    permission = permission,
+                    allowed = allowed,
+                    reasonCode = reasonCode,
+                )
+            }.onSuccess { audit ->
+                mutableAuthorizationState.value = mutableAuthorizationState.value.copy(lastAudit = audit)
+            }
+        }
     }
 
     private fun refreshAuthorization(ready: IdentityUiState.Ready?) {
@@ -620,6 +654,7 @@ data class FieldAuthorizationUiState(
     val role: Role? = null,
     val permissions: Set<Permission> = emptySet(),
     val denial: AuthorizationDenial? = null,
+    val lastAudit: AuthorizationAuditRecord? = null,
 ) {
     fun allows(permission: Permission): Boolean = permission in permissions
 }
@@ -630,4 +665,17 @@ private fun DenialReason?.toAuthorizationFailure(): AuthorizationFailure = when 
     DenialReason.ROLE_FORBIDDEN,
     null,
     -> AuthorizationFailure.ROLE_FORBIDDEN
+}
+
+private object UnavailableAuthorizationAuditTrail : AuthorizationAuditTrail {
+    override suspend fun record(
+        actorIdentityId: String,
+        actorNodeId: String,
+        role: com.example.digitaldelta.proto.v1.IdentityRole,
+        permission: Permission,
+        allowed: Boolean,
+        reasonCode: String,
+    ) = AuthorizationAuditRecord("audit-unavailable", permission, allowed, reasonCode, 0)
+
+    override suspend fun verifyChain(): Boolean = false
 }

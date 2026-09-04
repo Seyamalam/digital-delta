@@ -237,6 +237,12 @@ interface OperationLogDao {
         """,
     )
     suspend fun forMission(missionId: String): List<OperationEntity>
+
+    @Query(
+        "SELECT * FROM operation_log WHERE eventType = 'AUTHORIZATION_AUDIT' " +
+            "ORDER BY createdAtUnixMs ASC, eventId ASC",
+    )
+    suspend fun authorizationAudit(): List<OperationEntity>
 }
 
 @Dao

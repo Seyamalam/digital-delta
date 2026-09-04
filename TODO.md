@@ -31,7 +31,7 @@ This checklist tracks implementation. Milestone exit criteria live in [MILESTONE
 ## Protocol and domain contracts
 
 - [x] Define `Envelope`, `VectorClock`, `Signature`, `EncryptedPayload`, and `Acknowledgement` messages.
-- [ ] Define identity, request, cargo, route, vehicle, handoff, receipt, prediction, and audit events. Enrollment and signed identity-credential contracts plus request, cargo, route, handoff, prediction, conflict, SLA, and preemption events exist; vehicle and audit events remain.
+- [x] Define identity, request, cargo, route, vehicle, handoff, receipt, prediction, and signed authorization-audit events in Protobuf.
 - [x] Add schema version and minimum reader version.
 - [x] Add TTL, hop count, creation time, sender, recipient, payload hash, and nonce fields.
 - [ ] Generate Kotlin/Java Lite gRPC and Go clients. TypeScript generation remains.
@@ -63,7 +63,7 @@ This checklist tracks implementation. Milestone exit criteria live in [MILESTONE
 - [x] Add a salted local six-digit PIN unlock with a persisted five-attempt offline lockout.
 - [x] Implement least-privilege roles and permission policy for coordinator, clinic, hospital, and driver/operator credentials.
 - [x] Hide forbidden actions and enforce the same signed-credential policy below the user interface.
-- [ ] Add signed audit events.
+- [x] Add RSA-PSS-signed, hash-chained authorization audit events and a visible bilingual latest-entry ID.
 - [x] Add a persisted five-attempt, 30-second offline PIN lockout.
 - [ ] Add key revocation and expiry events that propagate later.
 - [ ] Test valid, expired, revoked, malformed, and wrong-role credentials. Valid, expired, tampered, untrusted-issuer, and profile/role/key mismatch cases pass; propagation of a new revocation event remains.

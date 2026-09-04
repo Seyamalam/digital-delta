@@ -158,6 +158,23 @@ message RendezvousPlanned {
   bool simulated = 13;
 }
 
+message AuthorizationAuditEntry {
+  string audit_id = 1;
+  string actor_identity_id = 2;
+  string actor_node_id = 3;
+  IdentityRole role = 4;
+  string permission_code = 5;
+  bool allowed = 6;
+  string reason_code = 7;
+  int64 occurred_at_unix_ms = 8;
+  bytes previous_record_sha256 = 9;
+}
+
+message SignedAuthorizationAuditEntry {
+  AuthorizationAuditEntry entry = 1;
+  Signature actor_signature = 2;
+}
+
 message DomainEvent {
   string event_id = 1;
   uint32 schema_version = 2;
@@ -179,5 +196,6 @@ message DomainEvent {
     MissionFieldUpdated mission_field_updated = 29;
     VehicleStateChanged vehicle_state_changed = 30;
     RendezvousPlanned rendezvous_planned = 31;
+    SignedAuthorizationAuditEntry authorization_audit = 32;
   }
 }
