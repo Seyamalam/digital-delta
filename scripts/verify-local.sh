@@ -11,12 +11,31 @@ java_runtime="${JAVA_HOME:-/opt/homebrew/opt/openjdk@17/libexec/openjdk.jdk/Cont
 
 echo "[proto] lint shared wire contract"
 (cd "${repo_dir}/packages/proto" && buf lint)
+echo "[proto] verify stored v1 wire fixture remains readable"
+compat_fixture="${repo_dir}/packages/proto/fixtures/v1-envelope.pb.b64"
+compat_text="$({ openssl base64 -d -A -in "${compat_fixture}"; printf '\n'; } | \
+  protoc \
+    -I "${repo_dir}/packages/proto" \
+    --decode=digitaldelta.v1.Envelope \
+    "${repo_dir}/packages/proto/digitaldelta/v1/common.proto")"
+if ! rg -F 'message_id: "fixture-v1"' <<<"${compat_text}" >/dev/null || \
+   ! rg -F 'schema_version: 1' <<<"${compat_text}" >/dev/null || \
+   ! rg -F 'recipient_node_id: "N6"' <<<"${compat_text}" >/dev/null; then
+  echo "Stored v1 Envelope fixture no longer decodes with the current schema." >&2
+  exit 1
+fi
 
 echo "[localization] verify Bangla and English resource parity and bundled font"
 if ! diff -u \
   <(rg -o '<string name="[^"]+"' "${android_dir}/app/src/main/res/values/strings.xml" | sort) \
   <(rg -o '<string name="[^"]+"' "${android_dir}/app/src/main/res/values-bn/strings.xml" | sort); then
   echo "Bangla and English string resources must contain exactly the same keys." >&2
+  exit 1
+fi
+if rg -n 'Text\(\s*"[A-Za-z]|contentDescription\s*=\s*"[^"$]*[A-Za-z]' \
+  "${android_dir}/app/src/main/java/com/example/digitaldelta/ui" \
+  --glob '*.kt'; then
+  echo "Raw English user-facing text found in a critical field UI; use paired string resources." >&2
   exit 1
 fi
 (
@@ -85,7 +104,7 @@ echo "[android] unit tests, debug build, and minified release build"
 )
 
 debug_apk="${android_dir}/app/build/outputs/apk/debug/app-debug.apk"
-if ! unzip -Z1 "${debug_apk}" | rg -q '^assets/mlkit_barcode_models/.+\.tflite$'; then
+if ! unzip -Z1 "${debug_apk}" | rg '^assets/mlkit_barcode_models/.+\.tflite$' >/dev/null; then
   echo "Bundled ML Kit barcode model is missing from the debug APK; QR scanning must work offline." >&2
   exit 1
 fi
@@ -110,6 +129,8 @@ if [[ -f "${repo_dir}/services/node/go.mod" ]]; then
 fi
 
 if [[ -f "${repo_dir}/apps/command/package.json" ]]; then
+  echo "[proto] generate checked-in TypeScript descriptors"
+  (cd "${repo_dir}/packages/proto" && buf generate)
   echo "[command] tests, typecheck, and Next.js production build"
   (cd "${repo_dir}/apps/command" && pnpm test --run && pnpm typecheck && pnpm build)
 fi

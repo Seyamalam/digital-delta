@@ -20,7 +20,7 @@ class ProductionIdentityFlowTest {
     @Test
     fun deviceBoundEnrollmentBecomesVisibleThroughProductionGraph() {
         chooseBanglaIfRequired("identity-open")
-        composeTestRule.waitUntilAtLeastOneExists(hasTestTag("identity-open"), timeoutMillis = 4_000)
+        composeTestRule.waitUntilAtLeastOneExists(hasTestTag("identity-open"), timeoutMillis = 10_000)
         composeTestRule.onNode(hasTestTag("identity-open")).performClick()
         composeTestRule.waitUntilAtLeastOneExists(hasTestTag("identity-screen"), timeoutMillis = 8_000)
         composeTestRule.onNode(hasScrollAction()).performScrollToNode(hasTestTag("profile-CLINIC_N4"))

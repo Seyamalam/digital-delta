@@ -125,6 +125,23 @@
     <string name="connected_peers">পিয়ার</string>
     <string name="battery">ব্যাটারি</string>
     <string name="broadcast_every">সম্প্রচার বিরতি</string>
+    <string name="mesh_topology">টপোলজি</string>
+    <string name="queue_depth">সারি</string>
+    <string name="last_contact">শেষ যোগাযোগ</string>
+    <string name="seconds_short"> সে আগে</string>
+    <string name="link_quality">লিংক</string>
+    <string name="relay_reason">ভূমিকা</string>
+    <string name="local_node">স্থানীয় নোড</string>
+    <string name="no_authenticated_peer">যাচাইকৃত পিয়ার নেই</string>
+    <string name="not_available_short">প্রযোজ্য নয়</string>
+    <string name="link_quality_unknown">মাপা হয়নি</string>
+    <string name="link_quality_good">ভালো</string>
+    <string name="link_quality_degraded">দুর্বল</string>
+    <string name="relay_reason_client">শুধু ক্লায়েন্ট, সারি খালি</string>
+    <string name="relay_reason_ready">রিলে প্রস্তুত, পিয়ার কাছে</string>
+    <string name="relay_reason_active">সারির বার্তা রিলে হচ্ছে</string>
+    <string name="relay_reason_urgent">P0-এর জরুরি রিলে</string>
+    <string name="relay_reason_conserve">ব্যাটারি সাশ্রয়</string>
     <string name="scanning_for_peers">নিকটবর্তী নিবন্ধিত ফোন খোঁজা হচ্ছে…</string>
     <string name="authenticating_peer">স্বাক্ষরিত ডিভাইস পরিচয় যাচাই হচ্ছে</string>
     <string name="verified_peer">নিবন্ধিত পিয়ার যাচাইকৃত</string>
@@ -271,4 +288,10 @@
     <string name="offline_map_unavailable">ভৌগোলিক রেন্ডারার অনুপলব্ধ — রুট চিত্র দেখানো হচ্ছে</string>
     <string name="offline_map_local_source">স্থানীয় OSM • যাচাইকৃত</string>
     <string name="openstreetmap_attribution">© OpenStreetMap অবদানকারীরা</string>
+    <string name="recenter_map">মানচিত্র পুনরায় কেন্দ্রে আনুন</string>
+    <string name="selected_location">নির্বাচিত স্থান</string>
+    <string name="decrease_value">%1$s কমান</string>
+    <string name="increase_value">%1$s বাড়ান</string>
+    <string name="priority_p0_short">P0</string>
+    <string name="predicted_risk_value">পূর্বাভাস %1$s</string>
 </resources>

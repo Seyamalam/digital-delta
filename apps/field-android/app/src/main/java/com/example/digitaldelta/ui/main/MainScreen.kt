@@ -131,6 +131,8 @@ import com.example.digitaldelta.domain.identity.DeviceProfiles
 import com.example.digitaldelta.domain.identity.Permission
 import com.example.digitaldelta.domain.identity.Role
 import com.example.digitaldelta.domain.mesh.MeshRuntimeState
+import com.example.digitaldelta.domain.mesh.RelayLinkQuality
+import com.example.digitaldelta.domain.mesh.RelayRole
 import com.example.digitaldelta.domain.sync.ConflictSide
 import com.example.digitaldelta.domain.sync.MissionConflictSnapshot
 import com.example.digitaldelta.domain.routing.RouteScenarioSnapshot
@@ -173,6 +175,18 @@ private fun text(@StringRes id: Int, language: AppLanguage): String {
             setLocale(Locale.forLanguageTag(language.tag))
         }
         context.createConfigurationContext(configuration).getString(id)
+    }
+}
+
+@Composable
+private fun text(@StringRes id: Int, language: AppLanguage, vararg formatArgs: Any): String {
+    val context = LocalContext.current
+    val currentConfiguration = LocalConfiguration.current
+    return remember(id, language, currentConfiguration, *formatArgs) {
+        val configuration = Configuration(currentConfiguration).apply {
+            setLocale(Locale.forLanguageTag(language.tag))
+        }
+        context.createConfigurationContext(configuration).getString(id, *formatArgs)
     }
 }
 
@@ -1236,7 +1250,10 @@ private fun OperationsScreen(
                     onClick = {},
                     modifier = Modifier.align(Alignment.BottomEnd).padding(14.dp),
                 ) {
-                    Icon(Icons.Default.MyLocation, contentDescription = "Recenter map")
+                    Icon(
+                        Icons.Default.MyLocation,
+                        contentDescription = text(R.string.recenter_map, language),
+                    )
                 }
             }
         }
@@ -1436,7 +1453,12 @@ private fun MissionSheet(language: AppLanguage, expanded: Boolean, onExpand: () 
         Column(Modifier.padding(18.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Surface(color = AlertCoral, shape = RoundedCornerShape(9.dp)) {
-                    Text("P0", color = Color.White, fontWeight = FontWeight.Bold, modifier = Modifier.padding(horizontal = 10.dp, vertical = 6.dp))
+                    Text(
+                        text(R.string.priority_p0_short, language),
+                        color = Color.White,
+                        fontWeight = FontWeight.Bold,
+                        modifier = Modifier.padding(horizontal = 10.dp, vertical = 6.dp),
+                    )
                 }
                 Spacer(Modifier.width(10.dp))
                 Text(
@@ -1458,7 +1480,11 @@ private fun MissionSheet(language: AppLanguage, expanded: Boolean, onExpand: () 
                 Surface(color = MaterialTheme.colorScheme.surfaceVariant, shape = RoundedCornerShape(14.dp)) {
                     Row(Modifier.fillMaxWidth().padding(14.dp), horizontalArrangement = Arrangement.SpaceBetween) {
                         Text(text(R.string.relay_count, language))
-                        Text("PREDICTED 0.34", color = RiskAmber, fontWeight = FontWeight.SemiBold)
+                        Text(
+                            text(R.string.predicted_risk_value, language, "0.34"),
+                            color = RiskAmber,
+                            fontWeight = FontWeight.SemiBold,
+                        )
                     }
                 }
             }
@@ -1513,7 +1539,7 @@ private fun RequestScreen(
                         Text(text(R.string.select_location, language), modifier = Modifier.weight(1f))
                         Text("›", fontSize = 26.sp)
                     }
-                    MiniLocationMap()
+                    MiniLocationMap(language)
                 }
             }
         }
@@ -1526,11 +1552,11 @@ private fun RequestScreen(
                 border = CardDefaults.outlinedCardBorder(),
             ) {
                 Column {
-                    QuantityRow(Icons.Default.Medication, text(R.string.medicine, language), medicine) { medicine = it }
+                    QuantityRow(Icons.Default.Medication, text(R.string.medicine, language), medicine, language) { medicine = it }
                     HorizontalDivider(Modifier.padding(horizontal = 14.dp))
-                    QuantityRow(Icons.Default.WaterDrop, text(R.string.ors, language), ors) { ors = it }
+                    QuantityRow(Icons.Default.WaterDrop, text(R.string.ors, language), ors, language) { ors = it }
                     HorizontalDivider(Modifier.padding(horizontal = 14.dp))
-                    QuantityRow(Icons.Default.Layers, text(R.string.tarpaulin, language), tarpaulin) { tarpaulin = it }
+                    QuantityRow(Icons.Default.Layers, text(R.string.tarpaulin, language), tarpaulin, language) { tarpaulin = it }
                 }
             }
         }
@@ -2144,6 +2170,50 @@ private fun MeshRelayCard(
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
+                val relayReason = when (state.relaySelection.role) {
+                    RelayRole.CLIENT_ONLY -> R.string.relay_reason_client
+                    RelayRole.RELAY_READY -> R.string.relay_reason_ready
+                    RelayRole.RELAY_ACTIVE -> R.string.relay_reason_active
+                    RelayRole.RELAY_URGENT -> R.string.relay_reason_urgent
+                    RelayRole.RELAY_CONSERVE -> R.string.relay_reason_conserve
+                }
+                val linkQuality = when (state.relaySelection.linkQuality) {
+                    RelayLinkQuality.UNKNOWN -> R.string.link_quality_unknown
+                    RelayLinkQuality.GOOD -> R.string.link_quality_good
+                    RelayLinkQuality.DEGRADED -> R.string.link_quality_degraded
+                }
+                val lastContact = nearby.peerLastContactUnixMs.values.maxOrNull()
+                val lastContactSeconds = lastContact?.let {
+                    ((System.currentTimeMillis() - it).coerceAtLeast(0) / 1_000).toString()
+                } ?: text(R.string.not_available_short, language)
+                val topologyPeers = nearby.connectedNodeIds.sorted().joinToString()
+                    .ifBlank { text(R.string.no_authenticated_peer, language) }
+                Surface(
+                    color = MaterialTheme.colorScheme.surface,
+                    shape = RoundedCornerShape(12.dp),
+                    modifier = Modifier.fillMaxWidth().testTag("mesh-topology"),
+                ) {
+                    Column(Modifier.padding(10.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                        Text(
+                            "${text(R.string.mesh_topology, language)} • " +
+                                "${state.localNodeId.ifBlank { text(R.string.local_node, language) }} ⇄ $topologyPeers",
+                            style = MaterialTheme.typography.bodySmall,
+                            fontWeight = FontWeight.Bold,
+                        )
+                        Text(
+                            "${text(R.string.queue_depth, language)} ${state.pendingQueueDepth} • " +
+                                "${text(R.string.last_contact, language)} $lastContactSeconds${text(R.string.seconds_short, language)}",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        )
+                        Text(
+                            "${text(R.string.link_quality, language)} ${text(linkQuality, language)} • " +
+                                "${text(R.string.relay_reason, language)} ${text(relayReason, language)}",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        )
+                    }
+                }
                 if (nearby.connectedNodeIds.isEmpty() &&
                     nearby.pendingCandidates.isEmpty() &&
                     nearby.authenticatingNodeIds.isEmpty()
@@ -2938,7 +3008,7 @@ private fun FloodMap(
 }
 
 @Composable
-private fun MiniLocationMap() {
+private fun MiniLocationMap(language: AppLanguage) {
     Box(
         Modifier.fillMaxWidth().height(150.dp).background(Color(0xFFEFF5F3)),
         contentAlignment = Alignment.Center,
@@ -2953,7 +3023,12 @@ private fun MiniLocationMap() {
                 )
             }
         }
-        Icon(Icons.Default.LocationOn, contentDescription = "Selected location", tint = DeltaTeal, modifier = Modifier.size(48.dp))
+        Icon(
+            Icons.Default.LocationOn,
+            contentDescription = text(R.string.selected_location, language),
+            tint = DeltaTeal,
+            modifier = Modifier.size(48.dp),
+        )
     }
 }
 
@@ -3069,7 +3144,13 @@ private fun DetailRow(label: String, value: String, icon: ImageVector) {
 }
 
 @Composable
-private fun QuantityRow(icon: ImageVector, label: String, value: Int, onValueChange: (Int) -> Unit) {
+private fun QuantityRow(
+    icon: ImageVector,
+    label: String,
+    value: Int,
+    language: AppLanguage,
+    onValueChange: (Int) -> Unit,
+) {
     Row(
         Modifier.fillMaxWidth().padding(horizontal = 12.dp, vertical = 8.dp),
         verticalAlignment = Alignment.CenterVertically,
@@ -3078,11 +3159,17 @@ private fun QuantityRow(icon: ImageVector, label: String, value: Int, onValueCha
         Spacer(Modifier.width(10.dp))
         Text(label, modifier = Modifier.weight(1f))
         IconButton(onClick = { onValueChange((value - 1).coerceAtLeast(0)) }, modifier = Modifier.size(48.dp)) {
-            Icon(Icons.Default.Remove, contentDescription = "Decrease $label")
+            Icon(
+                Icons.Default.Remove,
+                contentDescription = text(R.string.decrease_value, language, label),
+            )
         }
         Text(value.toString(), textAlign = TextAlign.Center, fontWeight = FontWeight.Bold, modifier = Modifier.width(34.dp))
         IconButton(onClick = { onValueChange(value + 1) }, modifier = Modifier.size(48.dp)) {
-            Icon(Icons.Default.Add, contentDescription = "Increase $label")
+            Icon(
+                Icons.Default.Add,
+                contentDescription = text(R.string.increase_value, language, label),
+            )
         }
     }
 }

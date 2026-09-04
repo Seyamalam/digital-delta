@@ -44,6 +44,8 @@ data class NearbyMeshState(
     val authenticatingNodeIds: Set<String> = emptySet(),
     val connectedNodeIds: Set<String> = emptySet(),
     val authenticatedPeerKeyIds: Map<String, String> = emptyMap(),
+    val peerLastContactUnixMs: Map<String, Long> = emptyMap(),
+    val peerAcknowledgementRoundTripMillis: Map<String, Long> = emptyMap(),
     val lastError: String? = null,
 )
 
@@ -75,6 +77,8 @@ class NearbyConnectionsPeerTransport(
     private val connectedEndpoints = ConcurrentHashMap<String, String>()
     private val endpointNodeIds = ConcurrentHashMap<String, String>()
     private val authenticatedPeerKeyIds = ConcurrentHashMap<String, String>()
+    private val peerLastContactUnixMs = ConcurrentHashMap<String, Long>()
+    private val peerAcknowledgementRoundTripMillis = ConcurrentHashMap<String, Long>()
     private val pendingChallenges = PendingPeerChallenges()
     private val pendingAcknowledgements = ConcurrentHashMap<String, CompletableDeferred<com.example.digitaldelta.proto.v1.Acknowledgement>>()
 
@@ -82,6 +86,7 @@ class NearbyConnectionsPeerTransport(
         override fun onPayloadReceived(endpointId: String, payload: Payload) {
             if (payload.type != Payload.Type.BYTES) return
             val bytes = payload.asBytes() ?: return
+            recordPeerContact(endpointId)
             scope.launch {
                 try {
                     when (val body = PeerFrameCodec.decode(bytes)) {
@@ -238,8 +243,11 @@ class NearbyConnectionsPeerTransport(
             "message ${envelope.messageId} is already awaiting acknowledgement"
         }
         try {
+            val startedAt = System.currentTimeMillis()
             client.sendPayload(endpointId, Payload.fromBytes(PeerFrameCodec.encodeEnvelope(wireBytes))).awaitSuccess()
-            return withTimeout(ACK_TIMEOUT_MILLIS) { pending.await() }
+            val acknowledgement = withTimeout(ACK_TIMEOUT_MILLIS) { pending.await() }
+            recordPeerContact(endpointId, System.currentTimeMillis() - startedAt)
+            return acknowledgement
         } finally {
             pendingAcknowledgements.remove(envelope.messageId, pending)
         }
@@ -255,6 +263,8 @@ class NearbyConnectionsPeerTransport(
         acceptedEndpoints.clear()
         connectedEndpoints.clear()
         authenticatedPeerKeyIds.clear()
+        peerLastContactUnixMs.clear()
+        peerAcknowledgementRoundTripMillis.clear()
         pendingChallenges.clear()
         endpointNodeIds.clear()
         mutableState.value = NearbyMeshState()
@@ -268,8 +278,17 @@ class NearbyConnectionsPeerTransport(
                 authenticatingNodeIds = (acceptedEndpoints.keys - connectedEndpoints.keys).toSortedSet(),
                 connectedNodeIds = connectedEndpoints.keys.toSortedSet(),
                 authenticatedPeerKeyIds = authenticatedPeerKeyIds.toSortedMap(),
+                peerLastContactUnixMs = peerLastContactUnixMs.toSortedMap(),
+                peerAcknowledgementRoundTripMillis = peerAcknowledgementRoundTripMillis.toSortedMap(),
             )
         }
+    }
+
+    private fun recordPeerContact(endpointId: String, acknowledgementRoundTripMillis: Long? = null) {
+        val nodeId = endpointNodeIds[endpointId] ?: return
+        peerLastContactUnixMs[nodeId] = System.currentTimeMillis()
+        acknowledgementRoundTripMillis?.let { peerAcknowledgementRoundTripMillis[nodeId] = it }
+        publishPeers()
     }
 
     private suspend fun authenticateProof(endpointId: String, body: PeerFrameBody.IdentityProofMessage) {

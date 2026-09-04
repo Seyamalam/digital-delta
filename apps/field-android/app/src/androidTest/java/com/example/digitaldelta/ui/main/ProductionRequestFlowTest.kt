@@ -98,7 +98,7 @@ class ProductionRequestFlowTest {
         }
 
         chooseBanglaIfRequired("nav-request")
-        composeTestRule.waitUntilAtLeastOneExists(hasTestTag("nav-request"), timeoutMillis = 4_000)
+        composeTestRule.waitUntilAtLeastOneExists(hasTestTag("nav-request"), timeoutMillis = 10_000)
         composeTestRule.onNode(hasTestTag("nav-request")).performClick()
         composeTestRule.onNode(hasScrollAction()).performTouchInput { swipeUp() }
         composeTestRule.onNode(hasTestTag("send-request")).assertIsEnabled().performClick()

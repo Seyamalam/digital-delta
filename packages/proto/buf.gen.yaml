@@ -9,3 +9,7 @@ plugins:
     out: ../../services/node/gen
     opt:
       - paths=source_relative
+  - local: ../../apps/command/node_modules/.bin/protoc-gen-es
+    out: ../../apps/command/src/gen
+    opt:
+      - target=ts

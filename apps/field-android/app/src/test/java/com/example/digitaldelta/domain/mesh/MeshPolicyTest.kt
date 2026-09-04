@@ -31,4 +31,27 @@ class MeshPolicyTest {
         assertTrue(seen.contains("msg-1"))
         assertFalse(seen.contains("missing"))
     }
+
+    @Test
+    fun `role selection uses battery queue peer proximity and link telemetry`() {
+        val urgent = policy.selectRelayRole(
+            RelayRoleInput(22, 3, 1, 500, 180, urgentPending = true),
+        )
+        assertEquals(RelayRole.RELAY_URGENT, urgent.role)
+        assertEquals(RelayLinkQuality.GOOD, urgent.linkQuality)
+        assertTrue(urgent.proximityRecent)
+
+        val conserving = policy.selectRelayRole(
+            RelayRoleInput(9, 2, 1, 180_000, 4_200, urgentPending = false),
+        )
+        assertEquals(RelayRole.RELAY_CONSERVE, conserving.role)
+        assertEquals(RelayLinkQuality.DEGRADED, conserving.linkQuality)
+        assertFalse(conserving.proximityRecent)
+
+        val clientOnly = policy.selectRelayRole(
+            RelayRoleInput(84, 0, 0, null, null, urgentPending = false),
+        )
+        assertEquals(RelayRole.CLIENT_ONLY, clientOnly.role)
+        assertEquals(RelayLinkQuality.UNKNOWN, clientOnly.linkQuality)
+    }
 }

@@ -200,6 +200,18 @@ Use this log for choices that affect scope, claims, compatibility, or safety.
 
 **Consequences:** The Go observer and Android event stores remain authoritative. The public deployment must visibly fall back to seeded simulated data when it cannot reach the local observer. D1 may contain event identifiers, ordered sequence, source node, event kind, time, simulation flag, and a short allow-listed summary only. Hosted deployment is performed manually from a locally verified prebuilt artifact; GitHub Actions and hosted CI remain excluded.
 
+## DD-019: expose implemented modules and gate evidence explicitly
+
+**Status:** Accepted
+
+**Decision:** Keep all eight implemented module paths available in the fair build. Do not use feature flags to hide a working module solely because its final physical-device evidence has not been collected. Put the exact simulation, measurement, and release-gate status beside the feature and in the evidence checklist.
+
+**Reason:** A hidden path cannot be demonstrated or reviewed, while a flag can make unfinished evidence look like unfinished software. The safer distinction is whether a capability is implemented, whether its data is simulated, and whether the required physical proof has been recorded.
+
+**Consequences:** Every module remains demoable. Synthetic weather and vehicle movement stay visibly labelled. Camera, radio, target-memory, and three-phone claims remain open release gates until their physical evidence exists. New incomplete code must still be disabled or fail closed; this decision does not authorize exposing unsafe partial behavior.
+
+**Evidence:** Module status tables in `README.md`, `TODO.md`, `docs/TRACEABILITY.md`, and the final report; local and connected test gates; paired screenshots under `artifacts/screenshots/`.
+
 ## New decision template
 
 ```md

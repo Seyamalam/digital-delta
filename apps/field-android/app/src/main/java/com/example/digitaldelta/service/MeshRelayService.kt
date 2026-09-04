@@ -26,6 +26,10 @@ import com.example.digitaldelta.domain.mesh.NearbyMeshController
 import com.example.digitaldelta.domain.mesh.NearbyMeshState
 import com.example.digitaldelta.domain.mesh.RoomMeshIngress
 import com.example.digitaldelta.domain.mesh.RoomPeerSigningIdentityDirectory
+import com.example.digitaldelta.domain.mesh.RelayRoleInput
+import com.example.digitaldelta.domain.mesh.RelayRoleSelection
+import com.example.digitaldelta.domain.mesh.RelayRole
+import com.example.digitaldelta.domain.mesh.RelayLinkQuality
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
@@ -48,6 +52,9 @@ class MeshRelayService : Service() {
     private var dispatchJob: Job? = null
     private var batteryPercent = 100
     private var intervalMillis = 10_000L
+    private var localNodeId = ""
+    private var pendingQueueDepth = 0
+    private var relaySelection = RelayRoleSelection(RelayRole.CLIENT_ONLY, RelayLinkQuality.UNKNOWN, false)
 
     override fun onCreate() {
         super.onCreate()
@@ -68,6 +75,9 @@ class MeshRelayService : Service() {
                             NearbyMeshState(lastError = error.message ?: error.javaClass.simpleName),
                             batteryPercent,
                             intervalMillis,
+                            localNodeId,
+                            pendingQueueDepth,
+                            relaySelection,
                         )
                     }
                 }
@@ -137,8 +147,29 @@ class MeshRelayService : Service() {
             val now = System.currentTimeMillis()
             batteryPercent = readBatteryPercent()
             val urgent = graph.database().outboxDao().hasUrgentPending(now)
+            pendingQueueDepth = graph.database().outboxDao().activeQueueDepth(now)
             intervalMillis = policy.broadcastIntervalMillis(batteryPercent, urgent)
-            runtimeState.publish(activeController.state.value, batteryPercent, intervalMillis)
+            val nearby = activeController.state.value
+            val lastContact = nearby.peerLastContactUnixMs.values.maxOrNull()
+            val lastRoundTrip = nearby.peerAcknowledgementRoundTripMillis.values.minOrNull()
+            relaySelection = policy.selectRelayRole(
+                RelayRoleInput(
+                    batteryPercent = batteryPercent,
+                    pendingQueueDepth = pendingQueueDepth,
+                    connectedPeerCount = nearby.connectedNodeIds.size,
+                    lastContactAgeMillis = lastContact?.let { (now - it).coerceAtLeast(0) },
+                    lastAcknowledgementRoundTripMillis = lastRoundTrip,
+                    urgentPending = urgent,
+                ),
+            )
+            runtimeState.publish(
+                nearby,
+                batteryPercent,
+                intervalMillis,
+                localNodeId,
+                pendingQueueDepth,
+                relaySelection,
+            )
             activeController.state.value.connectedNodeIds.forEach { peerId ->
                 dispatcher.dispatch(peerId)
             }
@@ -149,6 +180,7 @@ class MeshRelayService : Service() {
     private suspend fun ensureController(): NearbyMeshController = controllerMutex.withLock {
         controller?.let { return@withLock it }
         val profile = graph.deviceProfileRepository().profile.first()
+        localNodeId = profile.nodeId
         val acknowledgementSigner = AndroidMeshAcknowledgementSigner(
             nodeId = profile.nodeId,
             deviceKeys = graph.deviceIdentityKeyStore(),
@@ -172,7 +204,14 @@ class MeshRelayService : Service() {
             controller = created
             scope.launch {
                 created.state.collectLatest { state ->
-                    runtimeState.publish(state, batteryPercent, intervalMillis)
+                    runtimeState.publish(
+                        state,
+                        batteryPercent,
+                        intervalMillis,
+                        localNodeId,
+                        pendingQueueDepth,
+                        relaySelection,
+                    )
                 }
             }
         }

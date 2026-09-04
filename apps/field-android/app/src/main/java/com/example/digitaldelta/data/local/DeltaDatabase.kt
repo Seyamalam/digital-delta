@@ -185,6 +185,12 @@ interface OutboxDao {
     )
     suspend fun hasUrgentPending(nowUnixMs: Long): Boolean
 
+    @Query(
+        "SELECT COUNT(*) FROM mesh_outbox " +
+            "WHERE state IN ('PENDING', 'IN_FLIGHT') AND expiresAtUnixMs > :nowUnixMs",
+    )
+    suspend fun activeQueueDepth(nowUnixMs: Long): Int
+
     @Query("SELECT * FROM mesh_outbox WHERE messageId = :messageId LIMIT 1")
     suspend fun find(messageId: String): MeshEnvelopeEntity?
 

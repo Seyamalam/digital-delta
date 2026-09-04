@@ -8,7 +8,7 @@ This checklist tracks implementation. Milestone exit criteria live in [MILESTONE
 - [x] Record the no-external-hardware boundary.
 - [x] Define module-level live proofs.
 - [x] Create milestone, screenshot, demo, security, testing, and traceability plans.
-- [ ] Confirm the fair participation status, date, booth rules, and pitch duration.
+- [ ] Confirm the fair participation status, date, booth rules, and pitch duration. The official site review is recorded in `docs/FAIR_SUBMISSION.md`: submissions are closed, Novo Theatre is listed, and the required deck has 7 to 8 slides, but selection status, a reliable final date, pitch duration, and booth equipment still require direct organizer confirmation.
 - [ ] Record available Android phones, operating-system versions, laptops, and projector resolution.
 - [x] Confirm the implementation stack in `docs/DECISIONS.md`.
 - [x] Decide whether strict HackFusion gRPC transport compliance is a target for this fair build. DD-006 records gRPC for supported IP links and framed Protobuf for Nearby instead of making a false transport claim.
@@ -26,7 +26,7 @@ This checklist tracks implementation. Milestone exit criteria live in [MILESTONE
 - [x] Add a fixture validator for node and edge references through `SylhetMapParser` and the bundled-asset connected test.
 - [x] Correct the supplied chaos-server formatting and keep it as a visibly simulated development fixture only under `packages/scenario/`.
 - [x] Add structured logs with event ID, node ID, mission ID, and correlation ID. The observer logs visible domain identifiers; mesh logs mark event and mission contents as encrypted instead of opening payloads.
-- [ ] Add feature flags for each unfinished module.
+- [x] Decide feature-flag policy for unfinished work. DD-019 keeps all eight implemented modules visible and uses explicit evidence labels and release gates instead of hiding working paths behind flags.
 
 ## Protocol and domain contracts
 
@@ -34,8 +34,8 @@ This checklist tracks implementation. Milestone exit criteria live in [MILESTONE
 - [x] Define identity, request, cargo, route, vehicle, handoff, receipt, prediction, and signed authorization-audit events in Protobuf.
 - [x] Add schema version and minimum reader version.
 - [x] Add TTL, hop count, creation time, sender, recipient, payload hash, and nonce fields.
-- [ ] Generate Kotlin/Java Lite gRPC and Go clients. TypeScript generation remains.
-- [ ] Add backward-compatibility tests for stored fixtures.
+- [x] Generate Kotlin/Java Lite, Go, and TypeScript Protobuf bindings. The Next.js package owns the local `protoc-gen-es` tool and generated v2 descriptors are checked in under `apps/command/src/gen`.
+- [x] Add backward-compatibility tests for stored fixtures. The local gate decodes a checked-in schema-version-1 binary Envelope fixture with the current contract and verifies its stable identity and recipient fields.
 - [x] Ban JSON serialization from the mesh package through the local verification script.
 - [x] Document gRPC links and framed-Protobuf links separately in the README, architecture, stack, and DD-006.
 
@@ -48,10 +48,10 @@ This checklist tracks implementation. Milestone exit criteria live in [MILESTONE
 - [x] Bundle Noto Sans Bengali with its offline SIL Open Font License and verify the font hash locally.
 - [x] Create the glossary in `packages/localization/glossary.csv`.
 - [x] Add a local-gate test requiring identical Bangla and English Android string keys.
-- [ ] Add tests that reject raw user-facing strings in critical field screens.
-- [ ] Test Bengali combining marks, wrapping, truncation, and large text.
+- [x] Add tests that reject raw user-facing strings in critical field screens. The local gate now rejects literal English `Text` and accessibility descriptions in the field UI, and the remaining map, quantity, priority, and prediction labels use paired resources.
+- [x] Test Bengali combining marks, wrapping, truncation, and large text. A connected Compose test renders the critical bilingual shell at 150 percent font scale, switches languages in place, and asserts that the Bangla fixture exercises combining marks.
 - [x] Keep P0 to P3, coordinates, cryptographic fingerprints, and delivery IDs language-neutral.
-- [ ] Provide bilingual status text when a term could affect safety.
+- [x] Provide bilingual status text when a term could affect safety. P0 urgency, predicted-versus-confirmed route risk, identity verification, replay rejection, custody state, and relay role all have paired Bangla and English resources.
 - [x] Add accessible labels in both languages for the implemented field surfaces; continue auditing new screens.
 - [x] Verify that no language change clears the implemented request and identity state.
 
@@ -98,9 +98,9 @@ This checklist tracks implementation. Milestone exit criteria live in [MILESTONE
 - [x] Implement durable duplicate rejection before domain-event application in both Android and Go.
 - [x] Encrypt payloads for the final recipient through the signed public-key directory using RSA-OAEP-wrapped AES-256-GCM; production instrumentation decrypts the persisted request with only the intended recipient key.
 - [x] Keep relay-visible routing metadata outside recipient-only ciphertext; relays never receive a content decryption key.
-- [ ] Select relay behavior using battery, signal, queue size, and proximity.
+- [x] Select relay behavior using battery, link quality, queue size, and proximity. Because Nearby Connections does not expose RSSI, the tested policy uses acknowledgement round-trip time as the honest link-quality signal and authenticated contact recency as the proximity signal; unknown telemetry remains visibly unmeasured.
 - [x] Reduce broadcast frequency by 60 percent below 30 percent battery.
-- [ ] Display topology, queue depth, last contact, and relay reason. The live card currently shows relay state, peers, battery, broadcast interval, discovery, candidates, and errors.
+- [x] Display topology, queue depth, last contact, link quality, and relay reason in the bilingual live mesh card alongside state, peers, battery, broadcast interval, discovery, candidates, and errors.
 - [x] Test interrupted transfer retry and Room close/reopen recovery; physical process-kill evidence remains.
 - [ ] Test A to B to C with no commercial internet.
 
