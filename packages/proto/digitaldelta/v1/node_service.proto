@@ -34,5 +34,15 @@ message ObserveResponse {
 }
 
 service ObserverService {
+  rpc Publish(ObserverServicePublishRequest) returns (ObserverServicePublishResponse);
   rpc Observe(ObserveRequest) returns (stream ObserveResponse);
+}
+
+message ObserverServicePublishRequest {
+  string source_node_id = 1;
+  DomainEvent event = 2;
+}
+
+message ObserverServicePublishResponse {
+  uint64 sequence = 1;
 }

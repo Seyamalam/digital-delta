@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useReducer, useState } from "react";
+import { connectObserver, type ObserverConnectOptions, type ObserverStatus, type PresentationObservation } from "./observer";
 
 type Language = "bn" | "en";
 type ControlMode = "core" | "faults";
@@ -82,8 +83,10 @@ const copy = {
     command: "ডেল্টা কমান্ড",
     subtitle: "সিলেট দুর্যোগ সমন্বয় • স্থানীয় পর্যবেক্ষণ",
     offline: "বাণিজ্যিক ইন্টারনেট নেই",
-    observer: "পর্যবেক্ষক সংযুক্ত",
+    observer: "লাইভ পর্যবেক্ষক সংযুক্ত",
     observerLost: "পর্যবেক্ষক বিচ্ছিন্ন",
+    observerConnecting: "স্থানীয় পর্যবেক্ষক সংযোগ হচ্ছে",
+    seededFallback: "বীজভিত্তিক অফলাইন দৃশ্য",
     syncing: "স্থানীয় পর্যবেক্ষণ সিঙ্ক হচ্ছে",
     fieldSafe: "ফিল্ড কাজ চালু আছে",
     simulated: "সিমুলেটেড মহড়া",
@@ -136,8 +139,10 @@ const copy = {
     command: "Delta Command",
     subtitle: "Sylhet disaster coordination • local observer",
     offline: "Commercial internet unavailable",
-    observer: "Observer connected",
+    observer: "Live observer connected",
     observerLost: "Observer disconnected",
+    observerConnecting: "Connecting local observer",
+    seededFallback: "Seeded offline view",
     syncing: "Syncing local observer",
     fieldSafe: "Field work continues",
     simulated: "SIMULATED EXERCISE",
@@ -188,13 +193,46 @@ const copy = {
   },
 } as const;
 
-export function App() {
+type AppProps = {
+  observerConnect?: (options: ObserverConnectOptions) => () => void;
+  observerUrl?: string;
+};
+
+export function App({ observerConnect: injectedObserverConnect, observerUrl = import.meta.env.VITE_OBSERVER_URL ?? "http://127.0.0.1:7071/observer/events" }: AppProps = {}) {
   const [language, setLanguage] = useState<Language>("bn");
   const [controlMode, setControlMode] = useState<ControlMode>("core");
   const [isReplaying, setIsReplaying] = useState(false);
+  const [observerStatus, setObserverStatus] = useState<ObserverStatus | "seeded">("seeded");
+  const [observations, setObservations] = useState<PresentationObservation[]>([]);
   const [state, dispatch] = useReducer(scenarioReducer, initialScenario);
   const t = copy[language];
-  const events = useMemo(() => buildEvents(state, language), [state, language]);
+  const liveRoute = useMemo(() => [...observations].reverse().find((event) => event.kind === "routePlanned"), [observations]);
+  const liveRoutePresentation = liveRoute?.presentation;
+  const liveEdgeIds = stringArray(liveRoutePresentation?.edgeIds);
+  const liveRouteIsWaterway = liveRoutePresentation?.mode === "TRANSPORT_MODE_WATERWAY";
+  const displayState = liveRoute ? { ...state, failedRoad: liveRouteIsWaterway } : state;
+  const liveEta = typeof liveRoutePresentation?.etaMinutes === "number" ? liveRoutePresentation.etaMinutes : null;
+  const events = useMemo(() => buildEvents(state, language, observations), [state, language, observations]);
+  const observerConnector = injectedObserverConnect ?? (typeof EventSource === "undefined" ? null : connectObserver);
+
+  useEffect(() => {
+    if (!state.observerConnected) {
+      setObserverStatus("seeded");
+      return;
+    }
+    if (!observerConnector) {
+      setObserverStatus("seeded");
+      return;
+    }
+    return observerConnector({
+      url: observerUrl,
+      onStatus: setObserverStatus,
+      onObservation: (observation) => setObservations((current) => {
+        if (current.some((event) => event.sequence === observation.sequence)) return current;
+        return [...current, observation].sort((left, right) => left.sequence - right.sequence).slice(-100);
+      }),
+    });
+  }, [observerConnector, observerUrl, state.observerConnected]);
 
   useEffect(() => {
     if (!isReplaying) return;
@@ -207,6 +245,26 @@ export function App() {
     dispatch({ type: "RESET" });
   };
 
+  const observerLabel = !state.observerConnected
+    ? t.observerLost
+    : state.syncing
+      ? t.syncing
+      : observerStatus === "live"
+        ? t.observer
+        : observerStatus === "connecting"
+          ? t.observerConnecting
+          : t.seededFallback;
+  const observerTone = !state.observerConnected
+    ? "lost"
+    : state.syncing || observerStatus === "connecting"
+      ? "syncing"
+      : observerStatus === "live"
+        ? "connected"
+        : "offline";
+  const routeLabel = liveRoute
+    ? `${liveRouteIsWaterway ? (language === "bn" ? "নৌযান" : "Boat") : (language === "bn" ? "ট্রাক" : "Truck")} • ${liveEdgeIds.join(" → ")}`
+    : state.failedRoad ? t.routeValue : t.truckRoute;
+
   return (
     <main className="command-shell" data-language={language}>
       <header className="topbar">
@@ -216,8 +274,8 @@ export function App() {
         </div>
         <div className="top-status">
           <span className="pill offline"><i />{t.offline}</span>
-          <span className={`pill ${state.observerConnected ? (state.syncing ? "syncing" : "connected") : "lost"}`}>
-            <i />{state.observerConnected ? (state.syncing ? t.syncing : t.observer) : t.observerLost}
+          <span className={`pill ${observerTone}`}>
+            <i />{observerLabel}
           </span>
           <button className="language" onClick={() => setLanguage(language === "bn" ? "en" : "bn")}>
             {language === "bn" ? "English" : "বাংলা"}
@@ -228,16 +286,16 @@ export function App() {
       <section className="mission-strip" aria-label={t.mission}>
         <div className="priority">P0</div>
         <div className="mission-title"><span>{t.simulated}</span><strong>{t.mission}</strong></div>
-        <div className="mission-metric"><small>{t.eta}</small><strong>{(state.failedRoad ? 45 : 65) + (state.vehicleDelayed ? 18 : 0)}<em> min</em></strong></div>
-        <div className="mission-alert"><small>{t.droneRequired}</small><strong>{state.failedRoad ? t.warning : t.fieldSafe}</strong></div>
+        <div className="mission-metric"><small>{t.eta}</small><strong>{liveEta ?? ((state.failedRoad ? 45 : 65) + (state.vehicleDelayed ? 18 : 0))}<em> min</em></strong></div>
+        <div className="mission-alert"><small>{t.droneRequired}</small><strong>{displayState.failedRoad ? t.warning : t.fieldSafe}</strong></div>
       </section>
 
       <div className="dashboard-grid">
         <section className="map-panel panel">
           <PanelHeading eyebrow="M4 + M7 + M8" title={t.route} meta="24.8949°N / 91.8687°E" />
-          <DeltaMap state={state} language={language} />
+          <DeltaMap state={displayState} language={language} />
           <div className="route-caption">
-            <div><span>{t.route}</span><strong>{state.failedRoad ? t.routeValue : t.truckRoute}</strong></div>
+            <div><span>{t.route}</span><strong>{routeLabel}</strong></div>
             <div className="route-proof"><span>R3 RENDEZVOUS</span><strong>25.0200, 91.7000</strong></div>
           </div>
         </section>
@@ -351,7 +409,7 @@ function Control({ active, onClick, label, code }: { active: boolean; onClick: (
   return <button className={`control ${active ? "active" : ""}`} aria-pressed={active} onClick={onClick}><code>{code}</code><span>{label}</span><i /></button>;
 }
 
-function buildEvents(state: ScenarioState, language: Language) {
+function buildEvents(state: ScenarioState, language: Language, observations: PresentationObservation[] = []) {
   const en = language === "en";
   const events = [
     { id: "REQ…A19F", time: "08:01:04", tone: "teal", title: en ? "P0 request stored offline" : "P0 অনুরোধ অফলাইনে সংরক্ষিত", detail: "N4 → N7 • PROTOBUF" },
@@ -367,5 +425,26 @@ function buildEvents(state: ScenarioState, language: Language) {
   if (state.vehicleDelayed) events.push({ id: "DELAY…18M", time: "08:01:56", tone: "amber", title: en ? "Boat delayed by 18 min" : "নৌযান ১৮ মিনিট বিলম্বিত", detail: "SIMULATED VEHICLE INPUT" });
   if (state.duplicateRejected) events.push({ id: "DEDUP…44A1", time: "08:02:01", tone: "green", title: en ? "Duplicate envelope rejected" : "ডুপ্লিকেট এনভেলপ প্রত্যাখ্যাত", detail: "MESSAGE ID ALREADY CLAIMED" });
   if (state.tamperRejected) events.push({ id: "POD…BAD5", time: "08:02:06", tone: "green", title: en ? "Signature mismatch rejected" : "স্বাক্ষর অমিল প্রত্যাখ্যাত", detail: "CUSTODY CHAIN UNCHANGED" });
+  for (const observation of observations) {
+    const live = observation.kind === "routePlanned";
+    const eventTime = new Date(observation.occurredAtUnixMs).toLocaleTimeString(en ? "en-GB" : "bn-BD", {
+      hour: "2-digit",
+      minute: "2-digit",
+      second: "2-digit",
+      hour12: false,
+      timeZone: "Asia/Dhaka",
+    });
+    events.push({
+      id: observation.eventId,
+      time: eventTime,
+      tone: observation.simulated ? "amber" : live ? "blue" : "teal",
+      title: live ? (en ? "Live route received" : "লাইভ পথ গ্রহণ করা হয়েছে") : (en ? "Live field event received" : "লাইভ মাঠ ইভেন্ট গ্রহণ করা হয়েছে"),
+      detail: `${observation.sourceNodeId} • SEQ ${observation.sequence} • ${observation.simulated ? "SIMULATED EVENT" : "LIVE EVENT"}`,
+    });
+  }
   return events;
+}
+
+function stringArray(value: unknown): string[] {
+  return Array.isArray(value) ? value.filter((item): item is string => typeof item === "string") : [];
 }

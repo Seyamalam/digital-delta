@@ -115,6 +115,7 @@ var NodeMeshService_ServiceDesc = grpc.ServiceDesc{
 }
 
 const (
+	ObserverService_Publish_FullMethodName = "/digitaldelta.v1.ObserverService/Publish"
 	ObserverService_Observe_FullMethodName = "/digitaldelta.v1.ObserverService/Observe"
 )
 
@@ -122,6 +123,7 @@ const (
 //
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
 type ObserverServiceClient interface {
+	Publish(ctx context.Context, in *ObserverServicePublishRequest, opts ...grpc.CallOption) (*ObserverServicePublishResponse, error)
 	Observe(ctx context.Context, in *ObserveRequest, opts ...grpc.CallOption) (grpc.ServerStreamingClient[ObserveResponse], error)
 }
 
@@ -131,6 +133,16 @@ type observerServiceClient struct {
 
 func NewObserverServiceClient(cc grpc.ClientConnInterface) ObserverServiceClient {
 	return &observerServiceClient{cc}
+}
+
+func (c *observerServiceClient) Publish(ctx context.Context, in *ObserverServicePublishRequest, opts ...grpc.CallOption) (*ObserverServicePublishResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(ObserverServicePublishResponse)
+	err := c.cc.Invoke(ctx, ObserverService_Publish_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
 }
 
 func (c *observerServiceClient) Observe(ctx context.Context, in *ObserveRequest, opts ...grpc.CallOption) (grpc.ServerStreamingClient[ObserveResponse], error) {
@@ -156,6 +168,7 @@ type ObserverService_ObserveClient = grpc.ServerStreamingClient[ObserveResponse]
 // All implementations must embed UnimplementedObserverServiceServer
 // for forward compatibility.
 type ObserverServiceServer interface {
+	Publish(context.Context, *ObserverServicePublishRequest) (*ObserverServicePublishResponse, error)
 	Observe(*ObserveRequest, grpc.ServerStreamingServer[ObserveResponse]) error
 	mustEmbedUnimplementedObserverServiceServer()
 }
@@ -167,6 +180,9 @@ type ObserverServiceServer interface {
 // pointer dereference when methods are called.
 type UnimplementedObserverServiceServer struct{}
 
+func (UnimplementedObserverServiceServer) Publish(context.Context, *ObserverServicePublishRequest) (*ObserverServicePublishResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method Publish not implemented")
+}
 func (UnimplementedObserverServiceServer) Observe(*ObserveRequest, grpc.ServerStreamingServer[ObserveResponse]) error {
 	return status.Error(codes.Unimplemented, "method Observe not implemented")
 }
@@ -191,6 +207,24 @@ func RegisterObserverServiceServer(s grpc.ServiceRegistrar, srv ObserverServiceS
 	s.RegisterService(&ObserverService_ServiceDesc, srv)
 }
 
+func _ObserverService_Publish_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(ObserverServicePublishRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(ObserverServiceServer).Publish(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: ObserverService_Publish_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(ObserverServiceServer).Publish(ctx, req.(*ObserverServicePublishRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 func _ObserverService_Observe_Handler(srv interface{}, stream grpc.ServerStream) error {
 	m := new(ObserveRequest)
 	if err := stream.RecvMsg(m); err != nil {
@@ -208,7 +242,12 @@ type ObserverService_ObserveServer = grpc.ServerStreamingServer[ObserveResponse]
 var ObserverService_ServiceDesc = grpc.ServiceDesc{
 	ServiceName: "digitaldelta.v1.ObserverService",
 	HandlerType: (*ObserverServiceServer)(nil),
-	Methods:     []grpc.MethodDesc{},
+	Methods: []grpc.MethodDesc{
+		{
+			MethodName: "Publish",
+			Handler:    _ObserverService_Publish_Handler,
+		},
+	},
 	Streams: []grpc.StreamDesc{
 		{
 			StreamName:    "Observe",

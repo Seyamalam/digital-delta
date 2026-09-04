@@ -1,6 +1,7 @@
 import { act, fireEvent, render, screen } from "@testing-library/react";
 import { describe, expect, it, vi } from "vitest";
 import { App, scenarioReducer } from "./App";
+import type { ObserverConnectOptions } from "./observer";
 
 describe("Delta Command", () => {
   it("starts Bangla-first and keeps the scenario when language changes", () => {
@@ -65,6 +66,34 @@ describe("Delta Command", () => {
     act(() => vi.advanceTimersByTime(3_500));
     expect(screen.getByRole("button", { name: /Advance exercise02 \/ 06/ })).toBeVisible();
     vi.useRealTimers();
+  });
+
+  it("applies a real route observation and identifies its live sequence", () => {
+    const observerConnect = (options: ObserverConnectOptions) => {
+      options.onStatus("live");
+      options.onObservation({
+        sequence: 9,
+        sourceNodeId: "field-n4",
+        eventId: "route-live-9",
+        kind: "routePlanned",
+        occurredAtUnixMs: 1_774_000_000_000,
+        simulated: false,
+        presentation: {
+          vehicleId: "boat-02",
+          mode: "TRANSPORT_MODE_WATERWAY",
+          edgeIds: ["E6", "E7"],
+          etaMinutes: 171,
+        },
+      });
+      return () => undefined;
+    };
+
+    render(<App observerConnect={observerConnect} />);
+    fireEvent.click(screen.getByRole("button", { name: "English" }));
+    expect(screen.getByText("Live observer connected")).toBeVisible();
+    expect(screen.getByText("Boat • E6 → E7")).toBeVisible();
+    expect(screen.getByText("Live route received")).toBeVisible();
+    expect(screen.getByText("field-n4 • SEQ 9 • LIVE EVENT")).toBeVisible();
   });
 
   it("reset preserves the observer link choice but clears scenario effects", () => {

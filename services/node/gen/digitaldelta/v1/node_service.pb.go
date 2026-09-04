@@ -221,6 +221,102 @@ func (x *ObserveResponse) GetEvent() *DomainEvent {
 	return nil
 }
 
+type ObserverServicePublishRequest struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	SourceNodeId  string                 `protobuf:"bytes,1,opt,name=source_node_id,json=sourceNodeId,proto3" json:"source_node_id,omitempty"`
+	Event         *DomainEvent           `protobuf:"bytes,2,opt,name=event,proto3" json:"event,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *ObserverServicePublishRequest) Reset() {
+	*x = ObserverServicePublishRequest{}
+	mi := &file_digitaldelta_v1_node_service_proto_msgTypes[4]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *ObserverServicePublishRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*ObserverServicePublishRequest) ProtoMessage() {}
+
+func (x *ObserverServicePublishRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_digitaldelta_v1_node_service_proto_msgTypes[4]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use ObserverServicePublishRequest.ProtoReflect.Descriptor instead.
+func (*ObserverServicePublishRequest) Descriptor() ([]byte, []int) {
+	return file_digitaldelta_v1_node_service_proto_rawDescGZIP(), []int{4}
+}
+
+func (x *ObserverServicePublishRequest) GetSourceNodeId() string {
+	if x != nil {
+		return x.SourceNodeId
+	}
+	return ""
+}
+
+func (x *ObserverServicePublishRequest) GetEvent() *DomainEvent {
+	if x != nil {
+		return x.Event
+	}
+	return nil
+}
+
+type ObserverServicePublishResponse struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Sequence      uint64                 `protobuf:"varint,1,opt,name=sequence,proto3" json:"sequence,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *ObserverServicePublishResponse) Reset() {
+	*x = ObserverServicePublishResponse{}
+	mi := &file_digitaldelta_v1_node_service_proto_msgTypes[5]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *ObserverServicePublishResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*ObserverServicePublishResponse) ProtoMessage() {}
+
+func (x *ObserverServicePublishResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_digitaldelta_v1_node_service_proto_msgTypes[5]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use ObserverServicePublishResponse.ProtoReflect.Descriptor instead.
+func (*ObserverServicePublishResponse) Descriptor() ([]byte, []int) {
+	return file_digitaldelta_v1_node_service_proto_rawDescGZIP(), []int{5}
+}
+
+func (x *ObserverServicePublishResponse) GetSequence() uint64 {
+	if x != nil {
+		return x.Sequence
+	}
+	return 0
+}
+
 var File_digitaldelta_v1_node_service_proto protoreflect.FileDescriptor
 
 const file_digitaldelta_v1_node_service_proto_rawDesc = "" +
@@ -237,10 +333,16 @@ const file_digitaldelta_v1_node_service_proto_rawDesc = "" +
 	"\x0fObserveResponse\x12\x1a\n" +
 	"\bsequence\x18\x01 \x01(\x04R\bsequence\x12$\n" +
 	"\x0esource_node_id\x18\x02 \x01(\tR\fsourceNodeId\x122\n" +
-	"\x05event\x18\x03 \x01(\v2\x1c.digitaldelta.v1.DomainEventR\x05event2o\n" +
+	"\x05event\x18\x03 \x01(\v2\x1c.digitaldelta.v1.DomainEventR\x05event\"y\n" +
+	"\x1dObserverServicePublishRequest\x12$\n" +
+	"\x0esource_node_id\x18\x01 \x01(\tR\fsourceNodeId\x122\n" +
+	"\x05event\x18\x02 \x01(\v2\x1c.digitaldelta.v1.DomainEventR\x05event\"<\n" +
+	"\x1eObserverServicePublishResponse\x12\x1a\n" +
+	"\bsequence\x18\x01 \x01(\x04R\bsequence2o\n" +
 	"\x0fNodeMeshService\x12\\\n" +
-	"\vSynchronize\x12#.digitaldelta.v1.SynchronizeRequest\x1a$.digitaldelta.v1.SynchronizeResponse(\x010\x012a\n" +
-	"\x0fObserverService\x12N\n" +
+	"\vSynchronize\x12#.digitaldelta.v1.SynchronizeRequest\x1a$.digitaldelta.v1.SynchronizeResponse(\x010\x012\xcd\x01\n" +
+	"\x0fObserverService\x12j\n" +
+	"\aPublish\x12..digitaldelta.v1.ObserverServicePublishRequest\x1a/.digitaldelta.v1.ObserverServicePublishResponse\x12N\n" +
 	"\aObserve\x12\x1f.digitaldelta.v1.ObserveRequest\x1a .digitaldelta.v1.ObserveResponse0\x01Bu\n" +
 	"!com.example.digitaldelta.proto.v1H\x03P\x01ZLgithub.com/Seyamalam/digital-delta/services/node/gen/digitaldelta/v1;deltav1b\x06proto3"
 
@@ -256,29 +358,34 @@ func file_digitaldelta_v1_node_service_proto_rawDescGZIP() []byte {
 	return file_digitaldelta_v1_node_service_proto_rawDescData
 }
 
-var file_digitaldelta_v1_node_service_proto_msgTypes = make([]protoimpl.MessageInfo, 4)
+var file_digitaldelta_v1_node_service_proto_msgTypes = make([]protoimpl.MessageInfo, 6)
 var file_digitaldelta_v1_node_service_proto_goTypes = []any{
-	(*SynchronizeRequest)(nil),  // 0: digitaldelta.v1.SynchronizeRequest
-	(*SynchronizeResponse)(nil), // 1: digitaldelta.v1.SynchronizeResponse
-	(*ObserveRequest)(nil),      // 2: digitaldelta.v1.ObserveRequest
-	(*ObserveResponse)(nil),     // 3: digitaldelta.v1.ObserveResponse
-	(*Envelope)(nil),            // 4: digitaldelta.v1.Envelope
-	(*Acknowledgement)(nil),     // 5: digitaldelta.v1.Acknowledgement
-	(*DomainEvent)(nil),         // 6: digitaldelta.v1.DomainEvent
+	(*SynchronizeRequest)(nil),             // 0: digitaldelta.v1.SynchronizeRequest
+	(*SynchronizeResponse)(nil),            // 1: digitaldelta.v1.SynchronizeResponse
+	(*ObserveRequest)(nil),                 // 2: digitaldelta.v1.ObserveRequest
+	(*ObserveResponse)(nil),                // 3: digitaldelta.v1.ObserveResponse
+	(*ObserverServicePublishRequest)(nil),  // 4: digitaldelta.v1.ObserverServicePublishRequest
+	(*ObserverServicePublishResponse)(nil), // 5: digitaldelta.v1.ObserverServicePublishResponse
+	(*Envelope)(nil),                       // 6: digitaldelta.v1.Envelope
+	(*Acknowledgement)(nil),                // 7: digitaldelta.v1.Acknowledgement
+	(*DomainEvent)(nil),                    // 8: digitaldelta.v1.DomainEvent
 }
 var file_digitaldelta_v1_node_service_proto_depIdxs = []int32{
-	4, // 0: digitaldelta.v1.SynchronizeRequest.envelope:type_name -> digitaldelta.v1.Envelope
-	5, // 1: digitaldelta.v1.SynchronizeResponse.acknowledgement:type_name -> digitaldelta.v1.Acknowledgement
-	6, // 2: digitaldelta.v1.ObserveResponse.event:type_name -> digitaldelta.v1.DomainEvent
-	0, // 3: digitaldelta.v1.NodeMeshService.Synchronize:input_type -> digitaldelta.v1.SynchronizeRequest
-	2, // 4: digitaldelta.v1.ObserverService.Observe:input_type -> digitaldelta.v1.ObserveRequest
-	1, // 5: digitaldelta.v1.NodeMeshService.Synchronize:output_type -> digitaldelta.v1.SynchronizeResponse
-	3, // 6: digitaldelta.v1.ObserverService.Observe:output_type -> digitaldelta.v1.ObserveResponse
-	5, // [5:7] is the sub-list for method output_type
-	3, // [3:5] is the sub-list for method input_type
-	3, // [3:3] is the sub-list for extension type_name
-	3, // [3:3] is the sub-list for extension extendee
-	0, // [0:3] is the sub-list for field type_name
+	6, // 0: digitaldelta.v1.SynchronizeRequest.envelope:type_name -> digitaldelta.v1.Envelope
+	7, // 1: digitaldelta.v1.SynchronizeResponse.acknowledgement:type_name -> digitaldelta.v1.Acknowledgement
+	8, // 2: digitaldelta.v1.ObserveResponse.event:type_name -> digitaldelta.v1.DomainEvent
+	8, // 3: digitaldelta.v1.ObserverServicePublishRequest.event:type_name -> digitaldelta.v1.DomainEvent
+	0, // 4: digitaldelta.v1.NodeMeshService.Synchronize:input_type -> digitaldelta.v1.SynchronizeRequest
+	4, // 5: digitaldelta.v1.ObserverService.Publish:input_type -> digitaldelta.v1.ObserverServicePublishRequest
+	2, // 6: digitaldelta.v1.ObserverService.Observe:input_type -> digitaldelta.v1.ObserveRequest
+	1, // 7: digitaldelta.v1.NodeMeshService.Synchronize:output_type -> digitaldelta.v1.SynchronizeResponse
+	5, // 8: digitaldelta.v1.ObserverService.Publish:output_type -> digitaldelta.v1.ObserverServicePublishResponse
+	3, // 9: digitaldelta.v1.ObserverService.Observe:output_type -> digitaldelta.v1.ObserveResponse
+	7, // [7:10] is the sub-list for method output_type
+	4, // [4:7] is the sub-list for method input_type
+	4, // [4:4] is the sub-list for extension type_name
+	4, // [4:4] is the sub-list for extension extendee
+	0, // [0:4] is the sub-list for field type_name
 }
 
 func init() { file_digitaldelta_v1_node_service_proto_init() }
@@ -294,7 +401,7 @@ func file_digitaldelta_v1_node_service_proto_init() {
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_digitaldelta_v1_node_service_proto_rawDesc), len(file_digitaldelta_v1_node_service_proto_rawDesc)),
 			NumEnums:      0,
-			NumMessages:   4,
+			NumMessages:   6,
 			NumExtensions: 0,
 			NumServices:   2,
 		},
