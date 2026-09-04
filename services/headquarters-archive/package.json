@@ -1,0 +1,21 @@
+{
+  "name": "@digital-delta/headquarters-archive",
+  "version": "0.1.0",
+  "private": true,
+  "packageManager": "pnpm@11.0.8",
+  "type": "module",
+  "scripts": {
+    "dev": "wrangler dev",
+    "deploy": "wrangler deploy",
+    "cf:typegen": "wrangler types",
+    "d1:migrate:local": "wrangler d1 migrations apply digital-delta-hq --local",
+    "d1:migrate:remote": "wrangler d1 migrations apply digital-delta-hq --remote",
+    "test": "vitest run",
+    "typecheck": "tsc --noEmit"
+  },
+  "devDependencies": {
+    "typescript": "^5.9.0",
+    "vitest": "^5.0.0",
+    "wrangler": "^4.129.0"
+  }
+}

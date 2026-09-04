@@ -24,6 +24,7 @@ import { Progress } from "@/components/ui/progress";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { connectObserver, type ObserverConnectOptions, type ObserverStatus, type PresentationObservation } from "./observer";
 import { projectObservations } from "./projection";
+import { archiveObservation, probeArchive, type ArchiveStatus } from "./archive";
 
 const OfflineDeltaMap = lazy(() => import("./OfflineDeltaMap").then((module) => ({ default: module.OfflineDeltaMap })));
 
@@ -134,6 +135,9 @@ const copy = {
     situation: "পরিস্থিতি",
     fieldLink: "ফিল্ড লিংক",
     archive: "D1 আর্কাইভ ঐচ্ছিক",
+    archiveReady: "D1 আর্কাইভ সংযুক্ত",
+    archiveChecking: "D1 আর্কাইভ যাচাই",
+    archiveUnavailable: "D1 অনুপলব্ধ · স্থানীয় কাজ চালু",
     localTruth: "স্থানীয় প্রোটোবাফ উৎস",
     incidentBoard: "ঘটনা বোর্ড",
     commandActions: "কমান্ড অ্যাকশন",
@@ -205,6 +209,9 @@ const copy = {
     situation: "Situation",
     fieldLink: "Field link",
     archive: "D1 archive optional",
+    archiveReady: "D1 archive connected",
+    archiveChecking: "Checking D1 archive",
+    archiveUnavailable: "D1 unavailable · local work continues",
     localTruth: "Local Protobuf source",
     incidentBoard: "Incident board",
     commandActions: "Command actions",
@@ -272,14 +279,16 @@ const copy = {
 type AppProps = {
   observerConnect?: (options: ObserverConnectOptions) => () => void;
   observerUrl?: string;
+  archiveUrl?: string;
 };
 
-export function App({ observerConnect: injectedObserverConnect, observerUrl = process.env.NEXT_PUBLIC_OBSERVER_URL ?? "http://127.0.0.1:7071/observer/events" }: AppProps = {}) {
+export function App({ observerConnect: injectedObserverConnect, observerUrl = process.env.NEXT_PUBLIC_OBSERVER_URL ?? "http://127.0.0.1:7071/observer/events", archiveUrl = process.env.NEXT_PUBLIC_ARCHIVE_URL }: AppProps = {}) {
   const [language, setLanguage] = useState<Language>("bn");
   const [controlMode, setControlMode] = useState<ControlMode>("core");
   const [isReplaying, setIsReplaying] = useState(false);
   const [observerStatus, setObserverStatus] = useState<ObserverStatus | "seeded">("seeded");
   const [observations, setObservations] = useState<PresentationObservation[]>([]);
+  const [archiveStatus, setArchiveStatus] = useState<ArchiveStatus>(archiveUrl ? "checking" : "disabled");
   const [state, dispatch] = useReducer(scenarioReducer, initialScenario);
   const t = copy[language];
   const projection = useMemo(() => projectObservations(observations), [observations]);
@@ -310,11 +319,23 @@ export function App({ observerConnect: injectedObserverConnect, observerUrl = pr
       url: observerUrl,
       onStatus: setObserverStatus,
       onObservation: (observation) => setObservations((current) => {
+        if (archiveUrl) void archiveObservation(archiveUrl, observation).then((stored) => setArchiveStatus(stored ? "ready" : "unavailable"));
         if (current.some((event) => event.sequence === observation.sequence)) return current;
         return [...current, observation].sort((left, right) => left.sequence - right.sequence).slice(-100);
       }),
     });
-  }, [observerConnector, observerUrl, state.observerConnected]);
+  }, [archiveUrl, observerConnector, observerUrl, state.observerConnected]);
+
+  useEffect(() => {
+    if (!archiveUrl) {
+      setArchiveStatus("disabled");
+      return;
+    }
+    const controller = new AbortController();
+    setArchiveStatus("checking");
+    void probeArchive(archiveUrl, controller.signal).then((ready) => setArchiveStatus(ready ? "ready" : "unavailable"));
+    return () => controller.abort();
+  }, [archiveUrl]);
 
   useEffect(() => {
     if (!isReplaying) return;
@@ -346,6 +367,7 @@ export function App({ observerConnect: injectedObserverConnect, observerUrl = pr
   const routeLabel = liveRoute
     ? `${liveRouteIsWaterway ? (language === "bn" ? "নৌযান" : "Boat") : (language === "bn" ? "ট্রাক" : "Truck")} • ${liveEdgeIds.join(" → ")}`
     : useFallbackRoute ? t.routeValue : t.truckRoute;
+  const archiveLabel = archiveStatus === "ready" ? t.archiveReady : archiveStatus === "checking" ? t.archiveChecking : archiveStatus === "unavailable" ? t.archiveUnavailable : t.archive;
   const rendezvousLabel = projection.rendezvous?.candidateId ?? "R3";
   const rendezvousCoordinates = projection.rendezvous?.latitudeDegrees !== undefined && projection.rendezvous.longitudeDegrees !== undefined
     ? `${projection.rendezvous.latitudeDegrees.toFixed(4)}, ${projection.rendezvous.longitudeDegrees.toFixed(4)}`
@@ -380,7 +402,7 @@ export function App({ observerConnect: injectedObserverConnect, observerUrl = pr
           <div className="header-status">
             <Badge className="status-badge offline-status"><CloudOff />{t.offline}</Badge>
             <Badge className={`status-badge observer-status ${observerTone}`}><RadioTower />{observerLabel}</Badge>
-            <Badge className="status-badge archive-status"><Database />{t.archive}</Badge>
+            <Badge className={`status-badge archive-status ${archiveStatus}`}><Database />{archiveLabel}</Badge>
             <Button className="language" variant="outline" onClick={() => setLanguage(language === "bn" ? "en" : "bn")}>
               <Languages />{language === "bn" ? "English" : "বাংলা"}
             </Button>
