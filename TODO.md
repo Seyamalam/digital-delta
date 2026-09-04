@@ -59,7 +59,7 @@ This checklist tracks implementation. Milestone exit criteria live in [MILESTONE
 
 - [x] Generate device-bound RSA-2048 encryption and signing identities, the accepted C5 alternative to Ed25519.
 - [x] Keep private identity keys non-exportable in Android Keystore. Hardware-backed availability still requires target-phone evidence.
-- [ ] Implement offline administrator provisioning QR. Signed enrollment, administrator trust pinning, credential issue/verify, expiry checks, durable storage, and the bilingual display/paste journey are complete; bundled camera scanning remains.
+- [ ] Implement offline administrator provisioning QR. Signed enrollment, administrator trust pinning, credential issue/verify, expiry checks, durable storage, bilingual display/paste, and CameraX scanning with bundled ML Kit models are complete; a real two-phone camera pass remains.
 - [ ] Add local PIN or device-authentication unlock.
 - [ ] Implement roles and permission policy.
 - [ ] Hide forbidden actions and enforce the same policy below the user interface.
@@ -123,7 +123,7 @@ This checklist tracks implementation. Milestone exit criteria live in [MILESTONE
 ## M5 proof of delivery
 
 - [x] Generate QR images with ZXing Core.
-- [ ] Scan with the bundled ML Kit barcode model and verify airplane-mode behavior.
+- [ ] Scan with the bundled ML Kit barcode model and verify airplane-mode behavior. The CameraX scanner, workflow-specific QR gate, automatic verification handoff, permission fallback, JVM tests, APK model check, and connected-test compilation pass; a real camera-in-airplane-mode run remains.
 - [x] Build the signed Protobuf QR payload with the required delivery, identity, hash, nonce, timestamp, and previous-receipt fields.
 - [x] Verify the seeded sender key, signature, payload hash, nonce, timestamp, delivery, mission, and recipient offline. Cross-phone credential binding remains.
 - [x] Add atomic Room nonce persistence and replay rejection.

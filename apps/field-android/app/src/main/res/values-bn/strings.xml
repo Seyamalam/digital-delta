@@ -203,4 +203,12 @@
     <string name="hybrid_signed_qr_step">নৌযান অফলাইন হেফাজত QR স্বাক্ষর করে</string>
     <string name="hybrid_drone_step">সিমুলেটেড ড্রোন স্বাক্ষর করে কার্গো গ্রহণ করে</string>
     <string name="hybrid_receipt_verified">দুই পক্ষের রসিদ হেফাজত ধারায় সংযুক্ত</string>
+    <string name="scan_administrator_qr">প্রশাসকের ট্রাস্ট QR স্ক্যান করুন</string>
+    <string name="scan_credential_qr">প্রাপকের পরিচয়পত্র QR স্ক্যান করুন</string>
+    <string name="scan_delivery_qr">স্বাক্ষরিত সরবরাহ QR স্ক্যান করুন</string>
+    <string name="scan_qr_guidance">QR-টি ফ্রেমের মধ্যে ধরুন। শনাক্তকরণ ও যাচাই এই ফোনেই হবে।</string>
+    <string name="camera_permission_required">শুধু স্ক্যানের সময় ক্যামেরা অনুমতি প্রয়োজন। হাতে কোড দেওয়ার সুবিধাও থাকবে।</string>
+    <string name="wrong_qr_purpose">এই QR অন্য কাজের জন্য। কোনো তথ্য যোগ করা হয়নি।</string>
+    <string name="close_scanner">QR স্ক্যানার বন্ধ করুন</string>
+    <string name="grant_camera">ক্যামেরা অনুমতি দিন</string>
 </resources>

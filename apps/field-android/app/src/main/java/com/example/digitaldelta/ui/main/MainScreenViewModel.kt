@@ -252,13 +252,19 @@ class MainScreenViewModel @Inject constructor(
     fun verifyHandoff(tamperForDemo: Boolean = false) {
         val offer = mutableProofOfDeliveryState.value.offerOrNull() ?: return
         if (mutableProofOfDeliveryState.value is ProofOfDeliveryUiState.Verifying) return
+        val code = if (tamperForDemo) proofOfDeliveryWorkflow.tamperForDemo(offer.qrCode) else offer.qrCode
+        verifyOfferCode(offer, code)
+    }
+
+    fun verifyScannedHandoff(code: String) {
+        val offer = mutableProofOfDeliveryState.value.offerOrNull() ?: return
+        if (mutableProofOfDeliveryState.value is ProofOfDeliveryUiState.Verifying) return
+        verifyOfferCode(offer, code)
+    }
+
+    private fun verifyOfferCode(offer: DeliveryOfferReady, code: String) {
         mutableProofOfDeliveryState.value = ProofOfDeliveryUiState.Verifying(offer)
         viewModelScope.launch {
-            val code = if (tamperForDemo) {
-                proofOfDeliveryWorkflow.tamperForDemo(offer.qrCode)
-            } else {
-                offer.qrCode
-            }
             runCatching { proofOfDeliveryWorkflow.verify(code) }
                 .onSuccess { result ->
                     mutableProofOfDeliveryState.value = when (result) {

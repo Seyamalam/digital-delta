@@ -309,6 +309,27 @@ class MainScreenViewModelTest {
     }
 
     @Test
+    fun `camera handoff forwards the scanned code to offline verification`() = runTest(dispatcher) {
+        val proof = FakeProofOfDeliveryWorkflow()
+        val viewModel = MainScreenViewModel(
+            FakeSettingsRepository(),
+            FakeRequestSubmission(),
+            FakeIdentityCoordinator(),
+            FakeConflictCoordinator(),
+            FakeRouteScenario(),
+            DefaultTriageWorkflow(),
+            proof,
+        )
+        advanceUntilIdle()
+
+        viewModel.verifyScannedHandoff("DIGITALDELTA:POD:camera-frame")
+        advanceUntilIdle()
+
+        assertEquals("DIGITALDELTA:POD:camera-frame", proof.lastVerifiedCode)
+        assertEquals(true, viewModel.proofOfDeliveryState.value is ProofOfDeliveryUiState.Verified)
+    }
+
+    @Test
     fun `hybrid handoff exposes animated phases and advances workflow once per action`() = runTest(dispatcher) {
         val hybrid = CountingHybridFleetWorkflow()
         val viewModel = MainScreenViewModel(
@@ -411,6 +432,7 @@ private class CountingTriageWorkflow : TriageWorkflow {
 
 private class FakeProofOfDeliveryWorkflow : ProofOfDeliveryWorkflow {
     var verifyCalls = 0
+    var lastVerifiedCode: String? = null
     private val receipt = CustodyReceiptRecord(
         eventId = "custody-event-1",
         deliveryId = "DELTA-2026-0001",
@@ -436,6 +458,7 @@ private class FakeProofOfDeliveryWorkflow : ProofOfDeliveryWorkflow {
 
     override suspend fun verify(code: String): DeliveryReceiptResult {
         verifyCalls += 1
+        lastVerifiedCode = code
         return if (verifyCalls == 1) {
             DeliveryReceiptResult.Verified(receipt, listOf(receipt))
         } else {

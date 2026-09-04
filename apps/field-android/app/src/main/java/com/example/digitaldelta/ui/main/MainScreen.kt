@@ -64,6 +64,7 @@ import androidx.compose.material.icons.filled.Medication
 import androidx.compose.material.icons.filled.MyLocation
 import androidx.compose.material.icons.filled.Remove
 import androidx.compose.material.icons.filled.Replay
+import androidx.compose.material.icons.filled.QrCodeScanner
 import androidx.compose.material.icons.filled.Shield
 import androidx.compose.material.icons.filled.Warning
 import androidx.compose.material.icons.filled.WaterDrop
@@ -133,6 +134,8 @@ import com.example.digitaldelta.domain.routing.VehicleType
 import com.example.digitaldelta.domain.prediction.RouteRiskRuntime
 import com.example.digitaldelta.domain.triage.TriageWorkflowSnapshot
 import com.example.digitaldelta.domain.fleet.HybridFleetState
+import com.example.digitaldelta.ui.scanner.QrScanPurpose
+import com.example.digitaldelta.ui.scanner.QrScannerOverlay
 import com.example.digitaldelta.theme.AlertCoral
 import com.example.digitaldelta.theme.DeltaTeal
 import com.example.digitaldelta.theme.DigitalDeltaTheme
@@ -195,6 +198,7 @@ fun DigitalDeltaApp(
     onConfirmPreemption: (() -> Unit)? = null,
     proofOfDeliveryState: ProofOfDeliveryUiState = ProofOfDeliveryUiState.Loading,
     onVerifyHandoff: ((Boolean) -> Unit)? = null,
+    onScanHandoff: ((String) -> Unit)? = null,
     onPrepareNextHandoff: (() -> Unit)? = null,
     hybridFleetState: HybridFleetState = HybridFleetState.Unavailable,
     onReportBoatDelay: (() -> Unit)? = null,
@@ -241,6 +245,7 @@ fun DigitalDeltaApp(
                 onConfirmPreemption = onConfirmPreemption,
                 proofOfDeliveryState = proofOfDeliveryState,
                 onVerifyHandoff = onVerifyHandoff,
+                onScanHandoff = onScanHandoff,
                 onPrepareNextHandoff = onPrepareNextHandoff,
                 hybridFleetState = hybridFleetState,
                 onReportBoatDelay = onReportBoatDelay,
@@ -353,6 +358,7 @@ private fun DeltaShell(
     onConfirmPreemption: (() -> Unit)?,
     proofOfDeliveryState: ProofOfDeliveryUiState,
     onVerifyHandoff: ((Boolean) -> Unit)?,
+    onScanHandoff: ((String) -> Unit)?,
     onPrepareNextHandoff: (() -> Unit)?,
     hybridFleetState: HybridFleetState,
     onReportBoatDelay: (() -> Unit)?,
@@ -455,6 +461,7 @@ private fun DeltaShell(
                     onResetHybridFleet = onResetHybridFleet,
                     state = proofOfDeliveryState,
                     onVerify = onVerifyHandoff,
+                    onScan = onScanHandoff,
                     onPrepareNext = onPrepareNextHandoff,
                 )
             }
@@ -513,6 +520,7 @@ private fun IdentityScreen(
 ) {
     var trustCode by rememberSaveable { mutableStateOf("") }
     var credentialCode by rememberSaveable { mutableStateOf("") }
+    var scanPurpose by rememberSaveable { mutableStateOf<QrScanPurpose?>(null) }
     val clipboard = LocalClipboardManager.current
     val focusManager = LocalFocusManager.current
     val ready = when (state) {
@@ -622,6 +630,15 @@ private fun IdentityScreen(
                         modifier = Modifier.fillMaxWidth(),
                     )
                     Spacer(Modifier.height(8.dp))
+                    OutlinedButton(
+                        onClick = { scanPurpose = QrScanPurpose.ADMIN_TRUST },
+                        modifier = Modifier.fillMaxWidth().height(50.dp).testTag("scan-admin-trust"),
+                    ) {
+                        Icon(Icons.Default.QrCodeScanner, null)
+                        Spacer(Modifier.width(8.dp))
+                        Text(text(R.string.scan_administrator_qr, language))
+                    }
+                    Spacer(Modifier.height(8.dp))
                     Button(
                         onClick = { onPinAdministrator?.invoke(trustCode) },
                         enabled = trustCode.isNotBlank() && state !is IdentityUiState.Working,
@@ -654,6 +671,15 @@ private fun IdentityScreen(
                     ),
                     modifier = Modifier.fillMaxWidth(),
                 )
+                Spacer(Modifier.height(8.dp))
+                OutlinedButton(
+                    onClick = { scanPurpose = QrScanPurpose.RECIPIENT_CREDENTIAL },
+                    modifier = Modifier.fillMaxWidth().height(50.dp).testTag("scan-recipient-credential"),
+                ) {
+                    Icon(Icons.Default.QrCodeScanner, null)
+                    Spacer(Modifier.width(8.dp))
+                    Text(text(R.string.scan_credential_qr, language))
+                }
                 Spacer(Modifier.height(8.dp))
                 Button(
                     onClick = { onImportRecipientCredential?.invoke(credentialCode) },
@@ -708,6 +734,31 @@ private fun IdentityScreen(
                 }
             }
         }
+    }
+    scanPurpose?.let { purpose ->
+        QrScannerOverlay(
+            purpose = purpose,
+            title = text(
+                if (purpose == QrScanPurpose.ADMIN_TRUST) R.string.scan_administrator_qr else R.string.scan_credential_qr,
+                language,
+            ),
+            guidance = text(R.string.scan_qr_guidance, language),
+            permissionRequired = text(R.string.camera_permission_required, language),
+            wrongCode = text(R.string.wrong_qr_purpose, language),
+            closeLabel = text(R.string.close_scanner, language),
+            retryLabel = text(R.string.grant_camera, language),
+            onAccepted = { code ->
+                scanPurpose = null
+                if (purpose == QrScanPurpose.ADMIN_TRUST) {
+                    trustCode = code
+                    onPinAdministrator?.invoke(code)
+                } else {
+                    credentialCode = code
+                    onImportRecipientCredential?.invoke(code)
+                }
+            },
+            onDismiss = { scanPurpose = null },
+        )
     }
 }
 
@@ -1985,8 +2036,10 @@ private fun HandoffScreen(
     onResetHybridFleet: (() -> Unit)?,
     state: ProofOfDeliveryUiState,
     onVerify: ((Boolean) -> Unit)?,
+    onScan: ((String) -> Unit)?,
     onPrepareNext: (() -> Unit)?,
 ) {
+    var scannerOpen by rememberSaveable { mutableStateOf(false) }
     val offer = when (state) {
         is ProofOfDeliveryUiState.Ready -> state.offer
         is ProofOfDeliveryUiState.Verifying -> state.offer
@@ -2123,6 +2176,15 @@ private fun HandoffScreen(
                         }
                     }
                     if (offer != null && state !is ProofOfDeliveryUiState.Verifying) {
+                        OutlinedButton(
+                            onClick = { scannerOpen = true },
+                            enabled = onScan != null,
+                            modifier = Modifier.fillMaxWidth().height(50.dp).testTag("scan-handoff"),
+                        ) {
+                            Icon(Icons.Default.QrCodeScanner, null)
+                            Spacer(Modifier.width(8.dp))
+                            Text(text(R.string.scan_delivery_qr, language))
+                        }
                         Button(
                             onClick = { onVerify?.invoke(false) },
                             modifier = Modifier.fillMaxWidth().height(52.dp).testTag("verify-handoff"),
@@ -2191,6 +2253,22 @@ private fun HandoffScreen(
                 }
             }
         }
+    }
+    if (scannerOpen) {
+        QrScannerOverlay(
+            purpose = QrScanPurpose.DELIVERY_HANDOFF,
+            title = text(R.string.scan_delivery_qr, language),
+            guidance = text(R.string.scan_qr_guidance, language),
+            permissionRequired = text(R.string.camera_permission_required, language),
+            wrongCode = text(R.string.wrong_qr_purpose, language),
+            closeLabel = text(R.string.close_scanner, language),
+            retryLabel = text(R.string.grant_camera, language),
+            onAccepted = { code ->
+                scannerOpen = false
+                onScan?.invoke(code)
+            },
+            onDismiss = { scannerOpen = false },
+        )
     }
 }
 

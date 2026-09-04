@@ -71,6 +71,7 @@ These are real emulator captures from the working application, not final submiss
 | On-device ONNX risk prediction and proactive boat reroute | Captured | Captured | `artifacts/screenshots/field-bn/20-field-bn-onnx-risk-reroute.png`, `artifacts/screenshots/field-en/20-field-en-onnx-risk-reroute.png` |
 | Drone-required reachability, rendezvous, ETA, and battery reserve | Captured | Captured | `artifacts/screenshots/field-bn/21-field-bn-hybrid-ready.png`, `artifacts/screenshots/field-en/21-field-en-hybrid-ready.png` |
 | Signed boat-to-simulated-drone custody receipt | Captured | Captured | `artifacts/screenshots/field-bn/22-field-bn-hybrid-transferred.png`, `artifacts/screenshots/field-en/22-field-en-hybrid-transferred.png` |
+| Camera scanner for provisioning and PoD | Pending physical-device pair | Pending physical-device pair | CameraX and bundled-model implementation is verified; do not substitute a camera-less emulator capture for the required evidence. |
 
 ## Field application shots
 

@@ -89,10 +89,17 @@ dependencies {
   implementation(libs.hilt.android)
   implementation(libs.play.services.nearby)
   implementation(libs.onnxruntime.android)
+  implementation(libs.androidx.camera.camera2)
+  implementation(libs.androidx.camera.lifecycle)
+  implementation(libs.androidx.camera.view)
+  implementation(libs.androidx.camera.mlkit.vision)
+  implementation(libs.mlkit.barcode.scanning)
   ksp(libs.hilt.compiler)
   ksp(libs.androidx.room.compiler)
   androidTestImplementation(libs.androidx.room.testing)
   androidTestImplementation(libs.kotlinx.coroutines.test)
+  testImplementation(libs.truth)
+  androidTestImplementation(libs.truth)
   // Tooling
   debugImplementation(libs.androidx.compose.ui.tooling)
   // Instrumented tests

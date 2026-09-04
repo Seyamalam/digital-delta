@@ -97,6 +97,7 @@ fun MainNavigation(meshRuntimeStateStore: MeshRuntimeStateStore) {
     onConfirmPreemption = viewModel::confirmPreemption,
     proofOfDeliveryState = proofOfDeliveryState,
     onVerifyHandoff = viewModel::verifyHandoff,
+    onScanHandoff = viewModel::verifyScannedHandoff,
     onPrepareNextHandoff = viewModel::prepareNextHandoff,
     hybridFleetState = hybridFleetState,
     onReportBoatDelay = viewModel::reportBoatDelay,

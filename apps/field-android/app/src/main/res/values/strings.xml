@@ -203,4 +203,12 @@
     <string name="hybrid_signed_qr_step">Boat signs the offline custody QR</string>
     <string name="hybrid_drone_step">Simulated drone signs and receives cargo</string>
     <string name="hybrid_receipt_verified">Two-party receipt linked to custody chain</string>
+    <string name="scan_administrator_qr">Scan administrator trust QR</string>
+    <string name="scan_credential_qr">Scan recipient credential QR</string>
+    <string name="scan_delivery_qr">Scan signed delivery QR</string>
+    <string name="scan_qr_guidance">Align the QR inside the frame. Recognition and verification stay on this phone.</string>
+    <string name="camera_permission_required">Camera access is required only while scanning. Manual entry remains available.</string>
+    <string name="wrong_qr_purpose">That QR belongs to a different workflow. Nothing was imported.</string>
+    <string name="close_scanner">Close QR scanner</string>
+    <string name="grant_camera">Allow camera</string>
 </resources>

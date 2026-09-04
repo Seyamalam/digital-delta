@@ -146,6 +146,10 @@ This path must not be described as gRPC unless it actually carries a valid gRPC 
 
 Payload encryption is hybrid: each message receives a random AES-256-GCM content key, and that key is wrapped with the final recipient's provisioned RSA-2048 public key using OAEP with SHA-256. Android private encryption and signing keys remain non-exportable in Android Keystore. The Protobuf envelope carries the recipient key ID, nonce, associated-data hash, wrapped content key, and explicit algorithm identifiers so relays can route bytes without opening the domain payload.
 
+### Offline QR capture
+
+Provisioning, recipient credentials, and delivery handoffs use one lifecycle-bound CameraX preview with the bundled ML Kit barcode model. No camera frame or decoded QR is written to disk by the scanner. A small purpose gate rejects QR text from the wrong workflow before forwarding the exact decoded value to the existing credential or proof verifier; prefixes are routing hints, never security authority. Signature, trust, expiry, delivery, payload-hash, and nonce checks remain mandatory after scanning. Manual paste stays available for accessibility and camera failure, and denial of camera permission does not block the rest of the offline field application.
+
 ### Dashboard observation
 
 Field nodes publish `DomainEvent` messages to the Go `ObserverService` over local gRPC when the laptop is reachable. The Go service assigns a durable ordered sequence and supports cursor replay. A server-sent event bridge converts each stored event into a strict allow-listed JSON presentation object for the browser. It never serializes mesh envelopes, encrypted payloads, wrapped content keys, or signature bytes. JSON exists only across this laptop-local presentation boundary and must never be confused with the Protobuf mesh format.

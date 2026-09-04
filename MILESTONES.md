@@ -74,6 +74,8 @@ Deliverables:
 - Replay cache and rejection reason
 - Reconstructable receipt chain
 
+Current camera evidence: one bilingual CameraX scanner now captures administrator trust, recipient credential, and PoD QR codes; a workflow-purpose gate rejects accidental cross-flow codes before the existing cryptographic verifier runs. The ML Kit model is packaged in the APK and checked by the local verification script. This is implementation evidence only until the same paths pass on two real phones in airplane mode.
+
 Exit criteria:
 
 - Valid handoff succeeds.

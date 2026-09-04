@@ -55,6 +55,13 @@ echo "[android] unit tests, debug build, and minified release build"
   env JAVA_HOME="${java_runtime}" ./gradlew test assembleDebug assembleRelease
 )
 
+debug_apk="${android_dir}/app/build/outputs/apk/debug/app-debug.apk"
+if ! unzip -Z1 "${debug_apk}" | rg -q '^assets/mlkit_barcode_models/.+\.tflite$'; then
+  echo "Bundled ML Kit barcode model is missing from the debug APK; QR scanning must work offline." >&2
+  exit 1
+fi
+echo "[android] bundled offline barcode model present in APK"
+
 if [[ "${1:-}" == "--connected" ]]; then
   echo "[android] connected Compose journey tests"
   (
