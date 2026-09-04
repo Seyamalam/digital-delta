@@ -69,6 +69,45 @@ class MissionMergeEngineTest {
         assertEquals(merged, stockB.merge(stockA))
     }
 
+    @Test
+    fun `observed assignment removal converges and cannot be resurrected by late delivery`() {
+        val assigned = ObservedRemoveSet<String>()
+            .add("boat-02", "phone-a:1")
+            .add("drone-07", "phone-a:2")
+        val removedOnA = assigned.remove("boat-02")
+        val staleOnB = assigned.add("drone-07", "phone-a:2")
+
+        val forward = removedOnA.merge(staleOnB)
+        val reverse = staleOnB.merge(removedOnA)
+
+        assertEquals(setOf("drone-07"), forward.values)
+        assertEquals(forward, reverse)
+        assertFalse(forward.contains("boat-02"))
+        assertEquals(setOf("phone-a:1"), forward.tombstones)
+    }
+
+    @Test
+    fun `concurrent unseen assignment survives removal of observed tags`() {
+        val observed = ObservedRemoveSet<String>().add("boat-02", "phone-a:1")
+        val removedOnA = observed.remove("boat-02")
+        val concurrentlyReassignedOnB = observed.add("boat-02", "phone-b:1")
+
+        val merged = removedOnA.merge(concurrentlyReassignedOnB)
+
+        assertTrue(merged.contains("boat-02"))
+        assertEquals(setOf("boat-02"), merged.values)
+        assertEquals(setOf("phone-a:1"), merged.tombstones)
+    }
+
+    @Test
+    fun `duplicate assignment operations are idempotent`() {
+        val once = ObservedRemoveSet<String>().add("boat-02", "phone-a:1")
+        val duplicate = once.add("boat-02", "phone-a:1")
+
+        assertEquals(once, duplicate)
+        assertEquals(once, once.merge(duplicate))
+    }
+
     private fun revision(
         eventId: String,
         field: MissionField,

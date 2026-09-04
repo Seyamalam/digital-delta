@@ -86,6 +86,43 @@ data class GrowOnlySet<T>(val values: Set<T> = emptySet()) {
     fun merge(other: GrowOnlySet<T>): GrowOnlySet<T> = GrowOnlySet(values + other.values)
 }
 
+/**
+ * An observed-remove set for assignments. Each add carries a globally unique
+ * operation tag. Removing a value tombstones only the tags the replica has
+ * observed, so a truly concurrent reassignment survives while late or duplicate
+ * delivery cannot resurrect an assignment that was already removed.
+ */
+data class ObservedRemoveSet<T>(
+    val additions: Map<T, Set<String>> = emptyMap(),
+    val tombstones: Set<String> = emptySet(),
+) {
+    val values: Set<T>
+        get() = additions
+            .filterValues { tags -> tags.any { it !in tombstones } }
+            .keys
+
+    fun contains(value: T): Boolean = additions[value].orEmpty().any { it !in tombstones }
+
+    fun add(value: T, operationTag: String): ObservedRemoveSet<T> {
+        require(operationTag.isNotBlank()) { "operation tag is required" }
+        val tags = additions[value].orEmpty() + operationTag
+        return copy(additions = additions + (value to tags))
+    }
+
+    fun remove(value: T): ObservedRemoveSet<T> =
+        copy(tombstones = tombstones + additions[value].orEmpty())
+
+    fun merge(other: ObservedRemoveSet<T>): ObservedRemoveSet<T> {
+        val keys = additions.keys + other.additions.keys
+        return ObservedRemoveSet(
+            additions = keys.associateWith { value ->
+                additions[value].orEmpty() + other.additions[value].orEmpty()
+            },
+            tombstones = tombstones + other.tombstones,
+        )
+    }
+}
+
 data class PnCounter(
     val increments: Map<String, Long> = emptyMap(),
     val decrements: Map<String, Long> = emptyMap(),
