@@ -40,6 +40,20 @@ The project is designed for an innovation-fair demonstration using Android phone
 
 All phones enter airplane mode before the mission. Bluetooth and local Wi-Fi may be enabled for nearby communication. The laptops may join the local demonstration network, but the field workflow must not depend on them.
 
+## Local commands
+
+```bash
+make setup       # install locked local dependencies
+make verify      # unit, build, model, map, Go, and dashboard gate
+make connected   # add connected Android journeys
+make demo        # start Go node, observer, seeded drill, and projector
+make reset       # move old laptop demo state to a recoverable local backup
+make lint
+make format
+```
+
+Open `http://127.0.0.1:5173/` after `make demo`. The runner publishes the fixed `fair-pass-01` Protobuf drill and labels every generated environment or vehicle event as simulated. The field phones do not require these laptop processes.
+
 ## Software stack
 
 - Kotlin and Jetpack Compose field application, Android first
@@ -47,13 +61,13 @@ All phones enter airplane mode before the mission. Bluetooth and local Wi-Fi may
 - Room over SQLite for the event log, queues, projections, identities, and conflicts
 - Proto DataStore for language and small device settings
 - Google Nearby Connections with an Android foreground service for active relay
-- WorkManager for deferred retries and maintenance, not continuous mesh operation
-- Go node services, chaos simulator, load tests, and gRPC services
+- WorkManager is planned only for deferred maintenance; active relay currently uses a foreground service and bounded Room retries
+- Go node services, deterministic drill publisher, load tests, and gRPC services
 - React, TypeScript, Vite, MapLibre GL, a checksum-pinned offline PMTiles region derived from OpenStreetMap, and locally packaged fonts for the command dashboard
-- Protocol Buffers Kotlin Lite, Go, and TypeScript generated contracts
+- Protocol Buffers Kotlin Lite and Go generated contracts; the browser consumes a sanitized SSE presentation projection rather than mesh payloads
 - gRPC on supported IP links, with framed Protobuf transport for nearby-radio links
 - JCA/JCE and Android Keystore for RSA-2048-PSS signatures, RSA-OAEP key wrapping, AES-256-GCM payloads, and protected device keys
-- MapLibre Native Android embedded in Compose with bundled offline regions
+- Compose renders the validated Android scenario graph; MapLibre Native and a bundled Android geographic region remain planned
 - ZXing Core for QR generation and bundled ML Kit barcode scanning
 - ONNX Runtime Android for the on-device route-risk classifier
 - Python, pandas, scikit-learn, and skl2onnx for model training and export

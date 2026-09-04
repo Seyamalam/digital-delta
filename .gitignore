@@ -16,3 +16,6 @@ artifacts/reports/local-verify/
 /apps/command/vite.config.js
 /apps/command/vite.config.d.ts
 /apps/command/public/vendor/maplibre/
+# Recoverable local demo state and backups are machine-local.
+.demo-state/
+artifacts/demo-state-backups/

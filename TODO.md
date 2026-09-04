@@ -17,8 +17,8 @@ This checklist tracks implementation. Milestone exit criteria live in [MILESTONE
 ## Repository foundation
 
 - [ ] Create the monorepo folders described in `README.md`.
-- [ ] Add root setup, format, lint, test, seed, reset, and demo commands.
-- [ ] Add environment example files with no secrets.
+- [x] Add root setup, format, lint, test, seed, recoverable reset, and demo commands through the Makefile and local scripts.
+- [x] Add an environment example with the local observer URL and no secrets.
 - [x] Scaffold the Android project with Gradle Kotlin DSL and a version catalog.
 - [ ] Add the complete Android dependency set. Compose, Material 3, Navigation 3, ZXing, Protobuf Lite, gRPC OkHttp, Hilt, Room, DataStore, Nearby Connections, and test dependencies are present; WorkManager, Tink, MapLibre, and ONNX remain.
 - [x] Add a local Kotlin and Android verification runner; extend it for Go, TypeScript, and Protobuf compatibility as those projects land. Hosted CI and GitHub Actions are deliberately excluded.

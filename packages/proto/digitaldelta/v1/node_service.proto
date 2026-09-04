@@ -2,13 +2,13 @@ syntax = "proto3";
 
 package digitaldelta.v1;
 
-option java_package = "com.example.digitaldelta.proto.v1";
-option java_multiple_files = true;
-option optimize_for = LITE_RUNTIME;
-option go_package = "github.com/Seyamalam/digital-delta/services/node/gen/digitaldelta/v1;deltav1";
-
 import "digitaldelta/v1/common.proto";
 import "digitaldelta/v1/events.proto";
+
+option go_package = "github.com/Seyamalam/digital-delta/services/node/gen/digitaldelta/v1;deltav1";
+option java_multiple_files = true;
+option java_package = "com.example.digitaldelta.proto.v1";
+option optimize_for = LITE_RUNTIME;
 
 service NodeMeshService {
   rpc Synchronize(stream SynchronizeRequest) returns (stream SynchronizeResponse);

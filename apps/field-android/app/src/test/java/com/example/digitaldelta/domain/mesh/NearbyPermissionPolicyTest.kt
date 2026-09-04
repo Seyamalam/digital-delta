@@ -16,6 +16,7 @@ class NearbyPermissionPolicyTest {
         )
         assertEquals(
             setOf(
+                NearbyPermissionPolicy.COARSE_LOCATION,
                 NearbyPermissionPolicy.FINE_LOCATION,
                 NearbyPermissionPolicy.BLUETOOTH_ADVERTISE,
                 NearbyPermissionPolicy.BLUETOOTH_CONNECT,

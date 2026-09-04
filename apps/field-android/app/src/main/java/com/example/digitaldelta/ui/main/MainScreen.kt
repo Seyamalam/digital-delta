@@ -163,9 +163,9 @@ private enum class DeltaDestination(@param:StringRes val label: Int, val icon: I
 @Composable
 private fun text(@StringRes id: Int, language: AppLanguage): String {
     val context = LocalContext.current
-    val uiMode = LocalConfiguration.current.uiMode
-    return remember(id, language, uiMode) {
-        val configuration = Configuration(context.resources.configuration).apply {
+    val currentConfiguration = LocalConfiguration.current
+    return remember(id, language, currentConfiguration) {
+        val configuration = Configuration(currentConfiguration).apply {
             setLocale(Locale.forLanguageTag(language.tag))
         }
         context.createConfigurationContext(configuration).getString(id)

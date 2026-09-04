@@ -2,10 +2,10 @@ syntax = "proto3";
 
 package digitaldelta.v1;
 
-option java_package = "com.example.digitaldelta.proto.v1";
-option java_multiple_files = true;
-option optimize_for = LITE_RUNTIME;
 option go_package = "github.com/Seyamalam/digital-delta/services/node/gen/digitaldelta/v1;deltav1";
+option java_multiple_files = true;
+option java_package = "com.example.digitaldelta.proto.v1";
+option optimize_for = LITE_RUNTIME;
 
 enum PriorityClass {
   PRIORITY_CLASS_UNSPECIFIED = 0;

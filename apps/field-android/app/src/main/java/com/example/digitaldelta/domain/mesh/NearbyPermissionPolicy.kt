@@ -15,6 +15,7 @@ object NearbyPermissionPolicy {
             sdkInt <= 28 -> add(COARSE_LOCATION)
             sdkInt <= 30 -> add(FINE_LOCATION)
             sdkInt == 31 || sdkInt == 32 -> {
+                add(COARSE_LOCATION)
                 add(FINE_LOCATION)
                 add(BLUETOOTH_ADVERTISE)
                 add(BLUETOOTH_CONNECT)
