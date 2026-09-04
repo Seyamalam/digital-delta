@@ -1,0 +1,132 @@
+{
+  "14": {
+    "source": "artifacts/screenshots/field-bn/00-field-bilingual-language-choice-1280x2856.png",
+    "box": {
+      "left": 26,
+      "top": 942,
+      "width": 1229,
+      "height": 1200
+    },
+    "path": "details/crop-14.png"
+  },
+  "15": {
+    "source": "artifacts/screenshots/field-en/02-field-en-role-denied-1280x2856.png",
+    "box": {
+      "left": 26,
+      "top": 400,
+      "width": 1229,
+      "height": 1114
+    },
+    "path": "details/crop-15.png"
+  },
+  "16": {
+    "source": "artifacts/screenshots/field-en/03-field-en-p0-request-1280x2856.png",
+    "box": {
+      "left": 26,
+      "top": 486,
+      "width": 1229,
+      "height": 1485
+    },
+    "path": "details/crop-16.png"
+  },
+  "17": {
+    "source": "artifacts/screenshots/field-en/10-field-en-nearby-relay-active-1280x2856.png",
+    "box": {
+      "left": 6,
+      "top": 264,
+      "width": 307,
+      "height": 336
+    },
+    "path": "details/crop-17.png"
+  },
+  "18": {
+    "source": "artifacts/screenshots/field-en/11-field-en-conflict-review-1280x2856.png",
+    "box": {
+      "left": 10,
+      "top": 236,
+      "width": 301,
+      "height": 328
+    },
+    "path": "details/crop-18.png"
+  },
+  "19": {
+    "source": "artifacts/screenshots/field-en/14-field-en-route-rerouted-1280x2856.png",
+    "box": {
+      "left": 8,
+      "top": 293,
+      "width": 304,
+      "height": 343
+    },
+    "path": "details/crop-19.png"
+  },
+  "20": {
+    "source": "artifacts/screenshots/field-en/15-field-en-triage-preemption-1280x2856.png",
+    "box": {
+      "left": 8,
+      "top": 371,
+      "width": 304,
+      "height": 264
+    },
+    "path": "details/crop-20.png"
+  },
+  "21": {
+    "source": "artifacts/screenshots/field-en/20-field-en-onnx-risk-reroute.png",
+    "box": {
+      "left": 34,
+      "top": 1765,
+      "width": 1277,
+      "height": 928
+    },
+    "path": "details/crop-21.png"
+  },
+  "22": {
+    "source": "artifacts/screenshots/field-en/18-field-en-pod-replay-rejected.png",
+    "box": {
+      "left": 34,
+      "top": 1406,
+      "width": 1277,
+      "height": 1077
+    },
+    "path": "details/crop-22.png"
+  },
+  "23": {
+    "source": "artifacts/screenshots/field-en/24-field-en-hybrid-replanned-1280x2856.png",
+    "box": {
+      "left": 32,
+      "top": 214,
+      "width": 1216,
+      "height": 1485
+    },
+    "path": "details/crop-23.png"
+  },
+  "24": {
+    "source": "artifacts/screenshots/field-en/23-field-en-offline-geographic-map-1280x2856.png",
+    "box": {
+      "left": 32,
+      "top": 271,
+      "width": 1216,
+      "height": 1542
+    },
+    "path": "details/crop-24.png"
+  },
+  "25": {
+    "source": "artifacts/screenshots/command-en/02-command-en-live-overview-1920x1080.png",
+    "box": {
+      "left": 1440,
+      "top": 205,
+      "width": 470,
+      "height": 637
+    },
+    "path": "details/crop-25.png"
+  },
+  "26": {
+    "source": "artifacts/screenshots/command-en/03-command-en-dashboard-disconnected-1366x768.png",
+    "box": {
+      "left": 833,
+      "top": 15,
+      "width": 505,
+      "height": 730
+    },
+    "path": "details/crop-26.png"
+  }
+}

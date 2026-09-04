@@ -1,0 +1,19 @@
+{
+  "engine": "Built-in image generation",
+  "date": "2026-09-04",
+  "purpose": "Labelled editorial concept illustrations",
+  "images": [
+    {
+      "file": "illustrations/clinic-concept.png",
+      "prompt": "Use case: illustration-story. Create a premium editorial illustration for Digital Delta, an offline disaster logistics concept in Bangladesh. Wide landscape 3:2. Scene: a quiet rural riverside clinic in northeastern Bangladesh, a Bangladeshi woman health logistics coordinator under its shaded veranda recording a supply request on a generic smartphone, a small sealed medical cooler ready beside her, a narrow river and modest transport boat in the background. Elegant architectural illustration with realistic spatial detail and soft painterly texture, ivory paper, deep forest green, river blue and restrained ochre. Calm competent people, dignified everyday setting. Natural overcast daylight. No readable screen, no text, no logos, no network overlays, no drones, no physical sensors, no disaster victims, no dramatic destruction. This is conceptual editorial artwork, not a photograph or documentary evidence. Make a beautiful composed scene with ample breathing room."
+    },
+    {
+      "file": "illustrations/handoff-concept.png",
+      "prompt": "Use case: illustration-story. Create a premium editorial illustration for Digital Delta, an offline disaster logistics concept in Bangladesh. Wide landscape 3:2. Scene: beside a modest riverside landing in northeastern Bangladesh, two Bangladeshi adult logistics workers complete a supply handoff: one holds a generic phone, the other receives a sealed plain medical cooler from a small wooden transport boat. Safe composed stance on the landing, no one in danger. A low hospital/clinic building and watery green landscape in the distance. Elegant architectural illustration, realistic spatial detail, soft painterly paper texture, ivory, deep forest green, river blue, restrained ochre, calm overcast light. The scene should feel human, credible, quiet and carefully art-directed. No readable screens, text, logos, QR code detail, drones, sensors, holograms, network graphics or documentary claims. Conceptual artwork only."
+    },
+    {
+      "file": "illustrations/river-concept.png",
+      "provenance": "Reused AI-generated river illustration from the first report edition."
+    }
+  ]
+}

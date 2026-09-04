@@ -23,3 +23,4 @@ artifacts/reports/local-verify/
 artifacts/demo-state-backups/
 # Generated inspection intermediates stay local; final DOCX, PDF, and PPTX are versioned.
 output/qa/
+.artifacts/

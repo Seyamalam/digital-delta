@@ -1,0 +1,1134 @@
+{
+  "01-delivery-journey": {
+    "title": "A request becomes a verified delivery",
+    "width": 1200,
+    "height": 600,
+    "nodes": [
+      {
+        "id": "a",
+        "x": 20,
+        "y": 115,
+        "w": 210,
+        "h": 265,
+        "k": "01  CLINIC",
+        "title": "Save request",
+        "body": "Save the request\non the phone.",
+        "color": "green"
+      },
+      {
+        "id": "b",
+        "x": 258,
+        "y": 115,
+        "w": 210,
+        "h": 265,
+        "k": "02  RELAY",
+        "title": "Carry record",
+        "body": "Persist encrypted\nbytes. Forward\nwhen peers meet.",
+        "color": "green"
+      },
+      {
+        "id": "c",
+        "x": 496,
+        "y": 115,
+        "w": 210,
+        "h": 265,
+        "k": "03  ROUTE",
+        "title": "Reroute",
+        "body": "A simulated road\nfailure selects\na boat path.",
+        "color": "blue"
+      },
+      {
+        "id": "d",
+        "x": 734,
+        "y": 115,
+        "w": 210,
+        "h": 265,
+        "k": "04  DECISION",
+        "title": "Review",
+        "body": "A coordinator\nreviews the\nproposed change.",
+        "color": "amber"
+      },
+      {
+        "id": "e",
+        "x": 972,
+        "y": 115,
+        "w": 210,
+        "h": 265,
+        "k": "05  RECIPIENT",
+        "title": "Sign receipt",
+        "body": "Verify once.\nReject replay\nand tampering.",
+        "color": "green"
+      }
+    ],
+    "edges": [
+      {
+        "a": "a",
+        "b": "b",
+        "from": "right",
+        "to": "left",
+        "dash": false
+      },
+      {
+        "a": "b",
+        "b": "c",
+        "from": "right",
+        "to": "left",
+        "dash": false
+      },
+      {
+        "a": "c",
+        "b": "d",
+        "from": "right",
+        "to": "left",
+        "dash": false
+      },
+      {
+        "a": "d",
+        "b": "e",
+        "from": "right",
+        "to": "left",
+        "dash": false
+      }
+    ],
+    "labels": [
+      {
+        "x": 20,
+        "y": 470,
+        "text": "A conceptual walkthrough across demonstrated modules",
+        "size": 29,
+        "color": "green"
+      },
+      {
+        "x": 20,
+        "y": 520,
+        "text": "Screenshots come from separate seeded captures. Physical end-to-end acceptance remains open.",
+        "size": 23,
+        "color": "muted"
+      }
+    ],
+    "zones": []
+  },
+  "02-field-boundary": {
+    "title": "Field authority stays on the phones",
+    "width": 1200,
+    "height": 600,
+    "nodes": [
+      {
+        "id": "a",
+        "x": 35,
+        "y": 100,
+        "w": 330,
+        "h": 200,
+        "k": "CLINIC",
+        "title": "Create and retain",
+        "body": "Identity checks\nLocal request and outbox",
+        "color": "green"
+      },
+      {
+        "id": "b",
+        "x": 435,
+        "y": 100,
+        "w": 330,
+        "h": 200,
+        "k": "RELAY",
+        "title": "Store and forward",
+        "body": "Authenticated nearby peers\nRecipient-encrypted queue",
+        "color": "green"
+      },
+      {
+        "id": "c",
+        "x": 835,
+        "y": 100,
+        "w": 330,
+        "h": 200,
+        "k": "RECIPIENT",
+        "title": "Verify and accept",
+        "body": "Local route and policy\nSigned custody receipt",
+        "color": "green"
+      },
+      {
+        "id": "d",
+        "x": 235,
+        "y": 435,
+        "w": 330,
+        "h": 140,
+        "k": "OPTIONAL",
+        "title": "Local observer",
+        "body": "Go log and dashboard",
+        "color": "blue"
+      },
+      {
+        "id": "e",
+        "x": 690,
+        "y": 435,
+        "w": 430,
+        "h": 140,
+        "k": "OPTIONAL",
+        "title": "Public presentation",
+        "body": "Sanitized archive and web view",
+        "color": "blue"
+      }
+    ],
+    "edges": [
+      {
+        "a": "a",
+        "b": "b",
+        "from": "right",
+        "to": "left",
+        "dash": false
+      },
+      {
+        "a": "b",
+        "b": "c",
+        "from": "right",
+        "to": "left",
+        "dash": false
+      },
+      {
+        "a": "b",
+        "b": "d",
+        "from": "bottom",
+        "to": "top",
+        "dash": true
+      },
+      {
+        "a": "d",
+        "b": "e",
+        "from": "right",
+        "to": "left",
+        "dash": true
+      }
+    ],
+    "labels": [
+      {
+        "x": 38,
+        "y": 42,
+        "text": "FIELD AUTHORITY  /  Bundled Bangla and English",
+        "size": 25,
+        "color": "green"
+      },
+      {
+        "x": 660,
+        "y": 382,
+        "text": "Observation may disconnect",
+        "size": 24,
+        "color": "blue"
+      }
+    ],
+    "zones": [
+      {
+        "x": 15,
+        "y": 66,
+        "w": 1170,
+        "h": 260,
+        "label": "",
+        "color": "pale"
+      }
+    ]
+  },
+  "03-envelope-privacy": {
+    "title": "The relay can forward without opening the contents",
+    "width": 1200,
+    "height": 600,
+    "nodes": [
+      {
+        "id": "a",
+        "x": 30,
+        "y": 120,
+        "w": 315,
+        "h": 250,
+        "k": "SENDER",
+        "title": "Seal the event",
+        "body": "Protobuf bytes\nRecipient encryption\nSigned envelope",
+        "color": "green"
+      },
+      {
+        "id": "b",
+        "x": 440,
+        "y": 60,
+        "w": 325,
+        "h": 220,
+        "k": "RELAY CAN CHECK",
+        "title": "Forwarding metadata",
+        "body": "IDs and destination\nExpiry and hop limits\nEnvelope integrity",
+        "color": "blue"
+      },
+      {
+        "id": "c",
+        "x": 440,
+        "y": 345,
+        "w": 325,
+        "h": 200,
+        "k": "RELAY CANNOT OPEN",
+        "title": "Delivery payload",
+        "body": "Recipient encryption\nprotects the contents.",
+        "color": "green"
+      },
+      {
+        "id": "d",
+        "x": 855,
+        "y": 120,
+        "w": 315,
+        "h": 250,
+        "k": "RECIPIENT",
+        "title": "Open and verify",
+        "body": "Decrypt with own key\nVerify trusted fields\nApply accepted event",
+        "color": "green"
+      }
+    ],
+    "edges": [
+      {
+        "a": "a",
+        "b": "b",
+        "from": "right",
+        "to": "left",
+        "dash": false
+      },
+      {
+        "a": "b",
+        "b": "d",
+        "from": "right",
+        "to": "left",
+        "dash": false
+      }
+    ],
+    "labels": [
+      {
+        "x": 35,
+        "y": 460,
+        "text": "AES-256-GCM payload encryption",
+        "size": 24,
+        "color": "green"
+      },
+      {
+        "x": 35,
+        "y": 502,
+        "text": "RSA-OAEP recipient key wrapping",
+        "size": 23,
+        "color": "muted"
+      },
+      {
+        "x": 845,
+        "y": 460,
+        "text": "Persist before acknowledgement",
+        "size": 23,
+        "color": "blue"
+      },
+      {
+        "x": 845,
+        "y": 502,
+        "text": "Receipt ≠ domain acceptance",
+        "size": 23,
+        "color": "muted"
+      }
+    ],
+    "zones": []
+  },
+  "04-phone-layers": {
+    "title": "The phone owns the operational stack",
+    "width": 1200,
+    "height": 600,
+    "nodes": [
+      {
+        "id": "a",
+        "x": 80,
+        "y": 25,
+        "w": 1040,
+        "h": 125,
+        "k": "INTERFACE",
+        "title": "Compose and ViewModels",
+        "body": "Bundled Bangla and English read the same local mission.",
+        "color": "green"
+      },
+      {
+        "id": "b",
+        "x": 80,
+        "y": 208,
+        "w": 1040,
+        "h": 130,
+        "k": "DOMAIN",
+        "title": "Policies and repositories",
+        "body": "Identity, conflicts, routing, priority and custody.",
+        "color": "green"
+      },
+      {
+        "id": "c",
+        "x": 35,
+        "y": 414,
+        "w": 345,
+        "h": 160,
+        "k": "PERSISTENCE",
+        "title": "Room and DataStore",
+        "body": "Events, queues and profile",
+        "color": "green"
+      },
+      {
+        "id": "d",
+        "x": 425,
+        "y": 414,
+        "w": 345,
+        "h": 160,
+        "k": "LOCAL CAPABILITY",
+        "title": "Keystore and ONNX",
+        "body": "Protected keys and inference",
+        "color": "blue"
+      },
+      {
+        "id": "e",
+        "x": 815,
+        "y": 414,
+        "w": 345,
+        "h": 160,
+        "k": "TRANSPORT",
+        "title": "Nearby service",
+        "body": "Active foreground relay",
+        "color": "blue"
+      }
+    ],
+    "edges": [
+      {
+        "a": "a",
+        "b": "b",
+        "from": "bottom",
+        "to": "top",
+        "dash": false
+      },
+      {
+        "a": "b",
+        "b": "c",
+        "from": "bottom",
+        "to": "top",
+        "dash": false
+      },
+      {
+        "a": "b",
+        "b": "d",
+        "from": "bottom",
+        "to": "top",
+        "dash": false
+      },
+      {
+        "a": "b",
+        "b": "e",
+        "from": "bottom",
+        "to": "top",
+        "dash": false
+      }
+    ],
+    "labels": [],
+    "zones": []
+  },
+  "05-message-lifecycle": {
+    "title": "Storage acknowledgement precedes domain acceptance",
+    "width": 1200,
+    "height": 600,
+    "nodes": [
+      {
+        "id": "a",
+        "x": 20,
+        "y": 65,
+        "w": 250,
+        "h": 185,
+        "k": "01  SENDER",
+        "title": "Write outbox",
+        "body": "Encrypted envelope\nStable message ID",
+        "color": "green"
+      },
+      {
+        "id": "b",
+        "x": 323,
+        "y": 65,
+        "w": 250,
+        "h": 185,
+        "k": "02  RELAY",
+        "title": "Persist bytes",
+        "body": "Durable queue\nSigned storage\nacknowledgement",
+        "color": "green"
+      },
+      {
+        "id": "c",
+        "x": 626,
+        "y": 65,
+        "w": 250,
+        "h": 185,
+        "k": "03  RECIPIENT",
+        "title": "Verify and apply",
+        "body": "Decrypt and deduplicate\nCheck domain rules",
+        "color": "green"
+      },
+      {
+        "id": "d",
+        "x": 930,
+        "y": 65,
+        "w": 250,
+        "h": 185,
+        "k": "04  LOCAL STATE",
+        "title": "Rebuild view",
+        "body": "Accepted event\nUpdated projection",
+        "color": "green"
+      },
+      {
+        "id": "e",
+        "x": 85,
+        "y": 390,
+        "w": 430,
+        "h": 160,
+        "k": "ON INTERRUPTION",
+        "title": "Retry within limits",
+        "body": "Expiry and hop count bound retries.",
+        "color": "blue"
+      },
+      {
+        "id": "f",
+        "x": 675,
+        "y": 390,
+        "w": 430,
+        "h": 160,
+        "k": "ON DUPLICATION",
+        "title": "Preserve one effect",
+        "body": "IDs and nonces prevent repetition.",
+        "color": "green"
+      }
+    ],
+    "edges": [
+      {
+        "a": "a",
+        "b": "b",
+        "from": "right",
+        "to": "left",
+        "dash": false
+      },
+      {
+        "a": "b",
+        "b": "c",
+        "from": "right",
+        "to": "left",
+        "dash": false
+      },
+      {
+        "a": "c",
+        "b": "d",
+        "from": "right",
+        "to": "left",
+        "dash": false
+      }
+    ],
+    "labels": [
+      {
+        "x": 20,
+        "y": 318,
+        "text": "A stored envelope may still fail recipient or domain verification.",
+        "size": 27,
+        "color": "blue"
+      }
+    ],
+    "zones": []
+  },
+  "06-conflict-resolution": {
+    "title": "Concurrent unsafe edits require a person",
+    "width": 1200,
+    "height": 600,
+    "nodes": [
+      {
+        "id": "a",
+        "x": 20,
+        "y": 25,
+        "w": 330,
+        "h": 160,
+        "k": "PHONE A",
+        "title": "Destination edit",
+        "body": "Vector clock and event ID",
+        "color": "green"
+      },
+      {
+        "id": "b",
+        "x": 850,
+        "y": 25,
+        "w": 330,
+        "h": 160,
+        "k": "PHONE B",
+        "title": "Concurrent edit",
+        "body": "Independent offline record",
+        "color": "green"
+      },
+      {
+        "id": "c",
+        "x": 435,
+        "y": 230,
+        "w": 330,
+        "h": 160,
+        "k": "MERGE POLICY",
+        "title": "Compare causality",
+        "body": "Safe data types merge\nUnsafe fields enter review",
+        "color": "blue"
+      },
+      {
+        "id": "d",
+        "x": 20,
+        "y": 438,
+        "w": 410,
+        "h": 145,
+        "k": "AUTHORIZED COORDINATOR",
+        "title": "Select the resolution",
+        "body": "Destination, priority or quantity",
+        "color": "amber"
+      },
+      {
+        "id": "e",
+        "x": 710,
+        "y": 438,
+        "w": 470,
+        "h": 145,
+        "k": "ACCEPTED PROJECTION",
+        "title": "Retain the decision",
+        "body": "Selected value, policy version and hash",
+        "color": "green"
+      }
+    ],
+    "edges": [
+      {
+        "a": "a",
+        "b": "c",
+        "from": "bottom",
+        "to": "top",
+        "dash": false
+      },
+      {
+        "a": "b",
+        "b": "c",
+        "from": "bottom",
+        "to": "top",
+        "dash": false
+      },
+      {
+        "a": "c",
+        "b": "d",
+        "from": "bottom",
+        "to": "top",
+        "dash": false
+      },
+      {
+        "a": "d",
+        "b": "e",
+        "from": "right",
+        "to": "left",
+        "dash": false
+      }
+    ],
+    "labels": [],
+    "zones": []
+  },
+  "07-route-and-priority": {
+    "title": "Confirmed failures and predictions have different effects",
+    "width": 1200,
+    "height": 600,
+    "nodes": [
+      {
+        "id": "a",
+        "x": 20,
+        "y": 25,
+        "w": 355,
+        "h": 170,
+        "k": "CONFIRMED FAILURE",
+        "title": "Exclude the edge",
+        "body": "Vehicle mode constraints\nremain mandatory.",
+        "color": "red"
+      },
+      {
+        "id": "b",
+        "x": 825,
+        "y": 25,
+        "w": 355,
+        "h": 170,
+        "k": "SIMULATED RISK",
+        "title": "Add advisory cost",
+        "body": "The model does not\nconfirm a closure.",
+        "color": "amber"
+      },
+      {
+        "id": "c",
+        "x": 430,
+        "y": 233,
+        "w": 340,
+        "h": 145,
+        "k": "LOCAL SEARCH",
+        "title": "Calculate a route",
+        "body": "Deterministic path and ETA",
+        "color": "blue"
+      },
+      {
+        "id": "d",
+        "x": 20,
+        "y": 440,
+        "w": 510,
+        "h": 140,
+        "k": "PRIORITY PROPOSAL",
+        "title": "Check time and safe waypoint",
+        "body": "Fresh estimate and slowdown scenario",
+        "color": "amber"
+      },
+      {
+        "id": "e",
+        "x": 700,
+        "y": 440,
+        "w": 480,
+        "h": 140,
+        "k": "HUMAN CONFIRMATION",
+        "title": "Record the assignment change",
+        "body": "Confirmer, cargo, reason and policy",
+        "color": "green"
+      }
+    ],
+    "edges": [
+      {
+        "a": "a",
+        "b": "c",
+        "from": "bottom",
+        "to": "top",
+        "dash": false
+      },
+      {
+        "a": "b",
+        "b": "c",
+        "from": "bottom",
+        "to": "top",
+        "dash": false
+      },
+      {
+        "a": "c",
+        "b": "d",
+        "from": "bottom",
+        "to": "top",
+        "dash": false
+      },
+      {
+        "a": "d",
+        "b": "e",
+        "from": "right",
+        "to": "left",
+        "dash": false
+      }
+    ],
+    "labels": [],
+    "zones": []
+  },
+  "08-users-and-buyers": {
+    "title": "The buyer owns preparedness and maintenance",
+    "width": 1200,
+    "height": 600,
+    "nodes": [
+      {
+        "id": "a",
+        "x": 20,
+        "y": 60,
+        "w": 340,
+        "h": 230,
+        "k": "USES THE PRODUCT",
+        "title": "Field operator",
+        "body": "Records requests\nCarries encrypted messages\nVerifies a handoff",
+        "color": "green"
+      },
+      {
+        "id": "b",
+        "x": 430,
+        "y": 60,
+        "w": 340,
+        "h": 230,
+        "k": "APPROVES ADOPTION",
+        "title": "Institutional sponsor",
+        "body": "Government or NGO team\nBudget and procurement\nNamed operational owner",
+        "color": "blue"
+      },
+      {
+        "id": "c",
+        "x": 840,
+        "y": 60,
+        "w": 340,
+        "h": 230,
+        "k": "RECEIVES THE BENEFIT",
+        "title": "Community",
+        "body": "Continuity of supply records\nAccountable delivery\nOutcomes to be measured",
+        "color": "green"
+      },
+      {
+        "id": "d",
+        "x": 280,
+        "y": 410,
+        "w": 640,
+        "h": 150,
+        "k": "DEPLOYMENT RESPONSIBILITY",
+        "title": "Keep the system ready between events",
+        "body": "Training, devices, maps, credentials and support",
+        "color": "green"
+      }
+    ],
+    "edges": [
+      {
+        "a": "b",
+        "b": "d",
+        "from": "bottom",
+        "to": "top",
+        "dash": false
+      }
+    ],
+    "labels": [
+      {
+        "x": 20,
+        "y": 30,
+        "text": "Buyer hypothesis. Interviews and willingness to pay remain unvalidated.",
+        "size": 24,
+        "color": "amber"
+      }
+    ],
+    "zones": []
+  },
+  "09-route-to-market": {
+    "title": "Each adoption step needs a decision owner",
+    "width": 1200,
+    "height": 600,
+    "nodes": [
+      {
+        "id": "a",
+        "x": 20,
+        "y": 80,
+        "w": 260,
+        "h": 235,
+        "k": "01  DISCOVERY",
+        "title": "Map the workflow",
+        "body": "Find a sponsor and\noperational owner.\nReview procedures.",
+        "color": "green"
+      },
+      {
+        "id": "b",
+        "x": 320,
+        "y": 80,
+        "w": 260,
+        "h": 235,
+        "k": "02  AGREEMENT",
+        "title": "Scope the exercise",
+        "body": "Define data authority,\nacceptance criteria\nand cost.",
+        "color": "blue"
+      },
+      {
+        "id": "c",
+        "x": 620,
+        "y": 80,
+        "w": 260,
+        "h": 235,
+        "k": "03  VALIDATION",
+        "title": "Test performance",
+        "body": "Test physical devices\nand bilingual tasks\nagainst a baseline.",
+        "color": "blue"
+      },
+      {
+        "id": "d",
+        "x": 920,
+        "y": 80,
+        "w": 260,
+        "h": 235,
+        "k": "04  ADOPTION",
+        "title": "Review evidence",
+        "body": "Go, revise or stop.\nAgree support before\nexpanding deployment.",
+        "color": "green"
+      }
+    ],
+    "edges": [
+      {
+        "a": "a",
+        "b": "b",
+        "from": "right",
+        "to": "left",
+        "dash": false
+      },
+      {
+        "a": "b",
+        "b": "c",
+        "from": "right",
+        "to": "left",
+        "dash": false
+      },
+      {
+        "a": "c",
+        "b": "d",
+        "from": "right",
+        "to": "left",
+        "dash": false
+      }
+    ],
+    "labels": [
+      {
+        "x": 20,
+        "y": 400,
+        "text": "Entry offer: a supervised preparedness exercise",
+        "size": 31,
+        "color": "green"
+      },
+      {
+        "x": 20,
+        "y": 454,
+        "text": "Revenue hypothesis: scoped setup and training, followed by agreed readiness support.",
+        "size": 24,
+        "color": "muted"
+      },
+      {
+        "x": 20,
+        "y": 510,
+        "text": "No current contract, institutional endorsement or revenue is claimed.",
+        "size": 23,
+        "color": "amber"
+      }
+    ],
+    "zones": []
+  },
+  "10-pilot-milestones": {
+    "title": "A twelve week exercise creates an adoption decision",
+    "width": 1200,
+    "height": 600,
+    "nodes": [
+      {
+        "id": "a",
+        "x": 20,
+        "y": 70,
+        "w": 260,
+        "h": 240,
+        "k": "WEEKS 1–2",
+        "title": "Agree ownership",
+        "body": "Sponsor and workflow\nPhone selection\nAcceptance criteria",
+        "color": "green"
+      },
+      {
+        "id": "b",
+        "x": 320,
+        "y": 70,
+        "w": 260,
+        "h": 240,
+        "k": "WEEKS 3–5",
+        "title": "Test real phones",
+        "body": "Relay and recovery\nCamera QR verification\nBattery and latency",
+        "color": "blue"
+      },
+      {
+        "id": "c",
+        "x": 620,
+        "y": 70,
+        "w": 260,
+        "h": 240,
+        "k": "WEEKS 6–8",
+        "title": "Observe the users",
+        "body": "Bangla and English\nAccessibility review\nRehearsal and baseline",
+        "color": "blue"
+      },
+      {
+        "id": "d",
+        "x": 920,
+        "y": 70,
+        "w": 260,
+        "h": 240,
+        "k": "WEEKS 9–12",
+        "title": "Review adoption",
+        "body": "Shadow exercise\nIncident and cost review\nGo, revise or stop",
+        "color": "green"
+      }
+    ],
+    "edges": [
+      {
+        "a": "a",
+        "b": "b",
+        "from": "right",
+        "to": "left",
+        "dash": false
+      },
+      {
+        "a": "b",
+        "b": "c",
+        "from": "right",
+        "to": "left",
+        "dash": false
+      },
+      {
+        "a": "c",
+        "b": "d",
+        "from": "right",
+        "to": "left",
+        "dash": false
+      }
+    ],
+    "labels": [
+      {
+        "x": 20,
+        "y": 407,
+        "text": "Technical acceptance",
+        "size": 27,
+        "color": "green"
+      },
+      {
+        "x": 430,
+        "y": 407,
+        "text": "Human acceptance",
+        "size": 27,
+        "color": "blue"
+      },
+      {
+        "x": 815,
+        "y": 407,
+        "text": "Governance acceptance",
+        "size": 27,
+        "color": "green"
+      },
+      {
+        "x": 20,
+        "y": 470,
+        "text": "Proposed schedule. No customer commitment or organizer requirement is implied.",
+        "size": 23,
+        "color": "amber"
+      }
+    ],
+    "zones": []
+  },
+  "11-service-offering": {
+    "title": "Readiness support surrounds the field software",
+    "width": 1200,
+    "height": 600,
+    "nodes": [
+      {
+        "id": "a",
+        "x": 20,
+        "y": 90,
+        "w": 340,
+        "h": 270,
+        "k": "INITIAL ENGAGEMENT",
+        "title": "Prepare the exercise",
+        "body": "Workflow configuration\nDevices and identities\nBundled maps\nBilingual training",
+        "color": "green"
+      },
+      {
+        "id": "b",
+        "x": 430,
+        "y": 90,
+        "w": 340,
+        "h": 270,
+        "k": "ACCEPTANCE",
+        "title": "Produce evidence",
+        "body": "Supervised scenario\nBaseline comparison\nFailure and recovery log\nSponsor review",
+        "color": "blue"
+      },
+      {
+        "id": "c",
+        "x": 840,
+        "y": 90,
+        "w": 340,
+        "h": 270,
+        "k": "ONGOING AGREEMENT",
+        "title": "Maintain readiness",
+        "body": "Release maintenance\nMap refreshes\nCredential administration\nSeasonal rehearsals",
+        "color": "green"
+      }
+    ],
+    "edges": [
+      {
+        "a": "a",
+        "b": "b",
+        "from": "right",
+        "to": "left",
+        "dash": false
+      },
+      {
+        "a": "b",
+        "b": "c",
+        "from": "right",
+        "to": "left",
+        "dash": false
+      }
+    ],
+    "labels": [
+      {
+        "x": 20,
+        "y": 452,
+        "text": "The proposed commercial unit is an institutional service engagement.",
+        "size": 28,
+        "color": "green"
+      },
+      {
+        "x": 20,
+        "y": 510,
+        "text": "Pricing and repeat demand require validation. Sensitive data is not a revenue product.",
+        "size": 23,
+        "color": "muted"
+      }
+    ],
+    "zones": []
+  },
+  "12-market-frame": {
+    "title": "Affected people are beneficiaries rather than paying accounts",
+    "width": 1200,
+    "height": 600,
+    "nodes": [
+      {
+        "id": "a",
+        "x": 20,
+        "y": 70,
+        "w": 345,
+        "h": 270,
+        "k": "NEED CONTEXT",
+        "title": "3.74 million people",
+        "body": "June 2024 assessment\n6 districts\n64 upazilas\n360 unions",
+        "color": "green"
+      },
+      {
+        "id": "b",
+        "x": 430,
+        "y": 70,
+        "w": 345,
+        "h": 270,
+        "k": "REACHABLE SEGMENT",
+        "title": "Institutions with a role",
+        "body": "Relief logistics\nHealth supply coordination\nPreparedness operations\nBudget authority to verify",
+        "color": "blue"
+      },
+      {
+        "id": "c",
+        "x": 840,
+        "y": 70,
+        "w": 345,
+        "h": 270,
+        "k": "FIRST EXERCISE",
+        "title": "One referral chain",
+        "body": "One sponsor\nExperienced relief partner\nNamed operational owner\nBounded device cohort",
+        "color": "green"
+      }
+    ],
+    "edges": [
+      {
+        "a": "a",
+        "b": "b",
+        "from": "right",
+        "to": "left",
+        "dash": false
+      },
+      {
+        "a": "b",
+        "b": "c",
+        "from": "right",
+        "to": "left",
+        "dash": false
+      }
+    ],
+    "labels": [
+      {
+        "x": 20,
+        "y": 434,
+        "text": "Bottom-up sizing follows verified organizations, budgets and purchase cycles.",
+        "size": 27,
+        "color": "green"
+      },
+      {
+        "x": 20,
+        "y": 500,
+        "text": "S03: NAWG June 2024 assessment. Revenue market size is not yet established.",
+        "size": 23,
+        "color": "amber"
+      }
+    ],
+    "zones": []
+  }
+}

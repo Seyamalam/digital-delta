@@ -1,0 +1,184 @@
+[
+  {
+    "report_page": 14,
+    "capture": 1,
+    "file": "screenshots/14-1-00-field-bilingual-language-choice-1280x2856.png",
+    "repository_source": "artifacts/screenshots/field-bn/00-field-bilingual-language-choice-1280x2856.png",
+    "caption": "First-run language choice. Both interfaces are bundled."
+  },
+  {
+    "report_page": 14,
+    "capture": 2,
+    "file": "screenshots/14-2-android-home-bn.png",
+    "repository_source": "artifacts/screenshots/android-home-bn.png",
+    "caption": "Bangla field home with an offline operational context."
+  },
+  {
+    "report_page": 15,
+    "capture": 1,
+    "file": "screenshots/15-1-09-field-bn-offline-provisioning-trusted-1280x2856.png",
+    "repository_source": "artifacts/screenshots/field-bn/09-field-bn-offline-provisioning-trusted-1280x2856.png",
+    "caption": "Bangla provisioning state after trusted credential installation."
+  },
+  {
+    "report_page": 15,
+    "capture": 2,
+    "file": "screenshots/15-2-02-field-en-role-denied-1280x2856.png",
+    "repository_source": "artifacts/screenshots/field-en/02-field-en-role-denied-1280x2856.png",
+    "caption": "English role denial. Unauthorized activity remains blocked."
+  },
+  {
+    "report_page": 16,
+    "capture": 1,
+    "file": "screenshots/16-1-03-field-bn-p0-request-1280x2856.png",
+    "repository_source": "artifacts/screenshots/field-bn/03-field-bn-p0-request-1280x2856.png",
+    "caption": "Bangla urgent request in the field application."
+  },
+  {
+    "report_page": 16,
+    "capture": 2,
+    "file": "screenshots/16-2-03-field-en-p0-request-1280x2856.png",
+    "repository_source": "artifacts/screenshots/field-en/03-field-en-p0-request-1280x2856.png",
+    "caption": "Equivalent English request workflow and priority context."
+  },
+  {
+    "report_page": 17,
+    "capture": 1,
+    "file": "screenshots/17-1-10-field-bn-nearby-relay-active-1280x2856.png",
+    "repository_source": "artifacts/screenshots/field-bn/10-field-bn-nearby-relay-active-1280x2856.png",
+    "caption": "Bangla relay session with explicit active-state information."
+  },
+  {
+    "report_page": 17,
+    "capture": 2,
+    "file": "screenshots/17-2-10-field-en-nearby-relay-active-1280x2856.png",
+    "repository_source": "artifacts/screenshots/field-en/10-field-en-nearby-relay-active-1280x2856.png",
+    "caption": "English relay view from the same evidence family."
+  },
+  {
+    "report_page": 18,
+    "capture": 1,
+    "file": "screenshots/18-1-11-field-en-conflict-review-1280x2856.png",
+    "repository_source": "artifacts/screenshots/field-en/11-field-en-conflict-review-1280x2856.png",
+    "caption": "Two destination versions await a coordinator’s decision."
+  },
+  {
+    "report_page": 18,
+    "capture": 2,
+    "file": "screenshots/18-2-12-field-en-conflict-resolved-1280x2856.png",
+    "repository_source": "artifacts/screenshots/field-en/12-field-en-conflict-resolved-1280x2856.png",
+    "caption": "Resolved state records the choice and convergence evidence."
+  },
+  {
+    "report_page": 19,
+    "capture": 1,
+    "file": "screenshots/19-1-13-field-bn-route-initial-1280x2856.png",
+    "repository_source": "artifacts/screenshots/field-bn/13-field-bn-route-initial-1280x2856.png",
+    "caption": "Initial truck route in the Bangla interface."
+  },
+  {
+    "report_page": 19,
+    "capture": 2,
+    "file": "screenshots/19-2-14-field-en-route-rerouted-1280x2856.png",
+    "repository_source": "artifacts/screenshots/field-en/14-field-en-route-rerouted-1280x2856.png",
+    "caption": "English view after the simulated failure selects a boat route."
+  },
+  {
+    "report_page": 20,
+    "capture": 1,
+    "file": "screenshots/20-1-15-field-en-triage-preemption-1280x2856.png",
+    "repository_source": "artifacts/screenshots/field-en/15-field-en-triage-preemption-1280x2856.png",
+    "caption": "A preemption proposal explains the simulated SLA problem."
+  },
+  {
+    "report_page": 20,
+    "capture": 2,
+    "file": "screenshots/20-2-16-field-bn-triage-confirmed-1280x2856.png",
+    "repository_source": "artifacts/screenshots/field-bn/16-field-bn-triage-confirmed-1280x2856.png",
+    "caption": "Bangla confirmed state retains the decision in the mission."
+  },
+  {
+    "report_page": 21,
+    "capture": 1,
+    "file": "screenshots/21-1-20-field-bn-onnx-risk-reroute.png",
+    "repository_source": "artifacts/screenshots/field-bn/20-field-bn-onnx-risk-reroute.png",
+    "caption": "Bangla model output with visible simulation labelling."
+  },
+  {
+    "report_page": 21,
+    "capture": 2,
+    "file": "screenshots/21-2-20-field-en-onnx-risk-reroute.png",
+    "repository_source": "artifacts/screenshots/field-en/20-field-en-onnx-risk-reroute.png",
+    "caption": "English risk interpretation and proactive route result."
+  },
+  {
+    "report_page": 22,
+    "capture": 1,
+    "file": "screenshots/22-1-17-field-en-pod-verified.png",
+    "repository_source": "artifacts/screenshots/field-en/17-field-en-pod-verified.png",
+    "caption": "Signed receipt accepted."
+  },
+  {
+    "report_page": 22,
+    "capture": 2,
+    "file": "screenshots/22-2-18-field-en-pod-replay-rejected.png",
+    "repository_source": "artifacts/screenshots/field-en/18-field-en-pod-replay-rejected.png",
+    "caption": "Repeated offer rejected."
+  },
+  {
+    "report_page": 22,
+    "capture": 3,
+    "file": "screenshots/22-3-19-field-bn-pod-tamper-rejected.png",
+    "repository_source": "artifacts/screenshots/field-bn/19-field-bn-pod-tamper-rejected.png",
+    "caption": "Altered offer rejected in Bangla."
+  },
+  {
+    "report_page": 23,
+    "capture": 1,
+    "file": "screenshots/23-1-24-field-en-hybrid-replanned-1280x2856.png",
+    "repository_source": "artifacts/screenshots/field-en/24-field-en-hybrid-replanned-1280x2856.png",
+    "caption": "Delayed boat state triggers a revised meeting point."
+  },
+  {
+    "report_page": 23,
+    "capture": 2,
+    "file": "screenshots/23-2-22-field-bn-hybrid-transferred.png",
+    "repository_source": "artifacts/screenshots/field-bn/22-field-bn-hybrid-transferred.png",
+    "caption": "Bangla transfer state records linked custody evidence."
+  },
+  {
+    "report_page": 24,
+    "capture": 1,
+    "file": "screenshots/24-1-23-field-bn-offline-geographic-map-1280x2856.png",
+    "repository_source": "artifacts/screenshots/field-bn/23-field-bn-offline-geographic-map-1280x2856.png",
+    "caption": "Bangla map renderer with local geography and mission overlays."
+  },
+  {
+    "report_page": 24,
+    "capture": 2,
+    "file": "screenshots/24-2-23-field-en-offline-geographic-map-1280x2856.png",
+    "repository_source": "artifacts/screenshots/field-en/23-field-en-offline-geographic-map-1280x2856.png",
+    "caption": "English renderer using the same offline source boundary."
+  },
+  {
+    "report_page": 25,
+    "capture": 1,
+    "file": "screenshots/25-1-02-command-en-live-overview-1920x1080.png",
+    "repository_source": "artifacts/screenshots/command-en/02-command-en-live-overview-1920x1080.png",
+    "caption": "English live-observer dashboard at 1920 × 1080. Original full-frame capture."
+  },
+  {
+    "report_page": 26,
+    "capture": 1,
+    "file": "screenshots/26-1-01-command-bn-live-overview-1366x768.png",
+    "repository_source": "artifacts/screenshots/command-bn/01-command-bn-live-overview-1366x768.png",
+    "caption": "Bangla overview at the 1366 × 768 projector target."
+  },
+  {
+    "report_page": 26,
+    "capture": 2,
+    "file": "screenshots/26-2-03-command-en-dashboard-disconnected-1366x768.png",
+    "repository_source": "artifacts/screenshots/command-en/03-command-en-dashboard-disconnected-1366x768.png",
+    "caption": "Disconnected English observer state explains the connection loss."
+  }
+]
