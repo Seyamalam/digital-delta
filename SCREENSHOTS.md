@@ -73,6 +73,7 @@ These are real emulator captures from the working application, not final submiss
 | On-device ONNX risk prediction and proactive boat reroute | Captured | Captured | `artifacts/screenshots/field-bn/20-field-bn-onnx-risk-reroute.png`, `artifacts/screenshots/field-en/20-field-en-onnx-risk-reroute.png` |
 | Drone-required reachability, rendezvous, ETA, and battery reserve | Captured | Captured | `artifacts/screenshots/field-bn/21-field-bn-hybrid-ready.png`, `artifacts/screenshots/field-en/21-field-en-hybrid-ready.png` |
 | Signed boat-to-simulated-drone custody receipt | Captured | Captured | `artifacts/screenshots/field-bn/22-field-bn-hybrid-transferred.png`, `artifacts/screenshots/field-en/22-field-en-hybrid-transferred.png` |
+| Verified offline Android geographic map | Captured | Captured | `artifacts/screenshots/field-bn/23-field-bn-offline-geographic-map-1280x2856.png`, `artifacts/screenshots/field-en/23-field-en-offline-geographic-map-1280x2856.png` |
 | Camera scanner for provisioning and PoD | Pending physical-device pair | Pending physical-device pair | CameraX and bundled-model implementation is verified; do not substitute a camera-less emulator capture for the required evidence. |
 
 ## Field application shots
@@ -89,7 +90,7 @@ These are real emulator captures from the working application, not final submiss
 - [ ] Syncing state
 - [x] Conflict-detected state in the current Android emulator build
 - [x] Human conflict resolution in the current Android emulator build; final bilingual hero pair remains
-- [x] Route and vehicle assignment in the current Android emulator build; MapLibre final map remains
+- [x] Route and vehicle assignment on the checksum-pinned MapLibre Native geographic map in both languages
 - [x] SLA breach warning in the current Android emulator build
 - [x] Drop-and-reroute confirmation in the current Android emulator build; physical cargo movement is simulated
 - [x] QR handoff generation in the current Android emulator build

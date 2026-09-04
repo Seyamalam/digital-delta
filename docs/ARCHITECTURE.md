@@ -164,6 +164,8 @@ The React dashboard is a disposable projection and starts from the deterministic
 
 The projector map does not fetch public raster tiles at runtime. MapLibre GL reads the reviewed `public/maps/sylhet.pmtiles` archive over the laptop's local HTTP server; its SHA-256 is checked by the local verification gate. The vector archive supplies real OpenStreetMap-derived geography and attribution. Route, risk, node, rendezvous, and simulated-airway facts remain in a separate mission GeoJSON source so rehearsed data cannot be mistaken for map observations.
 
+The Android field map follows the same provenance boundary. `apps/command/scripts/export-android-map.mjs` deterministically extracts a RAM-bounded zoom-10 geographic view from that reviewed archive into a 4.4 MB GeoJSON asset. The asset records the source-archive hash, extraction bounds, and attribution, and has its own checked SHA-256. A lifecycle-aware Compose adapter gives MapLibre Native two local in-memory sources: OSM-derived basemap geography and independently generated mission state. Runtime connectivity is disabled, the style contains no glyph, sprite, or network URLs, and the previous Compose route diagram is displayed only if asset verification or native rendering fails.
+
 ## Local storage
 
 Suggested tables:

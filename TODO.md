@@ -20,7 +20,7 @@ This checklist tracks implementation. Milestone exit criteria live in [MILESTONE
 - [x] Add root setup, format, lint, test, seed, recoverable reset, and demo commands through the Makefile and local scripts.
 - [x] Add an environment example with the local observer URL and no secrets.
 - [x] Scaffold the Android project with Gradle Kotlin DSL and a version catalog.
-- [ ] Add the complete Android dependency set. Compose, Material 3, Navigation 3, ZXing, Protobuf Lite, gRPC OkHttp, Hilt, Room, DataStore, Nearby Connections, WorkManager, ONNX Runtime, CameraX, bundled ML Kit, and test dependencies are present; MapLibre Native remains. Direct audited JCA primitives currently replace Tink.
+- [x] Add the complete Android dependency set. Compose, Material 3, Navigation 3, ZXing, Protobuf Lite, gRPC OkHttp, Hilt, Room, DataStore, Nearby Connections, WorkManager, ONNX Runtime, CameraX, bundled ML Kit, MapLibre Native, and test dependencies are present. Direct audited JCA primitives replace Tink.
 - [x] Add a local Kotlin and Android verification runner; extend it for Go, TypeScript, and Protobuf compatibility as those projects land. Hosted CI and GitHub Actions are deliberately excluded.
 - [ ] Add deterministic clocks, random seeds, and device IDs for demo scenarios.
 - [x] Add a fixture validator for node and edge references through `SylhetMapParser` and the bundled-asset connected test.
@@ -116,9 +116,9 @@ This checklist tracks implementation. Milestone exit criteria live in [MILESTONE
 - [x] Apply M7 risk penalties without treating predictions as facts.
 - [x] Recompute the active demo mission after the `E3` edge-failure event; generalized multi-mission observation remains.
 - [x] Record computation latency and selected fallback policy in the live route state; persistent reports remain.
-- [x] Render the real computed edge sequence using bundled offline scenario data and a Compose canvas.
-- [ ] Embed MapLibre Native Android in Compose through an adapter.
-- [ ] Package and verify the offline Sylhet map region in Android. The projector already uses a checksum-pinned local PMTiles region with visible OpenStreetMap attribution.
+- [x] Render the real computed edge sequence using bundled offline scenario data; the Compose canvas is retained only as an explicit renderer-failure fallback.
+- [x] Embed MapLibre Native Android in Compose through a lifecycle-aware adapter with a local-only style and graceful route-diagram fallback.
+- [x] Package and verify the offline Sylhet geographic region in Android. Its 1,576 OSM-derived features are deterministically exported from the same checksum-pinned PMTiles archive as the projector and retain visible OpenStreetMap attribution.
 - [x] Explain why the preferred truck path was selected or rejected and why boat precedes simulated air fallback.
 
 ## M5 proof of delivery
