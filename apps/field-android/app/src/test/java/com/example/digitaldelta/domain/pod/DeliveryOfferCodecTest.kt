@@ -72,6 +72,40 @@ class DeliveryOfferCodecTest {
         )
     }
 
+    @Test
+    fun `unknown sender key is rejected before signature trust`() {
+        assertEquals(
+            DeliveryOfferRejection.UNKNOWN_SIGNING_KEY,
+            (codec.verifyCode(validCode(), null) as DeliveryOfferVerification.Rejected).reason,
+        )
+    }
+
+    @Test
+    fun `fresh offer signed by expired credential is rejected`() {
+        assertEquals(
+            DeliveryOfferRejection.CREDENTIAL_EXPIRED,
+            (
+                codec.verifyCode(
+                    validCode(),
+                    trusted(now).copy(credentialValidUntilUnixMs = now - 1),
+                ) as DeliveryOfferVerification.Rejected
+            ).reason,
+        )
+    }
+
+    @Test
+    fun `revoked credential is rejected even inside validity window`() {
+        assertEquals(
+            DeliveryOfferRejection.CREDENTIAL_REVOKED,
+            (
+                codec.verifyCode(
+                    validCode(),
+                    trusted(now).copy(credentialRevokedAtUnixMs = now - 1),
+                ) as DeliveryOfferVerification.Rejected
+            ).reason,
+        )
+    }
+
     private fun validCode(): String = codec.createCode(draft(), signer)
 
     private fun draft() = DeliveryOfferDraft(

@@ -5,6 +5,7 @@ import com.example.digitaldelta.data.local.DeltaDatabase
 import com.example.digitaldelta.data.local.OperationEntity
 import com.example.digitaldelta.data.local.UsedNonceEntity
 import com.example.digitaldelta.domain.identity.AndroidDeviceIdentityKeyStore
+import com.example.digitaldelta.domain.identity.InstalledIdentityCredential
 import com.example.digitaldelta.proto.v1.CustodyTransfer
 import com.example.digitaldelta.proto.v1.DeliveryOffer
 import com.example.digitaldelta.proto.v1.DomainEvent
@@ -87,6 +88,7 @@ class RoomProofOfDeliveryWorkflow(
         ByteArray(16).also(SecureRandom()::nextBytes)
     },
     private val eventId: () -> String = { "custody-${UUID.randomUUID()}" },
+    private val senderCredentialLookup: suspend (String) -> InstalledIdentityCredential? = { null },
 ) : ProofOfDeliveryWorkflow {
     private val payloadHash = sha256(scenario.payloadDescription.encodeToByteArray())
 
@@ -133,20 +135,41 @@ class RoomProofOfDeliveryWorkflow(
 
     private suspend fun verifyInternal(code: String): DeliveryReceiptResult {
         val chainBefore = reconstructChainInternal().receipts
-        val senderIdentity = deviceKeys.createOrGet(scenario.senderNodeId)
-        val verification = codec.verifyCode(
-            code,
-            TrustedDeliveryContext(
+        val installedSender = senderCredentialLookup(scenario.senderNodeId)
+            ?.takeIf { it.identityId == scenario.senderIdentityId }
+        val trustedSender = when {
+            installedSender != null -> TrustedDeliveryContext(
                 deliveryId = scenario.deliveryId,
                 missionId = scenario.missionId,
                 senderIdentityId = scenario.senderIdentityId,
                 recipientIdentityId = scenario.recipientIdentityId,
                 payloadSha256 = payloadHash,
-                senderSigningKeyId = senderIdentity.signingKeyId,
-                senderSigningPublicKeyDer = senderIdentity.signingPublicKeyDer,
+                senderSigningKeyId = installedSender.signingKeyId,
+                senderSigningPublicKeyDer = installedSender.signingPublicKeyDer,
                 nowUnixMs = nowUnixMs(),
                 allowedClockSkewMs = ALLOWED_CLOCK_SKEW_MS,
-            ),
+                credentialValidUntilUnixMs = installedSender.expiresAtUnixMs,
+                credentialRevokedAtUnixMs = installedSender.revokedAtUnixMs,
+            )
+            scenario.simulatedVehicle -> {
+                val localDemoIdentity = deviceKeys.createOrGet(scenario.senderNodeId)
+                TrustedDeliveryContext(
+                    deliveryId = scenario.deliveryId,
+                    missionId = scenario.missionId,
+                    senderIdentityId = scenario.senderIdentityId,
+                    recipientIdentityId = scenario.recipientIdentityId,
+                    payloadSha256 = payloadHash,
+                    senderSigningKeyId = localDemoIdentity.signingKeyId,
+                    senderSigningPublicKeyDer = localDemoIdentity.signingPublicKeyDer,
+                    nowUnixMs = nowUnixMs(),
+                    allowedClockSkewMs = ALLOWED_CLOCK_SKEW_MS,
+                )
+            }
+            else -> null
+        }
+        val verification = codec.verifyCode(
+            code,
+            trustedSender,
         )
         if (verification is DeliveryOfferVerification.Rejected) {
             return DeliveryReceiptResult.Rejected(verification.reason, chainBefore)
@@ -281,7 +304,7 @@ class RoomProofOfDeliveryWorkflow(
             .build()
     }
 
-    private fun verifyTransferSignatures(transfer: CustodyTransfer): Boolean {
+    private suspend fun verifyTransferSignatures(transfer: CustodyTransfer): Boolean {
         val offer = DeliveryOffer.newBuilder()
             .setDeliveryId(transfer.deliveryId)
             .setMissionId(scenario.missionId)
@@ -293,10 +316,19 @@ class RoomProofOfDeliveryWorkflow(
             .setPreviousReceiptSha256(transfer.previousReceiptSha256)
             .setSimulatedVehicle(transfer.simulatedVehicle)
             .build()
-        val sender = deviceKeys.createOrGet(scenario.senderNodeId)
+        val installedSender = senderCredentialLookup(scenario.senderNodeId)
+            ?.takeIf { it.identityId == scenario.senderIdentityId }
+        val sender = if (installedSender == null && scenario.simulatedVehicle) {
+            deviceKeys.createOrGet(scenario.senderNodeId)
+        } else {
+            null
+        }
+        val senderSigningPublicKeyDer = installedSender?.signingPublicKeyDer ?: sender?.signingPublicKeyDer
+            ?: return false
+        val senderSigningKeyId = installedSender?.signingKeyId ?: sender?.signingKeyId ?: return false
         val senderValid = verifySignature(
-            sender.signingPublicKeyDer,
-            sender.signingKeyId,
+            senderSigningPublicKeyDer,
+            senderSigningKeyId,
             offer.toByteArray(),
             transfer.senderSignature,
         )

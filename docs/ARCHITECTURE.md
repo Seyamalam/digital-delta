@@ -156,6 +156,8 @@ Payload encryption is hybrid: each message receives a random AES-256-GCM content
 
 Provisioning, recipient credentials, and delivery handoffs use one lifecycle-bound CameraX preview with the bundled ML Kit barcode model. No camera frame or decoded QR is written to disk by the scanner. A small purpose gate rejects QR text from the wrong workflow before forwarding the exact decoded value to the existing credential or proof verifier; prefixes are routing hints, never security authority. Signature, trust, expiry, delivery, payload-hash, and nonce checks remain mandatory after scanning. Manual paste stays available for accessibility and camera failure, and denial of camera permission does not block the rest of the offline field application.
 
+For a non-simulated handoff, the QR's sender key is accepted only when it matches an installed administrator-signed sender credential that is inside its validity window and not revoked. Missing, expired, revoked, or mismatched trust is rejected before nonce claim or custody mutation. The single-phone rehearsal may use its local sender key only when the vehicle and flow are visibly marked simulated; this exception does not exist for operational events.
+
 ### Dashboard observation
 
 Field nodes publish `DomainEvent` messages to the Go `ObserverService` over local gRPC when the laptop is reachable. The Go service assigns a durable ordered sequence and supports cursor replay. A server-sent event bridge converts each stored event into a strict allow-listed JSON presentation object for the browser. It never serializes mesh envelopes, encrypted payloads, wrapped content keys, or signature bytes. JSON exists only across this laptop-local presentation boundary and must never be confused with the Protobuf mesh format.

@@ -222,7 +222,12 @@ object AppModule {
     fun provideProofOfDeliveryWorkflow(
         database: DeltaDatabase,
         deviceKeys: AndroidDeviceIdentityKeyStore,
-    ): ProofOfDeliveryWorkflow = RoomProofOfDeliveryWorkflow(database, deviceKeys)
+        recipients: RecipientProvisioningRepository,
+    ): ProofOfDeliveryWorkflow = RoomProofOfDeliveryWorkflow(
+        database,
+        deviceKeys,
+        senderCredentialLookup = recipients::installedIdentity,
+    )
 
     @Provides
     @Singleton
@@ -230,6 +235,7 @@ object AppModule {
         @ApplicationContext context: Context,
         database: DeltaDatabase,
         deviceKeys: AndroidDeviceIdentityKeyStore,
+        recipients: RecipientProvisioningRepository,
     ): HybridFleetWorkflow {
         val fixture = context.assets.open("sylhet_map.json").bufferedReader().use { it.readText() }
         val graph = SylhetMapParser().parse(fixture).graph
@@ -271,6 +277,7 @@ object AppModule {
                 scenarioSeed = "m8-drone-handoff-v1",
                 simulatedVehicle = true,
             ),
+            senderCredentialLookup = recipients::installedIdentity,
         )
         return DefaultHybridFleetWorkflow(
             mission = mission,

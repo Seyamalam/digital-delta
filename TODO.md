@@ -126,14 +126,14 @@ This checklist tracks implementation. Milestone exit criteria live in [MILESTONE
 - [x] Generate QR images with ZXing Core.
 - [ ] Scan with the bundled ML Kit barcode model and verify airplane-mode behavior. The CameraX scanner, workflow-specific QR gate, automatic verification handoff, permission fallback, JVM tests, APK model check, and connected-test compilation pass; a real camera-in-airplane-mode run remains.
 - [x] Build the signed Protobuf QR payload with the required delivery, identity, hash, nonce, timestamp, and previous-receipt fields.
-- [x] Verify the seeded sender key, signature, payload hash, nonce, timestamp, delivery, mission, and recipient offline. Cross-phone credential binding remains.
+- [x] Verify the sender key, signature, payload hash, nonce, timestamp, delivery, mission, and recipient offline. Non-simulated handoffs require an installed administrator-signed sender credential; the self-contained seeded flow is allowed only while visibly simulated.
 - [x] Add atomic Room nonce persistence and replay rejection.
 - [x] Add bounded ten-minute field clock-skew handling with boundary tests.
-- [ ] Add credential expiry and manual override policy. QR timestamp expiry is enforced; credential override is not.
+- [x] Add credential expiry and manual override policy. Offer time and sender-credential validity are separately enforced; expired or revoked credentials cannot be manually resurrected and require a new administrator-signed credential.
 - [x] Link each receipt to the previous custody receipt hash.
 - [x] Display verifier result and exact rejection reason in Bangla and English.
 - [x] Reconstruct and cryptographically verify the complete local receipt chain.
-- [ ] Test altered QR fields, reused QR, unknown key, expired key, and wrong delivery. Altered fields, reuse, clock expiry, and wrong delivery pass; unknown and expired credential cases remain.
+- [x] Test altered QR fields, reused QR, unknown key, expired key, and wrong delivery. Each rejection preserves the nonce store and custody chain; revoked credential rejection is also covered.
 
 ## M6 triage and priority preemption
 

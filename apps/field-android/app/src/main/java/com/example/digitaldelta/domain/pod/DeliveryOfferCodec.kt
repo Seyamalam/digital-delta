@@ -38,6 +38,8 @@ data class TrustedDeliveryContext(
     val senderSigningPublicKeyDer: ByteArray,
     val nowUnixMs: Long,
     val allowedClockSkewMs: Long,
+    val credentialValidUntilUnixMs: Long = Long.MAX_VALUE,
+    val credentialRevokedAtUnixMs: Long? = null,
 )
 
 interface DeliverySigningKey {
@@ -72,6 +74,9 @@ class RsaPssDeliverySigner(
 
 enum class DeliveryOfferRejection {
     MALFORMED,
+    UNKNOWN_SIGNING_KEY,
+    CREDENTIAL_EXPIRED,
+    CREDENTIAL_REVOKED,
     KEY_MISMATCH,
     INVALID_SIGNATURE,
     WRONG_DELIVERY,
@@ -136,10 +141,18 @@ class DeliveryOfferCodec {
         return CODE_PREFIX + Base64.getUrlEncoder().withoutPadding().encodeToString(tampered.toByteArray())
     }
 
-    fun verifyCode(code: String, trusted: TrustedDeliveryContext): DeliveryOfferVerification {
-        require(trusted.allowedClockSkewMs >= 0) { "allowed clock skew cannot be negative" }
+    fun verifyCode(code: String, trusted: TrustedDeliveryContext?): DeliveryOfferVerification {
         val signed = runCatching { decodeCode(code) }.getOrElse {
             return DeliveryOfferVerification.Rejected(DeliveryOfferRejection.MALFORMED)
+        }
+        if (trusted == null) return rejected(DeliveryOfferRejection.UNKNOWN_SIGNING_KEY)
+        require(trusted.allowedClockSkewMs >= 0) { "allowed clock skew cannot be negative" }
+        if (trusted.nowUnixMs < 0) return rejected(DeliveryOfferRejection.CLOCK_SKEW)
+        if (trusted.credentialRevokedAtUnixMs?.let { it <= trusted.nowUnixMs } == true) {
+            return rejected(DeliveryOfferRejection.CREDENTIAL_REVOKED)
+        }
+        if (trusted.nowUnixMs >= trusted.credentialValidUntilUnixMs) {
+            return rejected(DeliveryOfferRejection.CREDENTIAL_EXPIRED)
         }
         val offer = signed.offer
         if (!MessageDigest.isEqual(
@@ -177,7 +190,7 @@ class DeliveryOfferCodec {
         if (!MessageDigest.isEqual(offer.payloadSha256.toByteArray(), trusted.payloadSha256)) {
             return rejected(DeliveryOfferRejection.PAYLOAD_HASH_MISMATCH)
         }
-        if (offer.timestampUnixMs < 0 || trusted.nowUnixMs < 0) {
+        if (offer.timestampUnixMs < 0) {
             return rejected(DeliveryOfferRejection.CLOCK_SKEW)
         }
         val clockDelta = if (trusted.nowUnixMs >= offer.timestampUnixMs) {

@@ -123,7 +123,7 @@ The final policy will use explicit permissions rather than hard-coded screen nam
 - Preemption that changes cargo custody requires human confirmation.
 - The simulated drone cannot imply flight control or regulatory compliance.
 - When identity or route state is uncertain, the interface must say so.
-- A manual override records actor, reason, prior state, and resulting state.
+- An operational manual override records actor, reason, prior state, and resulting state. Identity expiry and revocation have no field override: a new administrator-signed credential is required.
 
 ## Security test cases
 

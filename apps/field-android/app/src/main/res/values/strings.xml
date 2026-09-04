@@ -209,9 +209,15 @@
     <string name="prepare_next_handoff">Prepare next linked handoff</string>
     <string name="signature_rejected">Altered QR rejected</string>
     <string name="handoff_rejected">Handoff rejected</string>
+    <string name="unknown_sender_rejected">Unknown sender rejected</string>
+    <string name="expired_credential_rejected">Expired credential rejected</string>
+    <string name="revoked_credential_rejected">Revoked credential rejected</string>
     <string name="signature_rejection_explanation">The signed fields changed. The nonce and custody chain were not updated.</string>
     <string name="clock_skew_explanation">The offer is outside the allowed time window. Confirm both device clocks and create a new offer.</string>
     <string name="key_mismatch_explanation">The sender key does not match the trusted identity. Confirm provisioning before retrying.</string>
+    <string name="unknown_sender_explanation">No trusted credential is installed for this sender. Custody did not change.</string>
+    <string name="expired_credential_explanation">The sender credential has expired. Install a renewed administrator-signed credential.</string>
+    <string name="revoked_credential_explanation">The sender credential was revoked. The handoff is blocked and custody did not change.</string>
     <string name="handoff_rejection_explanation">A required delivery field did not match. Custody did not change.</string>
     <string name="relay_notification_channel">Nearby disaster relay</string>
     <string name="relay_notification_title">রিলে সক্রিয় • Relay active</string>

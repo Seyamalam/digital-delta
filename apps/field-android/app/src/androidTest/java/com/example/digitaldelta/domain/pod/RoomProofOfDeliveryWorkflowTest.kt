@@ -6,6 +6,8 @@ import androidx.test.core.app.ApplicationProvider
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.example.digitaldelta.data.local.DeltaDatabase
 import com.example.digitaldelta.domain.identity.AndroidDeviceIdentityKeyStore
+import com.example.digitaldelta.domain.identity.InstalledIdentityCredential
+import com.example.digitaldelta.proto.v1.IdentityRole
 import com.example.digitaldelta.proto.v1.DomainEvent
 import kotlinx.coroutines.test.runTest
 import org.junit.After
@@ -129,6 +131,60 @@ class RoomProofOfDeliveryWorkflowTest {
         assertEquals("simulated-drone-07", event.custodyTransfer.recipientIdentityId)
         assertTrue(event.custodyTransfer.recipientSignature.rsa2048PssSha256.size() > 0)
         assertEquals("m8-drone-handoff-v1", event.scenarioSeed)
+    }
+
+    @Test
+    fun realSenderWithoutInstalledCredentialIsRejectedWithoutClaimingNonce() = runTest {
+        val workflow = RoomProofOfDeliveryWorkflow(
+            database = database,
+            deviceKeys = AndroidDeviceIdentityKeyStore(),
+            scenario = RoomProofOfDeliveryWorkflow.DEFAULT_SCENARIO.copy(simulatedVehicle = false),
+            nowUnixMs = { now },
+            nonceBytes = { ByteArray(16) { it.toByte() } },
+            eventId = { "must-not-be-recorded" },
+            senderCredentialLookup = { null },
+        )
+
+        val result = workflow.verify(workflow.prepare().qrCode) as DeliveryReceiptResult.Rejected
+
+        assertEquals(DeliveryOfferRejection.UNKNOWN_SIGNING_KEY, result.reason)
+        assertTrue(result.preservedChain.isEmpty())
+        assertTrue(database.operationLogDao().forMission("mission-pod-demo-01").isEmpty())
+    }
+
+    @Test
+    fun realSenderWithExpiredCredentialIsRejectedWithoutChangingCustody() = runTest {
+        val keys = AndroidDeviceIdentityKeyStore()
+        val publicIdentity = keys.createOrGet(RoomProofOfDeliveryWorkflow.DEFAULT_SCENARIO.senderNodeId)
+        val expired = InstalledIdentityCredential(
+            credentialId = "cred-expired-sender",
+            identityId = RoomProofOfDeliveryWorkflow.DEFAULT_SCENARIO.senderIdentityId,
+            nodeId = RoomProofOfDeliveryWorkflow.DEFAULT_SCENARIO.senderNodeId,
+            role = IdentityRole.IDENTITY_ROLE_DRIVER,
+            encryptionKeyId = publicIdentity.encryptionKeyId,
+            encryptionPublicKeyDer = publicIdentity.encryptionPublicKeyDer,
+            signingKeyId = publicIdentity.signingKeyId,
+            signingPublicKeyDer = publicIdentity.signingPublicKeyDer,
+            issuerIdentityId = "admin-sylhet-01",
+            issuedAtUnixMs = now - 60_000,
+            expiresAtUnixMs = now,
+            revokedAtUnixMs = null,
+        )
+        val workflow = RoomProofOfDeliveryWorkflow(
+            database = database,
+            deviceKeys = keys,
+            scenario = RoomProofOfDeliveryWorkflow.DEFAULT_SCENARIO.copy(simulatedVehicle = false),
+            nowUnixMs = { now },
+            nonceBytes = { ByteArray(16) { it.toByte() } },
+            eventId = { "must-not-be-recorded" },
+            senderCredentialLookup = { expired },
+        )
+
+        val result = workflow.verify(workflow.prepare().qrCode) as DeliveryReceiptResult.Rejected
+
+        assertEquals(DeliveryOfferRejection.CREDENTIAL_EXPIRED, result.reason)
+        assertTrue(result.preservedChain.isEmpty())
+        assertTrue(database.operationLogDao().forMission("mission-pod-demo-01").isEmpty())
     }
 
     private fun workflow() = RoomProofOfDeliveryWorkflow(

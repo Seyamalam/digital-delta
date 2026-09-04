@@ -2783,6 +2783,9 @@ private fun rejectionTitle(reason: com.example.digitaldelta.domain.pod.DeliveryO
         when (reason) {
             com.example.digitaldelta.domain.pod.DeliveryOfferRejection.REPLAY_REJECTED -> R.string.replay_rejected
             com.example.digitaldelta.domain.pod.DeliveryOfferRejection.INVALID_SIGNATURE -> R.string.signature_rejected
+            com.example.digitaldelta.domain.pod.DeliveryOfferRejection.UNKNOWN_SIGNING_KEY -> R.string.unknown_sender_rejected
+            com.example.digitaldelta.domain.pod.DeliveryOfferRejection.CREDENTIAL_EXPIRED -> R.string.expired_credential_rejected
+            com.example.digitaldelta.domain.pod.DeliveryOfferRejection.CREDENTIAL_REVOKED -> R.string.revoked_credential_rejected
             else -> R.string.handoff_rejected
         },
         language,
@@ -2797,6 +2800,9 @@ private fun rejectionExplanation(
         com.example.digitaldelta.domain.pod.DeliveryOfferRejection.REPLAY_REJECTED -> R.string.replay_explanation
         com.example.digitaldelta.domain.pod.DeliveryOfferRejection.INVALID_SIGNATURE -> R.string.signature_rejection_explanation
         com.example.digitaldelta.domain.pod.DeliveryOfferRejection.CLOCK_SKEW -> R.string.clock_skew_explanation
+        com.example.digitaldelta.domain.pod.DeliveryOfferRejection.UNKNOWN_SIGNING_KEY -> R.string.unknown_sender_explanation
+        com.example.digitaldelta.domain.pod.DeliveryOfferRejection.CREDENTIAL_EXPIRED -> R.string.expired_credential_explanation
+        com.example.digitaldelta.domain.pod.DeliveryOfferRejection.CREDENTIAL_REVOKED -> R.string.revoked_credential_explanation
         com.example.digitaldelta.domain.pod.DeliveryOfferRejection.KEY_MISMATCH -> R.string.key_mismatch_explanation
         else -> R.string.handoff_rejection_explanation
     },

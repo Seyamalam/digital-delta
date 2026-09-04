@@ -209,9 +209,15 @@
     <string name="prepare_next_handoff">পরের সংযুক্ত হস্তান্তর তৈরি করুন</string>
     <string name="signature_rejected">পরিবর্তিত QR প্রত্যাখ্যাত</string>
     <string name="handoff_rejected">হস্তান্তর প্রত্যাখ্যাত</string>
+    <string name="unknown_sender_rejected">অজানা প্রেরক প্রত্যাখ্যাত</string>
+    <string name="expired_credential_rejected">মেয়াদোত্তীর্ণ পরিচয়পত্র প্রত্যাখ্যাত</string>
+    <string name="revoked_credential_rejected">বাতিল পরিচয়পত্র প্রত্যাখ্যাত</string>
     <string name="signature_rejection_explanation">স্বাক্ষরিত তথ্য বদলেছে। নন্স ও হেফাজত ধারা অপরিবর্তিত আছে।</string>
     <string name="clock_skew_explanation">প্রস্তাবটি অনুমোদিত সময়সীমার বাইরে। দুই ডিভাইসের সময় মিলিয়ে নতুন প্রস্তাব তৈরি করুন।</string>
     <string name="key_mismatch_explanation">প্রেরকের কী বিশ্বস্ত পরিচয়ের সঙ্গে মেলেনি। আবার চেষ্টা করার আগে নিবন্ধন যাচাই করুন।</string>
+    <string name="unknown_sender_explanation">এই প্রেরকের কোনো বিশ্বস্ত পরিচয়পত্র নেই। হেফাজত বদলায়নি।</string>
+    <string name="expired_credential_explanation">প্রেরকের পরিচয়পত্রের মেয়াদ শেষ। প্রশাসকের স্বাক্ষরিত নবায়ন করা পরিচয়পত্র যোগ করুন।</string>
+    <string name="revoked_credential_explanation">প্রেরকের পরিচয়পত্র বাতিল হয়েছে। হস্তান্তর বন্ধ এবং হেফাজত অপরিবর্তিত।</string>
     <string name="handoff_rejection_explanation">প্রয়োজনীয় সরবরাহ তথ্য মেলেনি। হেফাজত বদলায়নি।</string>
     <string name="relay_notification_channel">নিকটবর্তী দুর্যোগ রিলে</string>
     <string name="relay_notification_title">রিলে সক্রিয় • Relay active</string>
