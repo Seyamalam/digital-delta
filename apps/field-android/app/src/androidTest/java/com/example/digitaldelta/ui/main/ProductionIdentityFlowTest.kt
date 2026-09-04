@@ -31,10 +31,10 @@ class ProductionIdentityFlowTest {
         composeTestRule.onNode(hasTestTag("profile-RELAY_R1")).assertIsDisplayed()
         composeTestRule.onNode(hasScrollAction()).performScrollToNode(hasTestTag("enrollment-card"))
         composeTestRule.onNode(hasTestTag("enrollment-card")).assertIsDisplayed()
-        composeTestRule.onNode(hasScrollAction()).performScrollToNode(hasTestTag("scan-admin-trust"))
-        composeTestRule.onNode(hasTestTag("scan-admin-trust")).assertIsDisplayed()
         composeTestRule.onNode(hasScrollAction()).performScrollToNode(hasTestTag("scan-recipient-credential"))
         composeTestRule.onNode(hasTestTag("scan-recipient-credential")).assertIsDisplayed()
+        composeTestRule.onNode(hasScrollAction()).performScrollToNode(hasTestTag("scan-credential-revocation"))
+        composeTestRule.onNode(hasTestTag("scan-credential-revocation")).assertIsDisplayed()
     }
 
     private fun chooseBanglaIfRequired(destinationTag: String) {

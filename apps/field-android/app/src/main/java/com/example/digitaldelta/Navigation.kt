@@ -85,6 +85,7 @@ fun MainNavigation(meshRuntimeStateStore: MeshRuntimeStateStore) {
     authorizationState = authorizationState,
     onPinAdministrator = viewModel::pinAdministrator,
     onImportRecipientCredential = viewModel::importRecipientCredential,
+    onImportCredentialRevocation = viewModel::importCredentialRevocation,
     onSelectDeviceProfile = { profileCode ->
       context.stopService(MeshRelayService.intent(context, MeshRelayService.ACTION_STOP))
       viewModel.selectDeviceProfile(profileCode)

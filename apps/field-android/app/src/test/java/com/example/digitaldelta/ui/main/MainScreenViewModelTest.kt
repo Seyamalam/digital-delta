@@ -157,6 +157,26 @@ class MainScreenViewModelTest {
     }
 
     @Test
+    fun `signed revocation import refreshes local authorization state`() = runTest(dispatcher) {
+        val coordinator = FakeIdentityCoordinator()
+        val viewModel = MainScreenViewModel(
+            FakeSettingsRepository(),
+            FakeRequestSubmission(),
+            coordinator,
+            FakeConflictCoordinator(),
+            FakeRouteScenario(),
+        )
+        advanceUntilIdle()
+
+        viewModel.importCredentialRevocation("revocation-code")
+        advanceUntilIdle()
+
+        val ready = viewModel.identityState.value as IdentityUiState.Ready
+        assertEquals("revocation-1", ready.lastRevocation?.revocationId)
+        assertEquals("revocation-code", coordinator.revocationCode)
+    }
+
+    @Test
     fun `selecting a field profile regenerates identity for a distinct mesh node`() = runTest(dispatcher) {
         val coordinator = FakeIdentityCoordinator()
         val viewModel = MainScreenViewModel(
@@ -595,6 +615,7 @@ private class FakeIdentityCoordinator(
     private val provisioned: Boolean = true,
 ) : IdentityProvisioningCoordinator {
     var importedCode: String? = null
+    var revocationCode: String? = null
     private var fingerprint: String? = null
     private var profile = DeviceProfiles.require(profileCode)
 
@@ -633,6 +654,16 @@ private class FakeIdentityCoordinator(
         importedCode = code
         return AcceptedRecipient("N6", "Habiganj Medical", "rsa-recipient-1")
     }
+
+    override suspend fun acceptCredentialRevocation(code: String) =
+        com.example.digitaldelta.domain.identity.RevocationReceipt(
+            revocationId = "revocation-1",
+            credentialId = "credential-n6",
+            identityId = "hospital-operator-1",
+            nodeId = "N6",
+            revokedAtUnixMs = 300,
+            reasonCode = "DEVICE_LOST",
+        ).also { revocationCode = code }
 }
 
 private class FakeConflictCoordinator : ConflictCoordinator {

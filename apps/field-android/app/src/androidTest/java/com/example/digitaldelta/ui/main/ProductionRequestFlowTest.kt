@@ -8,6 +8,7 @@ import androidx.compose.ui.test.hasTestTag
 import androidx.compose.ui.test.ExperimentalTestApi
 import androidx.compose.ui.test.junit4.createAndroidComposeRule
 import androidx.compose.ui.test.performClick
+import androidx.compose.ui.test.performScrollToNode
 import androidx.compose.ui.test.performTouchInput
 import androidx.compose.ui.test.performTextInput
 import androidx.compose.ui.test.swipeUp
@@ -15,16 +16,19 @@ import androidx.compose.ui.test.assertIsEnabled
 import com.example.digitaldelta.MainActivity
 import com.example.digitaldelta.di.DigitalDeltaGraphEntryPoint
 import com.example.digitaldelta.domain.identity.ProvisioningCredentialService
+import com.example.digitaldelta.domain.identity.CredentialRevocationService
 import com.example.digitaldelta.domain.identity.DeviceProfiles
 import com.example.digitaldelta.domain.mesh.HybridPayloadCipher
 import com.example.digitaldelta.domain.mesh.MeshWireCodec
 import com.example.digitaldelta.domain.mesh.ProtectedPayload
 import com.example.digitaldelta.proto.v1.DomainEvent
+import com.example.digitaldelta.proto.v1.CredentialRevocationClaims
 import com.example.digitaldelta.proto.v1.IdentityProvisioningClaims
 import com.example.digitaldelta.proto.v1.IdentityRole
 import com.google.protobuf.ByteString
 import dagger.hilt.android.EntryPointAccessors
 import java.security.KeyPairGenerator
+import java.util.Base64
 import kotlinx.coroutines.runBlocking
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
@@ -40,10 +44,11 @@ class ProductionRequestFlowTest {
     @Test
     fun requestIsEncryptedAndPersistedThroughProductionGraph() {
         val recipient = rsaKeyPair()
+        val issuer = rsaKeyPair()
         val entryPoint = productionEntryPoint()
         runBlocking {
             entryPoint.deviceProfileRepository().select(DeviceProfiles.CLINIC)
-            val issuer = rsaKeyPair()
+            entryPoint.trustAnchorRepository().pin(issuer.public.encoded)
             val now = System.currentTimeMillis()
             val local = entryPoint.deviceIdentityKeyStore().createOrGet("N4")
             val localClaims = IdentityProvisioningClaims.newBuilder()
@@ -129,6 +134,33 @@ class ProductionRequestFlowTest {
         val event = DomainEvent.parseFrom(plaintext)
         assertEquals("N6", event.reliefRequestCreated.destinationNodeId)
         assertTrue(encrypted.wrappedAes256Key.size() >= 256)
+
+        val revokedAt = System.currentTimeMillis()
+        val revocationBytes = CredentialRevocationService().issue(
+            CredentialRevocationClaims.newBuilder()
+                .setRevocationId("revocation-production-n4")
+                .setCredentialId("credential-production-n4")
+                .setIdentityId("clinic-sylhet-01")
+                .setNodeId("N4")
+                .setRevokedAtUnixMs(revokedAt)
+                .setReasonCode("DEVICE_LOST")
+                .setIssuerIdentityId("test-admin")
+                .setNonce(ByteString.copyFrom(ByteArray(16) { it.toByte() }))
+                .build(),
+            "test-admin-key",
+            issuer.private.encoded,
+        )
+        val revocationCode = "DIGITALDELTA:REVOCATION:" +
+            Base64.getUrlEncoder().withoutPadding().encodeToString(revocationBytes)
+        composeTestRule.onNode(hasScrollAction()).performScrollToNode(hasTestTag("revocation-code"))
+        composeTestRule.onNode(hasTestTag("revocation-code")).performTextInput(revocationCode)
+        composeTestRule.onNode(hasScrollAction()).performScrollToNode(hasTestTag("import-credential-revocation"))
+        composeTestRule.onNode(hasTestTag("import-credential-revocation")).performClick()
+        composeTestRule.waitUntilAtLeastOneExists(hasTestTag("credential-revoked"), timeoutMillis = 4_000)
+        assertEquals(
+            true,
+            runBlocking { entryPoint.identityProvisioningCoordinator().snapshot().localCredential?.revoked },
+        )
     }
 
     private fun chooseBanglaIfRequired(destinationTag: String) {

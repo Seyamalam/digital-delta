@@ -19,6 +19,7 @@ import com.example.digitaldelta.domain.identity.AuthorizationAuditTrail
 import com.example.digitaldelta.domain.identity.DenialReason
 import com.example.digitaldelta.domain.identity.Permission
 import com.example.digitaldelta.domain.identity.Role
+import com.example.digitaldelta.domain.identity.RevocationReceipt
 import com.example.digitaldelta.domain.identity.toAuthorizationRole
 import com.example.digitaldelta.domain.mesh.RecipientKeyUnavailableException
 import com.example.digitaldelta.domain.sync.ConflictCoordinator
@@ -196,7 +197,7 @@ class MainScreenViewModel @Inject constructor(
             mutableIdentityState.value = IdentityUiState.Working(previous)
             runCatching { identityCoordinator.selectProfile(profileCode) }
                 .onSuccess { snapshot ->
-                    val ready = snapshot.toUiState()
+                    val ready = snapshot.toUiState(lastRevocation = previous?.lastRevocation)
                     mutableIdentityState.value = ready
                     refreshAuthorization(ready)
                 }
@@ -210,7 +211,7 @@ class MainScreenViewModel @Inject constructor(
             mutableIdentityState.value = IdentityUiState.Working(previous)
             runCatching { identityCoordinator.pinTrustAnchor(code) }
                 .onSuccess { snapshot ->
-                    val ready = snapshot.toUiState(previous?.acceptedRecipient)
+                    val ready = snapshot.toUiState(previous?.acceptedRecipient, previous?.lastRevocation)
                     mutableIdentityState.value = ready
                     refreshAuthorization(ready)
                 }
@@ -225,11 +226,26 @@ class MainScreenViewModel @Inject constructor(
             runCatching { identityCoordinator.acceptRecipientCredential(code) }
                 .onSuccess { recipient ->
                     val snapshot = identityCoordinator.snapshot()
-                    val ready = snapshot.toUiState(recipient)
+                    val ready = snapshot.toUiState(recipient, previous?.lastRevocation)
                     mutableIdentityState.value = ready
                     refreshAuthorization(ready)
                 }
                 .onFailure { mutableIdentityState.value = IdentityUiState.Failed(previous, IdentityFailure.INVALID_CREDENTIAL) }
+        }
+    }
+
+    fun importCredentialRevocation(code: String) {
+        val previous = mutableIdentityState.value.readySnapshot()
+        viewModelScope.launch {
+            mutableIdentityState.value = IdentityUiState.Working(previous)
+            runCatching { identityCoordinator.acceptCredentialRevocation(code) }
+                .onSuccess { receipt ->
+                    val snapshot = identityCoordinator.snapshot()
+                    val ready = snapshot.toUiState(previous?.acceptedRecipient, receipt)
+                    mutableIdentityState.value = ready
+                    refreshAuthorization(ready)
+                }
+                .onFailure { mutableIdentityState.value = IdentityUiState.Failed(previous, IdentityFailure.INVALID_REVOCATION) }
         }
     }
 
@@ -584,6 +600,7 @@ private object UnavailableOfflinePinRepository : OfflinePinRepository {
 
 private fun com.example.digitaldelta.domain.identity.IdentityProvisioningSnapshot.toUiState(
     acceptedRecipient: AcceptedRecipient? = this.acceptedRecipient,
+    lastRevocation: RevocationReceipt? = null,
 ): IdentityUiState.Ready = IdentityUiState.Ready(
     profileCode = profileCode,
     localNodeId = localNodeId,
@@ -595,6 +612,7 @@ private fun com.example.digitaldelta.domain.identity.IdentityProvisioningSnapsho
     trustedIssuerFingerprint = trustedIssuerFingerprint,
     acceptedRecipient = acceptedRecipient,
     localCredential = localCredential,
+    lastRevocation = lastRevocation,
 )
 
 private fun IdentityUiState.readySnapshot(): IdentityUiState.Ready? = when (this) {
@@ -622,7 +640,7 @@ sealed interface OfflineUnlockUiState {
 
 enum class RequestFailure { RECIPIENT_NOT_PROVISIONED, STORAGE_OR_CRYPTO }
 
-enum class IdentityFailure { KEYSTORE, INVALID_TRUST, INVALID_CREDENTIAL }
+enum class IdentityFailure { KEYSTORE, INVALID_TRUST, INVALID_CREDENTIAL, INVALID_REVOCATION }
 
 sealed interface IdentityUiState {
     data object Loading : IdentityUiState
@@ -638,6 +656,7 @@ sealed interface IdentityUiState {
         val trustedIssuerFingerprint: String?,
         val acceptedRecipient: AcceptedRecipient?,
         val localCredential: com.example.digitaldelta.domain.identity.OfflineCredential?,
+        val lastRevocation: RevocationReceipt? = null,
     ) : IdentityUiState
 
     data class Failed(val previous: Ready?, val reason: IdentityFailure) : IdentityUiState

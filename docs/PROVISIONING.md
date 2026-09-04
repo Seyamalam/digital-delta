@@ -49,7 +49,7 @@ go run ./cmd/delta-provision revoke \
   --out revocation-n4.pb
 ```
 
-The command binds the revocation to the credential ID, identity ID, and node ID copied from the original credential, adds a random 128-bit nonce and revocation time, and signs the canonical claims with RSA-PSS. It prints a `DIGITALDELTA:REVOCATION:...` transfer code. Android import and encrypted mesh forwarding of that code are the next implementation checkpoint; until those land, this command alone is not evidence that revocation has propagated to phones.
+The command binds the revocation to the credential ID, identity ID, and node ID copied from the original credential, adds a random 128-bit nonce and revocation time, and signs the canonical claims with RSA-PSS. It prints a `DIGITALDELTA:REVOCATION:...` transfer code. A phone with the administrator public key pinned can scan or paste that code in the identity screen. It verifies the signature and clock, applies it only to the exact installed credential, and immediately removes that identity's permissions and encryption eligibility. Replaying the old credential cannot clear the revocation. Encrypted automatic forwarding to other phones remains a separate checkpoint; a revocation is effective only on phones that have imported it until that lands.
 
 ## Multi-phone demo order
 

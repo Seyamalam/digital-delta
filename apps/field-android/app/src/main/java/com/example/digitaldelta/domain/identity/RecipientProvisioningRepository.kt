@@ -21,9 +21,19 @@ data class InstalledIdentityCredential(
     val revokedAtUnixMs: Long?,
 )
 
+data class RevocationReceipt(
+    val revocationId: String,
+    val credentialId: String,
+    val identityId: String,
+    val nodeId: String,
+    val revokedAtUnixMs: Long,
+    val reasonCode: String,
+)
+
 class RecipientProvisioningRepository(
     private val dao: RecipientKeyDao,
     private val credentials: ProvisioningCredentialService = ProvisioningCredentialService(),
+    private val revocations: CredentialRevocationService = CredentialRevocationService(),
 ) {
     suspend fun accept(
         credentialBytes: ByteArray,
@@ -31,6 +41,9 @@ class RecipientProvisioningRepository(
         nowUnixMs: Long = System.currentTimeMillis(),
     ): RecipientEncryptionKey {
         val claims = credentials.verify(credentialBytes, trustedIssuerPublicKeyDer, nowUnixMs)
+        val existingRevokedAt = dao.findByNodeId(claims.nodeId)
+            ?.takeIf { it.credentialBytes.contentEquals(credentialBytes) }
+            ?.revokedAtUnixMs
         dao.upsert(
             RecipientKeyEntity(
                 nodeId = claims.nodeId,
@@ -45,7 +58,7 @@ class RecipientProvisioningRepository(
                 credentialBytes = credentialBytes.copyOf(),
                 issuedAtUnixMs = claims.issuedAtUnixMs,
                 expiresAtUnixMs = claims.expiresAtUnixMs,
-                revokedAtUnixMs = null,
+                revokedAtUnixMs = existingRevokedAt,
                 provisionedAtUnixMs = nowUnixMs,
             ),
         )
@@ -55,6 +68,45 @@ class RecipientProvisioningRepository(
             publicKeyDer = claims.rsa2048EncryptionPublicKeyDer.toByteArray(),
             validUntilUnixMs = claims.expiresAtUnixMs,
             revokedAtUnixMs = null,
+        )
+    }
+
+    suspend fun acceptRevocation(
+        revocationBytes: ByteArray,
+        trustedIssuerPublicKeyDer: ByteArray,
+        nowUnixMs: Long = System.currentTimeMillis(),
+    ): RevocationReceipt {
+        val claims = revocations.verify(revocationBytes, trustedIssuerPublicKeyDer, nowUnixMs)
+        val installed = dao.findByNodeId(claims.nodeId)
+            ?: throw ProvisioningCredentialException("revocation target is not installed")
+        val installedClaims = runCatching {
+            com.example.digitaldelta.proto.v1.IdentityProvisioningCredential
+                .parseFrom(installed.credentialBytes)
+                .claims
+        }.getOrElse { throw ProvisioningCredentialException("installed credential is malformed", it) }
+        if (
+            installedClaims.credentialId != claims.credentialId ||
+            installed.identityId != claims.identityId ||
+            installed.issuerIdentityId != claims.issuerIdentityId
+        ) {
+            throw ProvisioningCredentialException("revocation target does not match the installed credential")
+        }
+        val updated = dao.revokeExactCredential(
+            nodeId = claims.nodeId,
+            identityId = claims.identityId,
+            credentialBytes = installed.credentialBytes,
+            revokedAtUnixMs = claims.revokedAtUnixMs,
+        )
+        if (updated == 0 && installed.revokedAtUnixMs == null) {
+            throw ProvisioningCredentialException("revocation target changed before it could be applied")
+        }
+        return RevocationReceipt(
+            revocationId = claims.revocationId,
+            credentialId = claims.credentialId,
+            identityId = claims.identityId,
+            nodeId = claims.nodeId,
+            revokedAtUnixMs = claims.revokedAtUnixMs,
+            reasonCode = claims.reasonCode,
         )
     }
 

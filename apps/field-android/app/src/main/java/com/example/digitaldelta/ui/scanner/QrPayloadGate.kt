@@ -3,6 +3,7 @@ package com.example.digitaldelta.ui.scanner
 enum class QrScanPurpose(val requiredPrefix: String) {
     ADMIN_TRUST("DIGITALDELTA:TRUST:"),
     RECIPIENT_CREDENTIAL("DIGITALDELTA:CREDENTIAL:"),
+    CREDENTIAL_REVOCATION("DIGITALDELTA:REVOCATION:"),
     DELIVERY_HANDOFF("DIGITALDELTA:POD:"),
 }
 

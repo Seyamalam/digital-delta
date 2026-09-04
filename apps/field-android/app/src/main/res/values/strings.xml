@@ -171,6 +171,12 @@
     <string name="identity_keystore_failed">Device keys could not be prepared. Restart and try again.</string>
     <string name="invalid_trust_code">Administrator code is invalid. Check the fingerprint with the administrator.</string>
     <string name="invalid_credential">Credential rejected: invalid signature, key, or validity time.</string>
+    <string name="credential_revocation">Credential revocation</string>
+    <string name="revocation_code">Signed revocation code</string>
+    <string name="scan_revocation_qr">Scan credential revocation QR</string>
+    <string name="verify_apply_revocation">Verify and apply revocation</string>
+    <string name="revocation_applied">Signed revocation applied</string>
+    <string name="invalid_revocation">Revocation rejected: signature or credential target is invalid.</string>
     <string name="preparing_device_keys">Preparing protected device keys</string>
     <string name="private_keys_never_leave">RSA-2048 private keys remain non-exportable in Android Keystore.</string>
     <string name="authorization_credential_active">Signed field credential active</string>

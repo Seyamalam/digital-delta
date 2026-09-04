@@ -171,6 +171,12 @@
     <string name="identity_keystore_failed">ডিভাইস কী প্রস্তুত করা যায়নি। পুনরায় চালু করে চেষ্টা করুন।</string>
     <string name="invalid_trust_code">প্রশাসকের কোডটি সঠিক নয়। প্রশাসকের সঙ্গে ফিঙ্গারপ্রিন্ট মিলিয়ে নিন।</string>
     <string name="invalid_credential">পরিচয়পত্র প্রত্যাখ্যাত: স্বাক্ষর, কী বা মেয়াদ সঠিক নয়।</string>
+    <string name="credential_revocation">পরিচয়পত্র বাতিল</string>
+    <string name="revocation_code">স্বাক্ষরিত বাতিলকরণ কোড</string>
+    <string name="scan_revocation_qr">পরিচয়পত্র বাতিলের QR স্ক্যান করুন</string>
+    <string name="verify_apply_revocation">যাচাই করে বাতিল করুন</string>
+    <string name="revocation_applied">স্বাক্ষরিত বাতিলকরণ কার্যকর হয়েছে</string>
+    <string name="invalid_revocation">বাতিলকরণ প্রত্যাখ্যাত: স্বাক্ষর বা পরিচয়পত্রের লক্ষ্য সঠিক নয়।</string>
     <string name="preparing_device_keys">সুরক্ষিত ডিভাইস কী প্রস্তুত হচ্ছে</string>
     <string name="private_keys_never_leave">RSA-2048 প্রাইভেট কী Android Keystore থেকে কখনও বের হয় না।</string>
     <string name="authorization_credential_active">স্বাক্ষরিত মাঠ পরিচয়পত্র সক্রিয়</string>

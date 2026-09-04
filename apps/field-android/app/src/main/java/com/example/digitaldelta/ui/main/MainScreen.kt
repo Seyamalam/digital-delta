@@ -195,6 +195,7 @@ fun DigitalDeltaApp(
     ),
     onPinAdministrator: ((String) -> Unit)? = null,
     onImportRecipientCredential: ((String) -> Unit)? = null,
+    onImportCredentialRevocation: ((String) -> Unit)? = null,
     onSelectDeviceProfile: ((String) -> Unit)? = null,
     meshRuntimeState: MeshRuntimeState = MeshRuntimeState(),
     onStartRelay: (() -> Unit)? = null,
@@ -253,6 +254,7 @@ fun DigitalDeltaApp(
                 authorizationState = authorizationState,
                 onPinAdministrator = onPinAdministrator,
                 onImportRecipientCredential = onImportRecipientCredential,
+                onImportCredentialRevocation = onImportCredentialRevocation,
                 onSelectDeviceProfile = onSelectDeviceProfile,
                 meshRuntimeState = meshRuntimeState,
                 onStartRelay = onStartRelay,
@@ -544,6 +546,7 @@ private fun DeltaShell(
     authorizationState: FieldAuthorizationUiState,
     onPinAdministrator: ((String) -> Unit)?,
     onImportRecipientCredential: ((String) -> Unit)?,
+    onImportCredentialRevocation: ((String) -> Unit)?,
     onSelectDeviceProfile: ((String) -> Unit)?,
     meshRuntimeState: MeshRuntimeState,
     onStartRelay: (() -> Unit)?,
@@ -629,6 +632,7 @@ private fun DeltaShell(
                     onBack = { identityOpen = false },
                     onPinAdministrator = onPinAdministrator,
                     onImportRecipientCredential = onImportRecipientCredential,
+                    onImportCredentialRevocation = onImportCredentialRevocation,
                     onSelectDeviceProfile = onSelectDeviceProfile,
                 )
                 return@AnimatedContent
@@ -733,10 +737,12 @@ private fun IdentityScreen(
     onBack: () -> Unit,
     onPinAdministrator: ((String) -> Unit)?,
     onImportRecipientCredential: ((String) -> Unit)?,
+    onImportCredentialRevocation: ((String) -> Unit)?,
     onSelectDeviceProfile: ((String) -> Unit)?,
 ) {
     var trustCode by rememberSaveable { mutableStateOf("") }
     var credentialCode by rememberSaveable { mutableStateOf("") }
+    var revocationCode by rememberSaveable { mutableStateOf("") }
     var scanPurpose by rememberSaveable { mutableStateOf<QrScanPurpose?>(null) }
     val clipboard = LocalClipboardManager.current
     val focusManager = LocalFocusManager.current
@@ -897,7 +903,9 @@ private fun IdentityScreen(
                         Text(text(R.string.pin_administrator, language))
                     }
                 } else {
-                    InfoRow(Icons.Default.CheckCircle, "${text(R.string.trusted, language)} • ${ready.trustedIssuerFingerprint}", VerifiedGreen)
+                    Box(Modifier.testTag("administrator-trusted")) {
+                        InfoRow(Icons.Default.CheckCircle, "${text(R.string.trusted, language)} • ${ready.trustedIssuerFingerprint}", VerifiedGreen)
+                    }
                 }
             }
             item {
@@ -917,7 +925,7 @@ private fun IdentityScreen(
                             }
                         },
                     ),
-                    modifier = Modifier.fillMaxWidth(),
+                    modifier = Modifier.fillMaxWidth().testTag("credential-code"),
                 )
                 Spacer(Modifier.height(8.dp))
                 OutlinedButton(
@@ -956,6 +964,59 @@ private fun IdentityScreen(
                     }
                 }
             }
+            item {
+                SectionLabel(text(R.string.credential_revocation, language))
+                Spacer(Modifier.height(8.dp))
+                OutlinedTextField(
+                    value = revocationCode,
+                    onValueChange = { revocationCode = it },
+                    label = { Text(text(R.string.revocation_code, language)) },
+                    minLines = 2,
+                    keyboardOptions = KeyboardOptions(imeAction = ImeAction.Done),
+                    keyboardActions = KeyboardActions(
+                        onDone = {
+                            focusManager.clearFocus()
+                            if (ready.trustedIssuerFingerprint != null && revocationCode.isNotBlank()) {
+                                onImportCredentialRevocation?.invoke(revocationCode)
+                            }
+                        },
+                    ),
+                    modifier = Modifier.fillMaxWidth().testTag("revocation-code"),
+                )
+                Spacer(Modifier.height(8.dp))
+                OutlinedButton(
+                    onClick = { scanPurpose = QrScanPurpose.CREDENTIAL_REVOCATION },
+                    modifier = Modifier.fillMaxWidth().height(50.dp).testTag("scan-credential-revocation"),
+                ) {
+                    Icon(Icons.Default.QrCodeScanner, null)
+                    Spacer(Modifier.width(8.dp))
+                    Text(text(R.string.scan_revocation_qr, language))
+                }
+                Spacer(Modifier.height(8.dp))
+                Button(
+                    onClick = { onImportCredentialRevocation?.invoke(revocationCode) },
+                    enabled = ready.trustedIssuerFingerprint != null && revocationCode.isNotBlank() && state !is IdentityUiState.Working,
+                    modifier = Modifier.fillMaxWidth().height(52.dp).testTag("import-credential-revocation"),
+                ) {
+                    Icon(Icons.Default.Warning, null)
+                    Spacer(Modifier.width(8.dp))
+                    Text(text(R.string.verify_apply_revocation, language))
+                }
+                ready.lastRevocation?.let { receipt ->
+                    Spacer(Modifier.height(10.dp))
+                    Surface(
+                        color = AlertCoral.copy(alpha = .10f),
+                        contentColor = AlertCoral,
+                        shape = RoundedCornerShape(14.dp),
+                        modifier = Modifier.fillMaxWidth().testTag("credential-revoked"),
+                    ) {
+                        Column(Modifier.padding(14.dp)) {
+                            Text(text(R.string.revocation_applied, language), fontWeight = FontWeight.Bold)
+                            Text("${receipt.nodeId} • ${receipt.credentialId.takeLast(12)} • ${receipt.reasonCode}")
+                        }
+                    }
+                }
+            }
         }
         if (state is IdentityUiState.Failed) {
             item {
@@ -974,6 +1035,7 @@ private fun IdentityScreen(
                                     IdentityFailure.KEYSTORE -> R.string.identity_keystore_failed
                                     IdentityFailure.INVALID_TRUST -> R.string.invalid_trust_code
                                     IdentityFailure.INVALID_CREDENTIAL -> R.string.invalid_credential
+                                    IdentityFailure.INVALID_REVOCATION -> R.string.invalid_revocation
                                 },
                                 language,
                             ),
@@ -987,7 +1049,11 @@ private fun IdentityScreen(
         QrScannerOverlay(
             purpose = purpose,
             title = text(
-                if (purpose == QrScanPurpose.ADMIN_TRUST) R.string.scan_administrator_qr else R.string.scan_credential_qr,
+                when (purpose) {
+                    QrScanPurpose.ADMIN_TRUST -> R.string.scan_administrator_qr
+                    QrScanPurpose.CREDENTIAL_REVOCATION -> R.string.scan_revocation_qr
+                    else -> R.string.scan_credential_qr
+                },
                 language,
             ),
             guidance = text(R.string.scan_qr_guidance, language),
@@ -997,12 +1063,19 @@ private fun IdentityScreen(
             retryLabel = text(R.string.grant_camera, language),
             onAccepted = { code ->
                 scanPurpose = null
-                if (purpose == QrScanPurpose.ADMIN_TRUST) {
-                    trustCode = code
-                    onPinAdministrator?.invoke(code)
-                } else {
-                    credentialCode = code
-                    onImportRecipientCredential?.invoke(code)
+                when (purpose) {
+                    QrScanPurpose.ADMIN_TRUST -> {
+                        trustCode = code
+                        onPinAdministrator?.invoke(code)
+                    }
+                    QrScanPurpose.CREDENTIAL_REVOCATION -> {
+                        revocationCode = code
+                        onImportCredentialRevocation?.invoke(code)
+                    }
+                    else -> {
+                        credentialCode = code
+                        onImportRecipientCredential?.invoke(code)
+                    }
                 }
             },
             onDismiss = { scanPurpose = null },

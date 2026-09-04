@@ -255,6 +255,18 @@ interface RecipientKeyDao {
 
     @Query("SELECT * FROM recipient_keys ORDER BY provisionedAtUnixMs DESC, nodeId ASC LIMIT 1")
     suspend fun mostRecentlyProvisioned(): RecipientKeyEntity?
+
+    @Query(
+        "UPDATE recipient_keys SET revokedAtUnixMs = :revokedAtUnixMs " +
+            "WHERE nodeId = :nodeId AND identityId = :identityId AND credentialBytes = :credentialBytes " +
+            "AND (revokedAtUnixMs IS NULL OR revokedAtUnixMs > :revokedAtUnixMs)",
+    )
+    suspend fun revokeExactCredential(
+        nodeId: String,
+        identityId: String,
+        credentialBytes: ByteArray,
+        revokedAtUnixMs: Long,
+    ): Int
 }
 
 @Dao

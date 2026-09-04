@@ -32,6 +32,7 @@ interface IdentityProvisioningCoordinator {
     suspend fun selectProfile(profileCode: String): IdentityProvisioningSnapshot
     suspend fun pinTrustAnchor(code: String): IdentityProvisioningSnapshot
     suspend fun acceptRecipientCredential(code: String): AcceptedRecipient
+    suspend fun acceptCredentialRevocation(code: String): RevocationReceipt
 }
 
 class DefaultIdentityProvisioningCoordinator(
@@ -68,6 +69,16 @@ class DefaultIdentityProvisioningCoordinator(
         )
         val claims = IdentityProvisioningCredential.parseFrom(credentialBytes).claims
         AcceptedRecipient(accepted.nodeId, claims.displayName, accepted.keyId)
+    }
+
+    override suspend fun acceptCredentialRevocation(code: String): RevocationReceipt = withContext(Dispatchers.IO) {
+        val trustedIssuer = trustAnchors.trustedIssuer.first()
+            ?: throw IllegalStateException("administrator trust key is not pinned")
+        recipients.acceptRevocation(
+            revocationBytes = decodeCode(code, REVOCATION_PREFIX),
+            trustedIssuerPublicKeyDer = trustedIssuer.publicKeyDer,
+            nowUnixMs = nowUnixMs(),
+        )
     }
 
     private suspend fun snapshotInternal(): IdentityProvisioningSnapshot {
@@ -122,5 +133,6 @@ class DefaultIdentityProvisioningCoordinator(
         const val ENROLLMENT_PREFIX = "DIGITALDELTA:ENROLLMENT:"
         const val TRUST_PREFIX = "DIGITALDELTA:TRUST:"
         const val CREDENTIAL_PREFIX = "DIGITALDELTA:CREDENTIAL:"
+        const val REVOCATION_PREFIX = "DIGITALDELTA:REVOCATION:"
     }
 }

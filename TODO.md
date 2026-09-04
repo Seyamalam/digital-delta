@@ -65,8 +65,8 @@ This checklist tracks implementation. Milestone exit criteria live in [MILESTONE
 - [x] Hide forbidden actions and enforce the same signed-credential policy below the user interface.
 - [x] Add RSA-PSS-signed, hash-chained authorization audit events and a visible bilingual latest-entry ID.
 - [x] Add a persisted five-attempt, 30-second offline PIN lockout.
-- [ ] Add key revocation and expiry events that propagate later.
-- [ ] Test valid, expired, revoked, malformed, and wrong-role credentials. Valid, expired, tampered, untrusted-issuer, and profile/role/key mismatch cases pass; propagation of a new revocation event remains.
+- [ ] Add key revocation and expiry events that propagate later. Signed Protobuf revocation issue/verify, offline QR scan/paste, exact-credential application, stale-credential replay protection, and immediate local authorization/key disablement are complete; encrypted automatic peer forwarding remains.
+- [ ] Test valid, expired, revoked, malformed, and wrong-role credentials. Valid, expired, signed revoked, malformed/tampered, future-dated, untrusted-issuer, wrong-target, profile/role/key mismatch, and stale-credential replay cases pass; multi-phone propagation remains.
 
 ## M2 distributed data and CRDT sync
 

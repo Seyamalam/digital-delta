@@ -12,10 +12,15 @@ class QrPayloadGateTest {
         val trust = QrPayloadGate.accept("  DIGITALDELTA:TRUST:abc  ", QrScanPurpose.ADMIN_TRUST)
         val credential = QrPayloadGate.accept("DIGITALDELTA:CREDENTIAL:def", QrScanPurpose.RECIPIENT_CREDENTIAL)
         val handoff = QrPayloadGate.accept("DIGITALDELTA:POD:ghi", QrScanPurpose.DELIVERY_HANDOFF)
+        val revocation = QrPayloadGate.accept(
+            "DIGITALDELTA:REVOCATION:jkl",
+            QrScanPurpose.CREDENTIAL_REVOCATION,
+        )
 
         assertThat(trust).isEqualTo(QrPayloadResult.Accepted("DIGITALDELTA:TRUST:abc"))
         assertThat(credential).isEqualTo(QrPayloadResult.Accepted("DIGITALDELTA:CREDENTIAL:def"))
         assertThat(handoff).isEqualTo(QrPayloadResult.Accepted("DIGITALDELTA:POD:ghi"))
+        assertThat(revocation).isEqualTo(QrPayloadResult.Accepted("DIGITALDELTA:REVOCATION:jkl"))
     }
 
     @Test
