@@ -69,7 +69,7 @@ const routeFeatures = routeGeometry.features.map((feature): RouteGeometryFeature
 
 export const routeGeometryMetadata = routeGeometry.metadata;
 
-export type MissionMapState = { edgeIds?: string[]; failedEdgeIds?: string[]; edgeRisks?: Record<string, number>; rendezvous?: { candidateId?: string; longitudeDegrees?: number; latitudeDegrees?: number } };
+export type MissionMapState = { showScenarioNodes?: boolean; edgeIds?: string[]; failedEdgeIds?: string[]; edgeRisks?: Record<string, number>; rendezvous?: { candidateId?: string; longitudeDegrees?: number; latitudeDegrees?: number } };
 export function buildMissionGeoJson(useWaterRoute: boolean, showRisk: boolean, simulated = true, state: MissionMapState = {}): MissionFeatureCollection {
   const activeIds = new Set(state.edgeIds ?? (useWaterRoute ? ["E6", "E7"] : ["E1", "E3"]));
   const failedIds = new Set(state.failedEdgeIds ?? []);
@@ -90,7 +90,8 @@ export function buildMissionGeoJson(useWaterRoute: boolean, showRisk: boolean, s
     };
   });
   for (const [id, coordinate] of Object.entries(sylhetNodes)) {
-    if (id === "R3" && state.rendezvous) continue;
+    // Reference scenario points must never become apparent live field locations.
+    if (!simulated || state.showScenarioNodes === false || (id === "R3" && state.rendezvous)) continue;
     features.push({
       type: "Feature",
       properties: { id, kind: "node", simulated },

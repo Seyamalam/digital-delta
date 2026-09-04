@@ -11,6 +11,11 @@ race/vet/build checks, schema, model and map checks. Connected Android checks fo
 the current hardening are recorded separately; older counts below are dated
 baselines, not current certification. See [OBSERVER.md](OBSERVER.md).
 
+The subsequent final run passed **100 Android JVM tests and 65 connected tests**
+on the explicitly selected API 35 emulator. Fixes, earlier failures and interactive
+verification limits are recorded in
+[the refresh report](../artifacts/reports/2026-09-05-hq-field-refresh.md).
+
 ## Principle
 
 A working screen is not enough. Each public claim needs a repeatable test, measured result, or visible simulation label.

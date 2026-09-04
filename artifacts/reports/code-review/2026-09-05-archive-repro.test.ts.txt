@@ -1,0 +1,22 @@
+import { expect, it, vi } from "vitest";
+import worker from "./index";
+
+const event = { eventId:"forged", sequence:9007199254740991, sourceNodeId:"field-n4", kind:"routePlanned", occurredAtUnixMs:Date.now(), simulated:false, summary:"Unverified forged observation" };
+function fakeEnv() {
+ const run=vi.fn().mockResolvedValue({meta:{changes:1}});
+ const bind=vi.fn().mockReturnValue({run});
+ return { ALLOWED_ORIGINS:"https://digital-delta-headquarters.vercel.app", ARCHIVE_RATE_LIMITER:{limit:vi.fn().mockResolvedValue({success:true})}, HQ_DB:{prepare:vi.fn().mockReturnValue({bind})} };
+}
+it("accepts forged non-simulated observation without Origin or credentials",async()=>{
+ const env=fakeEnv();
+ const response=await worker.fetch(new Request("https://archive.local/v1/observations",{method:"POST",body:JSON.stringify(event)}),env as any);
+ expect(response.status).toBe(201);
+ expect(env.HQ_DB.prepare).toHaveBeenCalled();
+});
+it("accepts body larger than 4096 bytes when Content-Length absent",async()=>{
+ const body=" ".repeat(1024*1024)+JSON.stringify(event);
+ const request=new Request("https://archive.local/v1/observations",{method:"POST",body});
+ expect(request.headers.has("content-length")).toBe(false);
+ const response=await worker.fetch(request,fakeEnv() as any);
+ expect(response.status).toBe(201);
+});

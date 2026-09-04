@@ -1,0 +1,53 @@
+// Diagnostic reproduction: copy into apps/command/src/review-regressions.test.tsx.
+// Run pnpm exec vitest run src/review-regressions.test.tsx from apps/command.
+// All three tests fail on reviewed commit 94a54a9. No application fixes included.
+import { act, fireEvent, render, screen } from "@testing-library/react";
+import { expect, it, vi } from "vitest";
+import { App } from "./App";
+import { buildMissionGeoJson } from "./offlineMap";
+import type { ObserverConnectOptions, PresentationObservation } from "./observer";
+
+vi.mock("./OfflineDeltaMap", () => ({
+  OfflineDeltaMap: (props: { useWaterRoute: boolean; showRisk: boolean; simulated: boolean }) => {
+    const geo = buildMissionGeoJson(props.useWaterRoute, props.showRisk, props.simulated);
+    return <output data-testid="review-map"
+      data-active={geo.features.filter(f => f.properties.active).map(f => f.properties.id).join(",")}
+      data-failed={geo.features.filter(f => f.properties.failed).map(f => f.properties.id).join(",")} />;
+  },
+}));
+
+function event(sequence: number, kind: string, presentation: Record<string, unknown>): PresentationObservation {
+  return { sequence, eventId: `review-${sequence}`, sourceNodeId: "N4", kind, presentation,
+    occurredAtUnixMs: 1_788_544_800_000, simulated: false };
+}
+
+it("review: route state survives 100 unrelated later observations", () => {
+  let observer: ObserverConnectOptions;
+  const connect = (options: ObserverConnectOptions) => { observer = options; options.onStatus("live"); return () => {}; };
+  render(<App observerConnect={connect} />);
+  fireEvent.click(screen.getByRole("button", { name: "English" }));
+  act(() => observer.onObservation(event(1, "routePlanned", { mode: "TRANSPORT_MODE_WATERWAY", edgeIds: ["E6", "E7"], etaMinutes: 171 })));
+  expect(screen.getByText("Boat • E6 → E7")).toBeVisible();
+  act(() => { for (let sequence = 2; sequence <= 101; sequence++) observer.onObservation(event(sequence, "reliefRequestCreated", {})); });
+  expect(screen.queryByText("Boat • E6 → E7")).not.toBeNull();
+});
+
+it("review: map renders the received road edge E5", async () => {
+  const connect = (options: ObserverConnectOptions) => {
+    options.onStatus("live");
+    options.onObservation(event(1, "routePlanned", { mode: "TRANSPORT_MODE_ROAD", edgeIds: ["E5"], etaMinutes: 120 }));
+    return () => {};
+  };
+  render(<App observerConnect={connect} />);
+  expect(await screen.findByTestId("review-map")).toHaveAttribute("data-active", "E5");
+});
+
+it("review: predicted risk alone never marks E3 as confirmed failed", async () => {
+  const connect = (options: ObserverConnectOptions) => {
+    options.onStatus("live");
+    options.onObservation(event(1, "edgeRiskPredicted", { edgeId: "E3", probability: 0.8 }));
+    return () => {};
+  };
+  render(<App observerConnect={connect} />);
+  expect(await screen.findByTestId("review-map")).toHaveAttribute("data-failed", "");
+});

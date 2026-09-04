@@ -28,7 +28,7 @@ export function OfflineDeltaMap({ useWaterRoute, showRisk, simulated, language, 
   const [routesVisible, setRoutesVisible] = useState(true);
   const markers = useRef<Marker[]>([]);
   const latestData = useRef(buildMissionGeoJson(useWaterRoute, showRisk, simulated, missionState));
-  latestData.current = buildMissionGeoJson(useWaterRoute, showRisk, simulated, missionState);
+  latestData.current = buildMissionGeoJson(useWaterRoute, showRisk, simulated, { ...missionState, showScenarioNodes: exerciseOverlay });
   const say = (en: string, bn: string) => language === "en" ? en : bn;
 
   useEffect(() => {
@@ -86,7 +86,7 @@ export function OfflineDeltaMap({ useWaterRoute, showRisk, simulated, language, 
     if (source instanceof GeoJSONSource) {
       source.setData(latestData.current);
     }
-  }, [showRisk, simulated, useWaterRoute, missionState.edgeIds, missionState.failedEdgeIds, missionState.edgeRisks, missionState.rendezvous, status]);
+  }, [showRisk, simulated, useWaterRoute, missionState.edgeIds, missionState.failedEdgeIds, missionState.edgeRisks, missionState.rendezvous, exerciseOverlay, status]);
 
   useEffect(() => {
     if (status !== "ready" || !map.current) return;

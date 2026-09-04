@@ -16,6 +16,7 @@ export type ProjectedRendezvous = {
 
 export type ObserverProjection = {
   latestSequence: number;
+  includesSimulated: boolean;
   failedEdges: Set<string>;
   edgeRisks: Map<string, number>;
   delayedVehicleIds: Set<string>;
@@ -29,6 +30,7 @@ export function projectObservations(observations: PresentationObservation[], pre
   const projection: ObserverProjection = {
     ...previous,
     latestSequence: previous?.latestSequence ?? 0,
+    includesSimulated: previous?.includesSimulated ?? false,
     failedEdges: new Set(previous?.failedEdges),
     edgeRisks: new Map(previous?.edgeRisks),
     delayedVehicleIds: new Set(previous?.delayedVehicleIds),
@@ -39,6 +41,7 @@ export function projectObservations(observations: PresentationObservation[], pre
   for (const observation of ordered) {
     if (observation.sequence <= projection.latestSequence) continue;
     projection.latestSequence = Math.max(projection.latestSequence, observation.sequence);
+    projection.includesSimulated ||= observation.simulated;
     projection.sources.set(observation.sourceNodeId, observation.occurredAtUnixMs);
     const value = observation.presentation ?? {};
     if (observation.kind === "reliefRequestCreated") {

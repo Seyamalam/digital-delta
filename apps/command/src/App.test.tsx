@@ -98,10 +98,11 @@ describe("routed headquarters", () => {
 
   it("retains old projected routes and closures beyond the visible 100-event window", () => {
     let feed = emptyFeed();
-    feed = receiveObservation(feed, event(1, "routePlanned", { edgeIds: ["E5"], mode: "TRANSPORT_MODE_ROAD" }));
+    feed = receiveObservation(feed, { ...event(1, "routePlanned", { edgeIds: ["E5"], mode: "TRANSPORT_MODE_ROAD" }), simulated: true });
     feed = receiveObservation(feed, event(2, "edgeStatusChanged", { edgeId: "E3", failed: true }));
     for (let sequence = 3; sequence <= 105; sequence++) feed = receiveObservation(feed, event(sequence));
     expect(feed.recent).toHaveLength(100);
+    expect(feed.projection.includesSimulated).toBe(true);
     expect(feed.projection.route?.edgeIds).toEqual(["E5"]);
     expect(feed.projection.failedEdges.has("E3")).toBe(true);
     const duplicate = receiveObservation(feed, event(1, "routePlanned", { edgeIds: ["E1"] }));
