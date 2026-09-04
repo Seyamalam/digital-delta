@@ -2,9 +2,14 @@
 
 ## Offline disaster logistics and verified relief delivery in Bangladesh
 
-Prepared for Bangladesh Innovation Fair 2026  
-Prepared by Touhidul Alam Seyam  
-Individual project lead and developer  
+Prepared for the Innovation Exhibitor programme at Bangladesh Innovation Fair 2026
+
+Prepared by Touhidul Alam Seyam
+
+BGC Trust University Bangladesh
+
+Individual project lead and developer
+
 Report date 4 September 2026
 
 ## Executive summary
@@ -191,13 +196,13 @@ The project is not yet field verified. The following evidence must remain open u
 - TalkBack, large-text, Bangla wrapping, and small-screen review by people;
 - field completion while the command laptop and projector are off;
 - twenty rehearsals and three unchanged successful final passes;
-- organizer confirmation of participation, event date, pitch duration, and booth equipment.
+- organizer confirmation of Innovation Exhibitor acceptance, package and payment status, stall allocation, event date, any pitch duration, and booth equipment.
 
 They remain release gates. The repository tracks them in `TODO.md`, `SCREENSHOTS.md`, and `docs/PHYSICAL_DEVICE_TEST.md`.
 
 ## Team
 
-Touhidul Alam Seyam is the individual project lead and developer. The work covers product design, Android development, Go services, cryptography integration, routing and ML integration, the Next.js headquarters interface, testing, evidence capture, and the fair package. The public GitHub profile lists Agentic Institute as the current affiliation. No additional team member is recorded for this submission.
+Touhidul Alam Seyam of BGC Trust University Bangladesh is the individual project lead and developer. The work covers product design, Android development, Go services, cryptography integration, routing and ML integration, the Next.js headquarters interface, testing, evidence capture, and the fair package. No additional team member is recorded for this exhibition.
 
 ## Conclusion
 
@@ -216,5 +221,5 @@ The next decision should be whether an operational sponsor will run a controlled
 - Bangladesh Cyclone and Monsoon Floods Humanitarian Response Plan 2024 to 2025: https://bangladesh.un.org/sites/default/files/2024-10/Bangladesh-HCTT-Humanitarian%20Response%20Plan-Cyclone%20and%20Monsoon%20Floods%202024-29-09-2024%20%28June%202024%20to%20March%202025%29.pdf
 - ICRC Handbook on Data Protection in Humanitarian Action: https://www.icrc.org/en/data-protection-humanitarian-action-handbook
 - OCHA Data Responsibility Guidelines 2025: https://centre.humdata.org/data-responsibility-guidelines-2025/
-- Bangladesh Innovation Fair official application: https://www.innovationfairbd.org/innovator-application-form?type=innovator
+- Bangladesh Innovation Fair Innovation Exhibitor registration: https://www.innovationfairbd.org/innovator-application-form?type=Exhibitor
 - Repository architecture and evidence: https://github.com/Seyamalam/digital-delta

@@ -10,7 +10,7 @@ Current count: 151 of 167 checklist items complete (90.4 percent). All eight sof
 - [x] Record the no-external-hardware boundary.
 - [x] Define module-level live proofs.
 - [x] Create milestone, screenshot, demo, security, testing, and traceability plans.
-- [ ] Confirm the fair participation status, date, booth rules, and pitch duration. The official site review is recorded in `docs/FAIR_SUBMISSION.md`: submissions are closed, Novo Theatre is listed, and the required deck has 7 to 8 slides, but selection status, a reliable final date, pitch duration, and booth equipment still require direct organizer confirmation.
+- [ ] Confirm Innovation Exhibitor acceptance, selected package, payment status, stall allocation, event date, booth rules, and any pitch duration. Touhidul Alam Seyam registered as an Innovation Exhibitor under BGC Trust University Bangladesh. The official site review is recorded in `docs/FAIR_SUBMISSION.md`, but organizer logistics still require the receipt or direct confirmation.
 - [ ] Record available Android phones, operating-system versions, laptops, and projector resolution.
 - [x] Confirm the implementation stack in `docs/DECISIONS.md`.
 - [x] Decide whether strict HackFusion gRPC transport compliance is a target for this fair build. DD-006 records gRPC for supported IP links and framed Protobuf for Nearby instead of making a false transport claim.

@@ -242,7 +242,7 @@ def build_cover(prs):
     overlay = rect(slide, 6.3, 0, 1.6, 7.5, DARK, radius=False, transparency=18)
     overlay.rotation = 0
     rect(slide, 0.62, 0.64, 1.16, 0.08, CYAN, radius=False)
-    text_box(slide, "BANGLADESH INNOVATION FAIR 2026", 0.62, 0.85, 5.45, 0.35, 12, CYAN, True)
+    text_box(slide, "BANGLADESH INNOVATION FAIR 2026  •  INNOVATION EXHIBITOR", 0.62, 0.85, 5.75, 0.35, 10.5, CYAN, True)
     text_box(slide, "Digital\nDelta", 0.62, 1.42, 5.65, 1.45, 45, WHITE, True)
     text_box(
         slide,
@@ -267,7 +267,7 @@ def build_cover(prs):
         5.0,
         0.58,
     )
-    text_box(slide, "Touhidul Alam Seyam  •  Individual project lead and developer", 0.62, 6.64, 5.5, 0.28, 10.5, "9FB7C2")
+    text_box(slide, "Touhidul Alam Seyam  •  BGC Trust University Bangladesh", 0.62, 6.64, 5.8, 0.28, 10.5, "9FB7C2")
     add_footer(slide, 1, dark=True)
     add_notes(slide, "Opening: This is not another cloud dashboard. The field mission lives on the phones. The projector only observes it.")
 
@@ -546,7 +546,8 @@ def build_close(prs):
     )
     text_box(slide, "Built solo by", 10.18, 2.02, 1.65, 0.25, 11, MID, True)
     text_box(slide, "Touhidul\nAlam Seyam", 10.18, 2.38, 2.02, 0.92, 21, INK, True)
-    text_box(slide, "Product  •  Android  •  Go\nSecurity  •  Routing  •  ML\nNext.js  •  Testing  •  Evidence", 10.18, 3.58, 2.0, 1.13, 13, MID)
+    text_box(slide, "BGC Trust University Bangladesh", 10.18, 3.38, 2.0, 0.38, 9.5, TEAL, True)
+    text_box(slide, "Product  •  Android  •  Go\nSecurity  •  Routing  •  ML\nNext.js  •  Testing  •  Evidence", 10.18, 3.82, 2.0, 1.13, 13, MID)
     text_box(slide, "SDG 3  •  9  •  11  •  13  •  16", 10.18, 5.21, 1.98, 0.28, 10.5, TEAL, True)
     text_box(slide, "digital-delta-headquarters.vercel.app", 0.65, 6.61, 4.25, 0.26, 11, CYAN, True)
     text_box(slide, "github.com/Seyamalam/digital-delta", 5.17, 6.61, 4.0, 0.26, 11, "9FB7C2", True)
@@ -563,7 +564,7 @@ def main() -> int:
     prs.core_properties.subject = "Offline disaster logistics and verified relief delivery in Bangladesh"
     prs.core_properties.author = "Touhidul Alam Seyam"
     prs.core_properties.last_modified_by = "Touhidul Alam Seyam"
-    prs.core_properties.comments = "Editable eight-slide fair submission deck"
+    prs.core_properties.comments = "Editable eight-slide Innovation Exhibitor deck"
     build_cover(prs)
     build_problem(prs)
     build_architecture(prs)

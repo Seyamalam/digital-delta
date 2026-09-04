@@ -145,7 +145,7 @@ def configure_document(doc: Document) -> None:
     props.subject = "Offline disaster logistics and verified relief delivery in Bangladesh"
     props.author = "Touhidul Alam Seyam"
     props.keywords = "Bangladesh, disaster logistics, offline first, mesh, relief, innovation"
-    props.comments = "Prepared for Bangladesh Innovation Fair 2026"
+    props.comments = "Prepared for the Innovation Exhibitor programme at Bangladesh Innovation Fair 2026"
 
 
 def set_alt_text(inline_shape, description: str) -> None:
@@ -312,7 +312,7 @@ def add_cover(doc: Document) -> None:
     set_cell_margins(band.cell(0, 0), top=180, start=220, bottom=180, end=220)
     p = band.cell(0, 0).paragraphs[0]
     p.alignment = WD_ALIGN_PARAGRAPH.LEFT
-    r = p.add_run("BANGLADESH INNOVATION FAIR 2026")
+    r = p.add_run("BANGLADESH INNOVATION FAIR 2026  •  INNOVATION EXHIBITOR")
     r.bold = True
     r.font.name = "Aptos"
     r.font.size = Pt(10)
@@ -337,10 +337,15 @@ def add_cover(doc: Document) -> None:
         "The live headquarters is an observer. Field phones remain authoritative and continue without it.",
     )
 
-    metadata = doc.add_table(rows=3, cols=2)
+    metadata = doc.add_table(rows=4, cols=2)
     metadata.alignment = WD_TABLE_ALIGNMENT.LEFT
     metadata.autofit = False
-    labels = (("Prepared by", "Touhidul Alam Seyam"), ("Role", "Individual project lead and developer"), ("Report date", "4 September 2026"))
+    labels = (
+        ("Prepared by", "Touhidul Alam Seyam"),
+        ("Institution", "BGC Trust University Bangladesh"),
+        ("Role", "Individual project lead and developer"),
+        ("Report date", "4 September 2026"),
+    )
     for row_index, (label, value) in enumerate(labels):
         left, right = metadata.rows[row_index].cells
         left.width = Inches(1.25)

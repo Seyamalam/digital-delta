@@ -2,7 +2,7 @@
 
 Editable deck: `output/presentation/digital-delta-innovation-fair.pptx`
 
-This manuscript matches the official Bangladesh Innovation Fair requirement for seven to eight slides. It covers originality, practical impact, commercialization, technical capability, Sustainable Development Goals, leadership, inclusion, ethics and safety, and market demand.
+This manuscript supports the Innovation Exhibitor registration and matches the fair form's seven-to-eight-slide requirement. It covers originality, practical impact, commercialization, technical capability, Sustainable Development Goals, leadership, inclusion, ethics and safety, and market demand.
 
 ## Slide 1 Digital Delta
 
@@ -128,4 +128,4 @@ Success means:
 
 The fair build proves the hard software boundary. I am not asking for a national rollout. I am asking for one controlled exercise that can turn emulator evidence into measured field evidence.
 
-The project supports SDGs 3, 9, 11, 13, and 16 through health continuity, resilient infrastructure, accountable custody, and climate preparedness. It was built independently by Touhidul Alam Seyam.
+The project supports SDGs 3, 9, 11, 13, and 16 through health continuity, resilient infrastructure, accountable custody, and climate preparedness. It was built independently by Touhidul Alam Seyam of BGC Trust University Bangladesh.

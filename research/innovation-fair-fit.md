@@ -6,9 +6,9 @@ Research date: 2 September 2026. Sources are limited to the fair's own website a
 
 Digital Delta is a strong thematic fit for Bangladesh Innovation Fair 2026. The fair has categories for "Climate, Environment & Sustainability," "Information & Digital Technology," "Artificial Intelligence, Automation & Robotics," and "Frontier Technology." It also lists individuals, students, and researchers among the participant groups. The best main category is **Climate, Environment & Sustainability**, because that makes the public problem clear before the technical explanation starts. The software, routing, cryptography, and predictive model can sit underneath that story. [Official fair homepage](https://innovationfairbd.org/)
 
-The idea should not be presented as the original eight-module hackathon specification. That version is impressive but too broad for one person and too hard to prove at a booth. The fair asks entrants to address practical impact, commercialization, technical capability, sustainable development, inclusion, safety, and market demand, as well as originality. A smaller system that completes one relief mission offline will answer those questions better than eight half-working modules. [Official innovator application](https://innovationfairbd.org/innovator-application-form?type=innovator)
+The idea should not be presented as the original eight-module hackathon specification. That version is impressive but too broad for one person and too hard to prove at a booth. The fair asks entrants to address practical impact, commercialization, technical capability, sustainable development, inclusion, safety, and market demand, as well as originality. A smaller system that completes one relief mission offline will answer those questions better than eight half-working modules. [Official Innovation Exhibitor registration](https://innovationfairbd.org/innovator-application-form?type=Exhibitor)
 
-One immediate obstacle matters. The official innovator application currently says that registration has closed. The page does not publish the closing date or a late-submission process. The user should contact the organizers now, before building around an assumed place. The website lists Novo Theatre, Dhaka, info@innovationfairbd.org, and +8801920376729. [Official homepage](https://innovationfairbd.org/) [Official application](https://innovationfairbd.org/innovator-application-form?type=innovator)
+Touhidul Alam Seyam registered through the Innovation Exhibitor route under BGC Trust University Bangladesh. The public route now says that registration has closed. Acceptance, package and payment status, stall allocation, and booth rules still need confirmation from the registration receipt or organizer. The website lists Novo Theatre, Dhaka, info@innovationfairbd.org, and +8801920376729. [Official homepage](https://innovationfairbd.org/) [Official Innovation Exhibitor registration](https://innovationfairbd.org/innovator-application-form?type=Exhibitor)
 
 ## What the official fair site publishes
 
@@ -21,8 +21,8 @@ One immediate obstacle matters. The official innovator application currently say
 ### Who can apply
 
 - The homepage names individuals, students, researchers, universities and institutions, companies, government bodies, NGOs, SMEs, service providers, startups, incubators, and green entrepreneurs as participant groups. [Official homepage](https://innovationfairbd.org/)
-- The innovator form's applicant choices are individual, student, and researcher. It allows a solo entry or a team and labels three as the maximum team size. Team consent is required when members are added. The selector can also be read as allowing three members in addition to the applicant, so the organizer should confirm whether the applicant counts toward the limit. [Official innovator application](https://innovationfairbd.org/innovator-application-form?type=innovator)
-- The form asks for a Bangladeshi mobile number and NID, birth registration, or passport details. It does not state an age limit, academic-level requirement, or nationality rule in the published text. This absence should not be treated as proof that none exists. [Official innovator application](https://innovationfairbd.org/innovator-application-form?type=innovator)
+- The Innovation Exhibitor route lists universities and institutions, corporations, government organizations, NGOs, SMEs, and startups or green innovation. The university and institution package is listed at BDT 25,000 to BDT 50,000 before VAT and tax, with an 8 by 8 foot stall and six passes. The selected package remains unconfirmed in this repository. [Official Innovation Exhibitor registration](https://innovationfairbd.org/innovator-application-form?type=Exhibitor)
+- The shared form also displays applicant, identity, institution, and team fields. It asks for a Bangladeshi mobile number and NID, birth registration, or passport details. The page mixes exhibitor-package information with innovator-style form labels, so the user's registration receipt should settle any conflict. [Official Innovation Exhibitor registration](https://innovationfairbd.org/innovator-application-form?type=Exhibitor)
 
 ### Categories
 
@@ -32,7 +32,7 @@ Digital Delta crosses several categories, but entering it as a climate-resilienc
 
 ### Submission material and evaluation prompts
 
-The innovator form requires:
+The shared Innovation Exhibitor form requests:
 
 - an innovation title;
 - one main category;
@@ -45,13 +45,13 @@ The innovator form requires:
 - team details and a consent document when applying with others;
 - answers naming any government and private-sector commercialization association, with "No" accepted when none applies.
 
-A supporting status document is requested "if applicable," and the project photo is marked optional. [Official innovator application](https://innovationfairbd.org/innovator-application-form?type=innovator)
+A supporting status document is requested "if applicable," and the project photo is marked optional. [Official Innovation Exhibitor registration](https://innovationfairbd.org/innovator-application-form?type=Exhibitor)
 
-The required presentation must address nine topics: originality, practical impact, commercialization potential, technical capability, SDG contribution, innovative leadership, social inclusion, ethics and safety, and market demand. These are the closest thing the site publishes to judging criteria. The site does **not** publish weights, a scoring scale, judging stages, pitch duration, prototype-readiness threshold, award categories, or prize amounts. Its terms say only that organizers may review submissions under criteria they determine and may request more information. [Official innovator application](https://innovationfairbd.org/innovator-application-form?type=innovator) [Official terms](https://innovationfairbd.org/terms-and-conditions)
+The requested presentation must address nine topics: originality, practical impact, commercialization potential, technical capability, SDG contribution, innovative leadership, social inclusion, ethics and safety, and market demand. These are the closest thing the site publishes to judging criteria. The site does **not** publish weights, a scoring scale, judging stages, pitch duration, prototype-readiness threshold, award categories, or prize amounts. Its terms say only that organizers may review submissions under criteria they determine and may request more information. [Official Innovation Exhibitor registration](https://innovationfairbd.org/innovator-application-form?type=Exhibitor) [Official terms](https://innovationfairbd.org/terms-and-conditions)
 
 ### Deadlines and current registration state
 
-The application says "Registration Has Closed" and "Innovator Registration is Currently Closed." No exact submission deadline appears on the homepage, application form, or terms page. Exhibitor stall booking and visitor or session registration are separate routes and should not be confused with innovator selection. [Official application](https://innovationfairbd.org/innovator-application-form?type=innovator) [Official homepage](https://innovationfairbd.org/)
+The Innovation Exhibitor route says "Registration Has Closed." No exact submission deadline appears on the homepage, registration form, or terms page. This project uses the exhibitor route, not Innovator selection. Visitor and session registration are separate. [Official Innovation Exhibitor registration](https://innovationfairbd.org/innovator-application-form?type=Exhibitor) [Official homepage](https://innovationfairbd.org/)
 
 ### Intellectual property and publicity
 
@@ -109,12 +109,13 @@ My assessment is that this can do well if the prototype is honest and the offlin
 
 ## Unpublished or unresolved items to confirm with organizers
 
-- whether late innovator applications or a waitlist exist;
-- whether an individual must name an institution despite that field being required;
+- organizer acceptance and the official registration receipt;
+- selected exhibitor category, package price, VAT and tax, and payment status;
+- stall or kiosk allocation, exhibitor passes, setup access, security, and teardown rules;
 - whether one innovation may be tagged with secondary categories;
 - prototype and booth hardware rules;
-- pitch and judging format;
+- whether exhibitors receive a pitch or judging session and, if so, its format;
 - award categories, prize amounts, and judging weights;
-- selection announcement timing and participant fees for selected individual innovators.
+- final programme and exhibitor reporting times.
 
 The official terms warn that schedules, deadlines, and participation requirements may change and tell users to follow official event communications. [Official terms](https://innovationfairbd.org/terms-and-conditions)

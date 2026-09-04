@@ -2,6 +2,10 @@
 
 Prepared on 4 September 2026 for the Bangladesh Innovation Fair.
 
+Registration route: Innovation Exhibitor.
+
+Exhibitor: Touhidul Alam Seyam, BGC Trust University Bangladesh.
+
 ## Final deliverables
 
 | Deliverable | Repository path | Purpose |
@@ -19,9 +23,9 @@ Prepared on 4 September 2026 for the Bangladesh Innovation Fair.
 Run `shasum -a 256` against the three binary deliverables and compare the results with the manifest below before submitting. The manifest is updated by the final packaging pass.
 
 ```text
-67c047be4d874835f4cffd9b0d54d5b4054890d43e0ef032a6d6375a94e1b69c  output/presentation/digital-delta-innovation-fair.pptx
-f3ed3e57569514133285d7e93e23fc08618d75602b4139b3bf1cb4d810fa8440  output/docx/digital-delta-report.docx
-bc24c916a85c027593c6450b89132f96bdeb24c59a93961467ce56828f1963fc  output/pdf/digital-delta-report.pdf
+c4b2ed95713ec2c2ff74e1194b0d350d17f8c4787d968e3523979090950897fb  output/presentation/digital-delta-innovation-fair.pptx
+6e3b973ac594a0d9c27b9e6a0615f6805a18762d4152bfaf206ef82393399da2  output/docx/digital-delta-report.docx
+87cd9d6d9355fcb637a02a47ed3bc71ab73a9938bad7ac3819e66d330e2feea7  output/pdf/digital-delta-report.pdf
 ```
 
 ## Verification summary
@@ -39,12 +43,13 @@ The dated verification record is `artifacts/reports/verification/2026-09-04-fina
 
 ## Paper Amigo copy
 
-- Project ID: `6879b659-e9f0-4568-853b-d8e8fba38a14`
-- Project title: `Digital Delta: Offline Disaster Logistics for Bangladesh`
+- Project ID: `cdac5e0e-507e-4c8d-bcdc-2df4e6ce82be`
+- Project title: `Digital Delta: Offline Disaster Logistics for Bangladesh (Innovation Exhibitor)`
+- Author: Touhidul Alam Seyam, Individual Project Lead and Developer, BGC Trust University Bangladesh
 - Uploaded file: `digital-delta-report.pdf`
-- File URL: https://yzy16yxaqa.ufs.sh/f/QMVxAv8DZmlKLwarMvnyoZ16pANvdRreizL4jYHhq0f7SbXn
+- File URL: https://yzy16yxaqa.ufs.sh/f/QMVxAv8DZmlKRfSHHcCY6QoKg4ed3SiVAtMWJXPbOGNfqu0I
 
-The uploaded PDF hash is `bc24c916a85c027593c6450b89132f96bdeb24c59a93961467ce56828f1963fc`, matching the local integrity manifest.
+The uploaded PDF hash is `87cd9d6d9355fcb637a02a47ed3bc71ab73a9938bad7ac3819e66d330e2feea7`, matching the local integrity manifest.
 
 ## Honest release boundary
 
@@ -54,7 +59,7 @@ These items cannot be replaced by emulator output or fabricated evidence. Use `d
 
 ## Submission order
 
-1. Confirm participation, the final deadline, pitch duration, and booth equipment with the organizer.
+1. Confirm Innovation Exhibitor acceptance, package and payment status, stall allocation, reporting time, and booth equipment with the organizer.
 2. Run the physical-device sheet on the exact phones and laptops that will go to the fair.
 3. Complete the human accessibility matrix and capture the remaining evidence.
 4. Run twenty rehearsals, then record three consecutive unchanged passing demos.

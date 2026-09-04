@@ -5,6 +5,8 @@
 
 Digital Delta is an offline-first disaster logistics system for Bangladesh. It coordinates urgent supply requests, mixed fleets, route failures, field handoffs, and eventual synchronization when commercial internet is unavailable.
 
+Built by Touhidul Alam Seyam of BGC Trust University Bangladesh and registered through the Bangladesh Innovation Fair's Innovation Exhibitor route.
+
 The project is designed for an innovation-fair demonstration using Android phones, laptops, and a projector. It does not require IoT sensors, LoRa devices, ESP32 boards, physical drones, or any other external hardware.
 
 ## Product rules
