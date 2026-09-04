@@ -21,19 +21,30 @@ export type ObserverProjection = {
   delayedVehicleIds: Set<string>;
   route?: ProjectedRoute;
   rendezvous?: ProjectedRendezvous;
+  requests: Map<string, PresentationObservation>;
+  sources: Map<string, number>;
 };
 
-export function projectObservations(observations: PresentationObservation[]): ObserverProjection {
+export function projectObservations(observations: PresentationObservation[], previous?: ObserverProjection): ObserverProjection {
   const projection: ObserverProjection = {
-    latestSequence: 0,
-    failedEdges: new Set(),
-    edgeRisks: new Map(),
-    delayedVehicleIds: new Set(),
+    ...previous,
+    latestSequence: previous?.latestSequence ?? 0,
+    failedEdges: new Set(previous?.failedEdges),
+    edgeRisks: new Map(previous?.edgeRisks),
+    delayedVehicleIds: new Set(previous?.delayedVehicleIds),
+    requests: new Map(previous?.requests),
+    sources: new Map(previous?.sources),
   };
   const ordered = [...observations].sort((left, right) => left.sequence - right.sequence);
   for (const observation of ordered) {
+    if (observation.sequence <= projection.latestSequence) continue;
     projection.latestSequence = Math.max(projection.latestSequence, observation.sequence);
+    projection.sources.set(observation.sourceNodeId, observation.occurredAtUnixMs);
     const value = observation.presentation ?? {};
+    if (observation.kind === "reliefRequestCreated") {
+      const requestId = asString(value.requestId) ?? observation.eventId;
+      projection.requests.set(requestId, observation);
+    }
     if (observation.kind === "edgeStatusChanged") {
       const edgeId = asString(value.edgeId);
       if (edgeId) {

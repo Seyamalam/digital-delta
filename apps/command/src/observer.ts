@@ -66,7 +66,7 @@ function parseObservation(value: string): PresentationObservation | null {
     if (typeof candidate.sourceNodeId !== "string" || candidate.sourceNodeId.length === 0) return null;
     if (typeof candidate.eventId !== "string" || candidate.eventId.length === 0) return null;
     if (typeof candidate.kind !== "string" || candidate.kind.length === 0) return null;
-    if (typeof candidate.occurredAtUnixMs !== "number") return null;
+    if (typeof candidate.occurredAtUnixMs !== "number" || !Number.isSafeInteger(candidate.occurredAtUnixMs) || candidate.occurredAtUnixMs < 0 || candidate.occurredAtUnixMs > 8_640_000_000_000_000) return null;
     if (typeof candidate.simulated !== "boolean") return null;
     return candidate as PresentationObservation;
   } catch {

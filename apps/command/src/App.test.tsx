@@ -1,119 +1,114 @@
 import { act, fireEvent, render, screen } from "@testing-library/react";
 import { describe, expect, it, vi } from "vitest";
-import { App, scenarioReducer } from "./App";
-import type { ObserverConnectOptions } from "./observer";
+import { OperationsProvider, emptyFeed, receiveObservation } from "./operations/OperationsProvider";
+import { OperationsShell } from "./operations/OperationsShell";
+import { OverviewPage } from "./operations/OverviewPage";
+import { MissionsPage } from "./operations/MissionsPage";
+import { NetworkPage } from "./operations/NetworkPage";
+import { ActivityPage } from "./operations/ActivityPage";
+import { ExercisePage } from "./operations/ExercisePage";
+import { ResourcesPage } from "./operations/ResourcesPage";
+import { scenarioReducer, initialScenario } from "./operations/scenario";
+import type { ObserverConnectOptions, PresentationObservation } from "./observer";
 
-describe("Delta Command", () => {
-  it("starts Bangla-first and keeps the scenario when language changes", () => {
-    render(<App />);
-    expect(screen.getByText("ডেল্টা কমান্ড")).toBeVisible();
-    expect(screen.getByText("রক্তের কুলার")).toBeVisible();
-    expect(screen.getByText("সড়ক")).toBeVisible();
-    fireEvent.click(screen.getByRole("button", { name: "English" }));
-    expect(screen.getByText("Delta Command")).toBeVisible();
-    expect(screen.getByText("Truck • N1 → N2 → N4")).toBeVisible();
+vi.mock("next/navigation", () => ({ usePathname: () => "/" }));
+vi.mock("./OfflineDeltaMap", () => ({ OfflineDeltaMap: () => <div data-testid="map">Geographic map</div> }));
+Object.defineProperty(window, "matchMedia", { writable: true, value: () => ({ matches: false, addEventListener() {}, removeEventListener() {} }) });
+const idle = () => () => undefined;
+const event = (sequence: number, kind = "vehicleStateChanged", presentation: Record<string, unknown> = {}): PresentationObservation => ({ sequence, kind, presentation, eventId: `event-${sequence}`, sourceNodeId: "N4", simulated: false, occurredAtUnixMs: 1774000000000 });
+
+function english() { fireEvent.click(screen.getByRole("button", { name: "English" })); }
+function workspace(page: React.ReactNode, connect: (options: ObserverConnectOptions) => () => void = idle) { return <OperationsProvider observerConnect={connect}><OperationsShell>{page}</OperationsShell></OperationsProvider>; }
+
+describe("routed headquarters", () => {
+  it("offers actual sidebar URLs and keeps the overview focused", () => {
+    render(workspace(<OverviewPage />));
+    expect(document.documentElement.lang).toBe("bn");
+    english();
+    expect(document.documentElement.lang).toBe("en");
+    for (const [name, href] of [["Live map", "/map"], ["Missions", "/missions"], ["Resources & shelters", "/resources"], ["Field network", "/network"], ["Activity log", "/activity"], ["Exercise lab", "/exercise"]]) expect(screen.getByRole("link", { name })).toHaveAttribute("href", href);
+    expect(screen.getByRole("heading", { level: 1 })).toHaveTextContent("Every response starts here.");
+    expect(screen.queryByRole("slider")).not.toBeInTheDocument();
+    expect(screen.queryByText("Scenario controls")).not.toBeInTheDocument();
   });
 
-  it("advances to a visibly simulated hybrid route and signed custody", () => {
-    render(<App />);
-    fireEvent.click(screen.getByRole("button", { name: "English" }));
-    const advance = screen.getByRole("button", { name: /Advance exercise/ });
-    for (let step = 0; step < 5; step += 1) fireEvent.click(advance);
-    expect(screen.getByText("Boat → R3 → simulated drone")).toBeVisible();
-    expect(screen.getByText("Two-party signature verified")).toBeVisible();
-    expect(screen.getByText("Drone custody verified")).toBeVisible();
-    expect(screen.getAllByText(/SIMULATED/).length).toBeGreaterThan(0);
+  it("preserves language and observer connection when route content changes", () => {
+    const cleanup = vi.fn();
+    const connector = vi.fn(() => cleanup);
+    const view = render(workspace(<OverviewPage />, connector));
+    english();
+    view.rerender(workspace(<MissionsPage />, connector));
+    expect(document.documentElement.lang).toBe("en");
+    expect(screen.getByText("Relief request register")).toBeVisible();
+    expect(connector).toHaveBeenCalledTimes(1);
+    expect(cleanup).not.toHaveBeenCalled();
   });
 
-  it("shows that field work continues when the observer disconnects", () => {
-    render(<App />);
-    fireEvent.click(screen.getByRole("button", { name: "English" }));
-    fireEvent.click(screen.getByRole("tab", { name: "Fault lab" }));
-    fireEvent.click(screen.getByRole("button", { name: /Disconnect dashboard/ }));
-    expect(screen.getByRole("status")).toHaveTextContent("Observer disconnected");
-    expect(screen.getByRole("status")).toHaveTextContent("Field work continues");
-  });
-
-  it("demonstrates observer sync and deterministic fault rejection", () => {
-    render(<App />);
-    fireEvent.click(screen.getByRole("button", { name: "English" }));
-    fireEvent.click(screen.getByRole("tab", { name: "Fault lab" }));
-    fireEvent.click(screen.getByRole("button", { name: /Show syncing/ }));
-    fireEvent.click(screen.getByRole("button", { name: /Reject duplicate/ }));
-    fireEvent.click(screen.getByRole("button", { name: /Reject tampered QR/ }));
-    expect(screen.getByText("Syncing local observer")).toBeVisible();
-    expect(screen.getByText("Duplicate envelope rejected")).toBeVisible();
-    expect(screen.getByText("Signature mismatch rejected")).toBeVisible();
-  });
-
-  it("keeps an offline relay queue and shows a simulated vehicle delay", () => {
-    render(<App />);
-    fireEvent.click(screen.getByRole("button", { name: "English" }));
-    fireEvent.click(screen.getByRole("tab", { name: "Fault lab" }));
-    fireEvent.click(screen.getByRole("button", { name: /Node B offline/ }));
-    fireEvent.click(screen.getByRole("button", { name: /Delay boat/ }));
-    expect(screen.getByText("offline • queue retained")).toBeVisible();
-    expect(screen.getByText("Boat delayed by 18 min")).toBeVisible();
-  });
-
-  it("changes labelled simulated rainfall and saturation before showing route risk", () => {
-    render(<App />);
-    fireEvent.click(screen.getByRole("button", { name: "English" }));
-
-    fireEvent.change(screen.getByRole("slider", { name: "Simulated rainfall" }), { target: { value: "82" } });
-    fireEvent.change(screen.getByRole("slider", { name: "Simulated soil saturation" }), { target: { value: "91" } });
-
-    expect(screen.getByText("82 mm/h")).toBeVisible();
-    expect(screen.getByText("91%")).toBeVisible();
-    expect(screen.getByText("E3 risk predicted at 97.3%")).toBeVisible();
-    expect(screen.getByText("Boat → R3 → simulated drone")).toBeVisible();
-  });
-
-  it("starts and pauses deterministic automatic replay", () => {
+  it("puts faults in the exercise page and keeps rehearsal deterministic", () => {
     vi.useFakeTimers();
-    render(<App />);
-    fireEvent.click(screen.getByRole("button", { name: "English" }));
+    render(workspace(<ExercisePage />)); english();
+    fireEvent.click(screen.getByRole("button", { name: "Fail road E3" }));
+    expect(screen.getByRole("button", { name: "Fail road E3" })).toHaveAttribute("aria-pressed", "true");
+    fireEvent.click(screen.getByRole("button", { name: "Reset to seed" }));
+    expect(screen.getByRole("button", { name: "Fail road E3" })).toHaveAttribute("aria-pressed", "false");
     fireEvent.click(screen.getByRole("button", { name: "Auto replay" }));
-    act(() => vi.advanceTimersByTime(1_750));
-    expect(screen.getByRole("button", { name: /Advance exercise02 \/ 06/ })).toBeVisible();
+    act(() => vi.advanceTimersByTime(1750));
+    expect(screen.getByText(/Step 2 of 6/)).toBeVisible();
     fireEvent.click(screen.getByRole("button", { name: "Pause replay" }));
-    act(() => vi.advanceTimersByTime(3_500));
-    expect(screen.getByRole("button", { name: /Advance exercise02 \/ 06/ })).toBeVisible();
+    act(() => vi.advanceTimersByTime(3500));
+    expect(screen.getByText(/Step 2 of 6/)).toBeVisible();
     vi.useRealTimers();
   });
 
-  it("applies a real route observation and identifies its live sequence", () => {
-    const observerConnect = (options: ObserverConnectOptions) => {
-      options.onStatus("live");
-      options.onObservation({
-        sequence: 9,
-        sourceNodeId: "field-n4",
-        eventId: "route-live-9",
-        kind: "routePlanned",
-        occurredAtUnixMs: 1_774_000_000_000,
-        simulated: false,
-        presentation: {
-          vehicleId: "boat-02",
-          mode: "TRANSPORT_MODE_WATERWAY",
-          edgeIds: ["E6", "E7"],
-          etaMinutes: 171,
-        },
-      });
-      return () => undefined;
-    };
-
-    render(<App observerConnect={observerConnect} />);
-    fireEvent.click(screen.getByRole("button", { name: "English" }));
-    expect(screen.getByText("Live observer connected")).toBeVisible();
-    expect(screen.getByText("Boat • E6 → E7")).toBeVisible();
-    expect(screen.getByText("Live route received")).toBeVisible();
-    expect(screen.getByText("field-n4 • SEQ 9 • LIVE EVENT")).toBeVisible();
+  it("disconnects the dashboard without claiming the field stopped", () => {
+    render(workspace(<NetworkPage />)); english();
+    fireEvent.click(screen.getByRole("button", { name: "Disconnect dashboard" }));
+    expect(screen.getByRole("status")).toHaveTextContent("Field work continues");
+    expect(screen.getByRole("button", { name: "Reconnect dashboard" })).toBeVisible();
   });
 
-  it("reset preserves the observer link choice but clears scenario effects", () => {
-    const disconnected = scenarioReducer({ step: 5, observerConnected: false, failedRoad: true, predictedRisk: true, rainfallMmPerHour: 82, soilSaturationPercent: 91, conflict: true, custodyVerified: true, droneBattery: 25, syncing: true, nodeOffline: true, vehicleDelayed: true, duplicateRejected: true, tamperRejected: true }, { type: "RESET" });
-    expect(disconnected).toEqual({ ...scenarioReducer(disconnected, { type: "RESET" }), observerConnected: false });
-    expect(disconnected.failedRoad).toBe(false);
-    expect(disconnected.custodyVerified).toBe(false);
+  it("separates live observations from exercise state and labels airway correctly", () => {
+    const connector = (options: ObserverConnectOptions) => { options.onStatus("live"); options.onObservation(event(1, "routePlanned", { mode: "TRANSPORT_MODE_AIRWAY", edgeIds: ["A2"], etaMinutes: 8 })); return () => undefined; };
+    render(workspace(<OverviewPage />, connector)); english();
+    expect(screen.getAllByText("Drone • A2")).toHaveLength(2);
+    expect(screen.queryByText("P0 · SIMULATED")).not.toBeInTheDocument();
+    expect(screen.queryByText("Blood & medicine to Companyganj")).not.toBeInTheDocument();
+    expect(screen.getByText("FIELD OBSERVATIONS")).toBeVisible();
+  });
+
+  it("searches missions and activity independently", () => {
+    const view = render(workspace(<MissionsPage />)); english();
+    fireEvent.change(screen.getByRole("textbox", { name: "Find a request" }), { target: { value: "missing" } });
+    expect(screen.getByText("No matching requests")).toBeVisible();
+    view.rerender(workspace(<ActivityPage />));
+    fireEvent.change(screen.getByRole("textbox", { name: "Search events" }), { target: { value: "exercise-route" } });
+    expect(screen.getByText("Route plan received")).toBeVisible();
+    expect(screen.queryByText("Relief request received")).not.toBeInTheDocument();
+  });
+
+  it("does not present scenario shelters as verified facilities", () => {
+    render(workspace(<ResourcesPage />)); english();
+    expect(screen.getByRole("alert")).toHaveTextContent("Shelter safety is not verified");
+    expect(screen.getAllByText("Unverified capacity").length).toBeGreaterThan(0);
+    expect(screen.getAllByRole("link", { name: "Locate on map" })[0]).toHaveAttribute("href", "/map?location=N2");
+    fireEvent.click(screen.getByRole("button", { name: "View field data" }));
+    expect(screen.getByText("No verified resource feed connected")).toBeVisible();
+    expect(screen.queryByText("Sunamganj exercise shelter")).not.toBeInTheDocument();
+  });
+
+  it("retains old projected routes and closures beyond the visible 100-event window", () => {
+    let feed = emptyFeed();
+    feed = receiveObservation(feed, event(1, "routePlanned", { edgeIds: ["E5"], mode: "TRANSPORT_MODE_ROAD" }));
+    feed = receiveObservation(feed, event(2, "edgeStatusChanged", { edgeId: "E3", failed: true }));
+    for (let sequence = 3; sequence <= 105; sequence++) feed = receiveObservation(feed, event(sequence));
+    expect(feed.recent).toHaveLength(100);
+    expect(feed.projection.route?.edgeIds).toEqual(["E5"]);
+    expect(feed.projection.failedEdges.has("E3")).toBe(true);
+    const duplicate = receiveObservation(feed, event(1, "routePlanned", { edgeIds: ["E1"] }));
+    expect(duplicate).toBe(feed);
+  });
+
+  it("resets scenario effects without changing the connection choice", () => {
+    expect(scenarioReducer({ ...initialScenario, observerConnected: false, failedRoad: true }, { type: "RESET" })).toEqual({ ...initialScenario, observerConnected: false });
   });
 });

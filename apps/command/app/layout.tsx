@@ -4,6 +4,8 @@ import "@fontsource-variable/noto-sans-bengali";
 import "maplibre-gl/dist/maplibre-gl.css";
 import "./globals.css";
 import { TooltipProvider } from "@/components/ui/tooltip";
+import { OperationsProvider } from "@/src/operations/OperationsProvider";
+import { OperationsShell } from "@/src/operations/OperationsShell";
 
 export const metadata = {
   title: "Delta Command | Disaster Operations Headquarters",
@@ -13,7 +15,7 @@ export const metadata = {
 export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
   return (
     <html lang="bn">
-      <body><TooltipProvider>{children}</TooltipProvider></body>
+      <body><TooltipProvider><OperationsProvider><OperationsShell>{children}</OperationsShell></OperationsProvider></TooltipProvider></body>
     </html>
   );
 }

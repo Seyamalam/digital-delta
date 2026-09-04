@@ -50,7 +50,6 @@ type RouteGeometryFeature = {
   geometry: { type: "LineString"; coordinates: Coordinate[] };
 };
 
-const visibleEdgeIds = new Set(["E1", "E3", "E6", "E7", "A2"]);
 const routeFeatures = routeGeometry.features.map((feature): RouteGeometryFeature => {
   const transport = feature.properties.transport;
   if (transport !== "road" && transport !== "water" && transport !== "air") {
@@ -66,12 +65,14 @@ const routeFeatures = routeGeometry.features.map((feature): RouteGeometryFeature
     properties: { ...feature.properties, transport },
     geometry: { type: "LineString", coordinates },
   };
-})
-  .filter((feature) => visibleEdgeIds.has(feature.properties.id));
+});
 
 export const routeGeometryMetadata = routeGeometry.metadata;
 
-export function buildMissionGeoJson(useWaterRoute: boolean, showRisk: boolean, simulated = true): MissionFeatureCollection {
+export type MissionMapState = { edgeIds?: string[]; failedEdgeIds?: string[]; edgeRisks?: Record<string, number>; rendezvous?: { candidateId?: string; longitudeDegrees?: number; latitudeDegrees?: number } };
+export function buildMissionGeoJson(useWaterRoute: boolean, showRisk: boolean, simulated = true, state: MissionMapState = {}): MissionFeatureCollection {
+  const activeIds = new Set(state.edgeIds ?? (useWaterRoute ? ["E6", "E7"] : ["E1", "E3"]));
+  const failedIds = new Set(state.failedEdgeIds ?? []);
   const features: MissionFeature[] = routeFeatures.map((feature) => {
     const { id, transport, geometry_source: geometrySource } = feature.properties;
     return {
@@ -80,8 +81,8 @@ export function buildMissionGeoJson(useWaterRoute: boolean, showRisk: boolean, s
         id,
         kind: "route",
         transport,
-        active: transport === "road" ? !useWaterRoute : transport === "water" && useWaterRoute,
-        failed: id === "E3" && useWaterRoute,
+        active: activeIds.has(id),
+        failed: failedIds.has(id),
         simulated: simulated || feature.properties.simulated,
         geometrySource,
       },
@@ -89,18 +90,24 @@ export function buildMissionGeoJson(useWaterRoute: boolean, showRisk: boolean, s
     };
   });
   for (const [id, coordinate] of Object.entries(sylhetNodes)) {
+    if (id === "R3" && state.rendezvous) continue;
     features.push({
       type: "Feature",
       properties: { id, kind: "node", simulated },
       geometry: { type: "Point", coordinates: coordinate },
     });
   }
-  if (showRisk) {
-    const riskyEdge = routeFeatures.find((feature) => feature.properties.id === "E3");
-    if (!riskyEdge) throw new Error("Missing E3 route geometry");
+  const rendezvous = state.rendezvous;
+  if (rendezvous && Number.isFinite(rendezvous.longitudeDegrees) && Number.isFinite(rendezvous.latitudeDegrees)) {
+    features.push({ type: "Feature", properties: { id: rendezvous.candidateId ?? "rendezvous", kind: "node", simulated }, geometry: { type: "Point", coordinates: [rendezvous.longitudeDegrees!, rendezvous.latitudeDegrees!] } });
+  }
+  for (const [edgeId, probability] of Object.entries(state.edgeRisks ?? (showRisk ? { E3: 0.973 } : {}))) {
+    if (!Number.isFinite(probability) || probability <= 0 || probability > 1) continue;
+    const riskyEdge = routeFeatures.find((feature) => feature.properties.id === edgeId);
+    if (!riskyEdge) continue;
     features.push({
       type: "Feature",
-      properties: { id: "risk-E3", kind: "risk", edgeId: "E3", simulated },
+      properties: { id: `risk-${edgeId}`, kind: "risk", edgeId, simulated },
       geometry: { type: "Point", coordinates: pointAlongLine(riskyEdge.geometry.coordinates, 0.5) },
     });
   }

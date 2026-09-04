@@ -1,5 +1,5 @@
-import { App } from "@/src/App";
+import { OverviewPage } from "@/src/operations/OverviewPage";
 
 export default function HeadquartersPage() {
-  return <App />;
+  return <OverviewPage />;
 }

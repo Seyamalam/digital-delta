@@ -2,6 +2,18 @@ import { describe, expect, it } from "vitest";
 import { buildMissionGeoJson, createOfflineStyle, missionBounds, routeGeometryMetadata } from "./offlineMap";
 
 describe("offline geographic map", () => {
+  it("draws the observed edge IDs without inventing E3 closures", () => {
+    const data = buildMissionGeoJson(false, false, false, { edgeIds: ["E5"], failedEdgeIds: [], edgeRisks: { E3: 0.9 } });
+    expect(data.features.filter((feature) => feature.properties.active).map((feature) => feature.properties.id)).toEqual(["E5"]);
+    expect(data.features.some((feature) => feature.properties.failed)).toBe(false);
+    expect(data.features.some((feature) => feature.properties.id === "risk-E3")).toBe(true);
+  });
+
+  it("uses observed rendezvous coordinates instead of a fixed R3", () => {
+    const data = buildMissionGeoJson(false, false, false, { rendezvous: { candidateId: "R2", latitudeDegrees: 25.04, longitudeDegrees: 91.8 } });
+    expect(data.features.find((feature) => feature.properties.id === "R2")?.geometry.coordinates).toEqual([91.8, 25.04]);
+    expect(data.features.some((feature) => feature.properties.id === "R3")).toBe(false);
+  });
   it("uses only the bundled PMTiles archive and keeps OSM attribution", () => {
     const style = createOfflineStyle("http://127.0.0.1:5173/maps/sylhet.pmtiles", buildMissionGeoJson(false, false));
     const encoded = JSON.stringify(style);
