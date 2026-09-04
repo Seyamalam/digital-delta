@@ -14,6 +14,7 @@ import com.google.protobuf.InvalidProtocolBufferException
 class RoomMeshIngress(
     private val database: DeltaDatabase,
     private val localNodeId: String,
+    private val acknowledgementSigner: MeshAcknowledgementSigner,
     private val nowUnixMs: () -> Long = System::currentTimeMillis,
 ) {
     init {
@@ -109,13 +110,15 @@ class RoomMeshIngress(
         status: AcknowledgementStatus,
         reason: String,
         recordedAt: Long,
-    ): Acknowledgement = Acknowledgement.newBuilder()
-        .setMessageId(messageId)
-        .setNodeId(localNodeId)
-        .setStatus(status)
-        .setReasonCode(reason)
-        .setRecordedAtUnixMs(recordedAt)
-        .build()
+    ): Acknowledgement = acknowledgementSigner.sign(
+        Acknowledgement.newBuilder()
+            .setMessageId(messageId)
+            .setNodeId(localNodeId)
+            .setStatus(status)
+            .setReasonCode(reason)
+            .setRecordedAtUnixMs(recordedAt)
+            .build(),
+    )
 
     companion object {
         private const val SUPPORTED_SCHEMA_VERSION = 1

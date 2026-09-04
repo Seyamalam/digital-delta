@@ -18,9 +18,12 @@ import com.example.digitaldelta.di.DigitalDeltaGraphEntryPoint
 import com.example.digitaldelta.domain.mesh.MeshOutboxDispatcher
 import com.example.digitaldelta.domain.mesh.MeshPolicy
 import com.example.digitaldelta.domain.mesh.MeshRuntimeStateStore
+import com.example.digitaldelta.domain.mesh.AndroidMeshAcknowledgementSigner
+import com.example.digitaldelta.domain.mesh.DirectoryMeshAcknowledgementVerifier
 import com.example.digitaldelta.domain.mesh.NearbyConnectionsPeerTransport
 import com.example.digitaldelta.domain.mesh.NearbyMeshController
 import com.example.digitaldelta.domain.mesh.RoomMeshIngress
+import com.example.digitaldelta.domain.mesh.RoomPeerSigningIdentityDirectory
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
@@ -47,10 +50,18 @@ class MeshRelayService : Service() {
             DigitalDeltaGraphEntryPoint::class.java,
         )
         runtimeState = graph.meshRuntimeStateStore()
+        val acknowledgementSigner = AndroidMeshAcknowledgementSigner(
+            nodeId = LOCAL_NODE_ID,
+            deviceKeys = graph.deviceIdentityKeyStore(),
+        )
         controller = NearbyConnectionsPeerTransport(
             context = applicationContext,
             localNodeId = LOCAL_NODE_ID,
-            ingress = RoomMeshIngress(graph.database(), LOCAL_NODE_ID),
+            ingress = RoomMeshIngress(
+                database = graph.database(),
+                localNodeId = LOCAL_NODE_ID,
+                acknowledgementSigner = acknowledgementSigner,
+            ),
         )
         scope.launch {
             controller.state.collectLatest { state ->
@@ -107,7 +118,13 @@ class MeshRelayService : Service() {
     }
 
     private suspend fun dispatchLoop() {
-        val dispatcher = MeshOutboxDispatcher(graph.database(), controller)
+        val dispatcher = MeshOutboxDispatcher(
+            database = graph.database(),
+            transport = controller,
+            acknowledgementVerifier = DirectoryMeshAcknowledgementVerifier(
+                RoomPeerSigningIdentityDirectory(graph.database().recipientKeyDao()),
+            ),
+        )
         val policy = MeshPolicy()
         while (scope.isActive) {
             val now = System.currentTimeMillis()

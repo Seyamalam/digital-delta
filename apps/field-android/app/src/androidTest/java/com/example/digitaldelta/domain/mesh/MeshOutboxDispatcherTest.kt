@@ -39,7 +39,12 @@ class MeshOutboxDispatcherTest {
         database.outboxDao().enqueue(pendingEnvelope(now))
         val transport = InterruptOnceTransport()
 
-        val interrupted = MeshOutboxDispatcher(database, transport, nowUnixMs = { now })
+        val interrupted = MeshOutboxDispatcher(
+            database,
+            transport,
+            acknowledgementVerifier = ACCEPT_TEST_ACKNOWLEDGEMENT,
+            nowUnixMs = { now },
+        )
             .dispatch(peerId = "C")
 
         assertEquals(1, interrupted.retryScheduled)
@@ -48,7 +53,12 @@ class MeshOutboxDispatcherTest {
         assertEquals(1, retry.attemptCount)
         assertTrue(retry.nextAttemptAtUnixMs > now)
 
-        val resumed = MeshOutboxDispatcher(database, transport, nowUnixMs = { retry.nextAttemptAtUnixMs })
+        val resumed = MeshOutboxDispatcher(
+            database,
+            transport,
+            acknowledgementVerifier = ACCEPT_TEST_ACKNOWLEDGEMENT,
+            nowUnixMs = { retry.nextAttemptAtUnixMs },
+        )
             .dispatch(peerId = "C")
 
         assertEquals(1, resumed.acknowledged)
@@ -62,11 +72,35 @@ class MeshOutboxDispatcherTest {
         database.outboxDao().enqueue(pendingEnvelope(now - 100_000))
         val transport = InterruptOnceTransport()
 
-        val report = MeshOutboxDispatcher(database, transport, nowUnixMs = { now }).dispatch("C")
+        val report = MeshOutboxDispatcher(
+            database,
+            transport,
+            acknowledgementVerifier = ACCEPT_TEST_ACKNOWLEDGEMENT,
+            nowUnixMs = { now },
+        ).dispatch("C")
 
         assertEquals(1, report.deadLettered)
         assertEquals(0, transport.calls)
         assertEquals(QueueState.DEAD_LETTER.name, database.outboxDao().find("resume-1")?.state)
+    }
+
+    @Test
+    fun forgedAcknowledgementSchedulesRetryWithoutRemovingMessage() = runTest {
+        val now = 1_800_000_000_000
+        database.outboxDao().enqueue(pendingEnvelope(now))
+        val transport = AlwaysAcknowledgesTransport()
+        val rejectSignature = MeshAcknowledgementVerifier { _, _, _ -> false }
+
+        val report = MeshOutboxDispatcher(
+            database,
+            transport,
+            acknowledgementVerifier = rejectSignature,
+            nowUnixMs = { now },
+        ).dispatch("C")
+
+        assertEquals(1, report.retryScheduled)
+        assertEquals(0, report.acknowledged)
+        assertEquals(QueueState.PENDING.name, database.outboxDao().find("resume-1")?.state)
     }
 
     private fun pendingEnvelope(createdAt: Long): MeshEnvelopeEntity {
@@ -92,6 +126,10 @@ class MeshOutboxDispatcherTest {
             nextAttemptAtUnixMs = createdAt,
         )
     }
+
+    companion object {
+        private val ACCEPT_TEST_ACKNOWLEDGEMENT = MeshAcknowledgementVerifier { _, _, _ -> true }
+    }
 }
 
 private class InterruptOnceTransport : PeerTransport {
@@ -107,4 +145,14 @@ private class InterruptOnceTransport : PeerTransport {
             .setRecordedAtUnixMs(1_800_000_001_000)
             .build()
     }
+}
+
+private class AlwaysAcknowledgesTransport : PeerTransport {
+    override suspend fun send(peerId: String, wireBytes: ByteArray): Acknowledgement =
+        Acknowledgement.newBuilder()
+            .setMessageId(MeshWireCodec.decode(wireBytes).messageId)
+            .setNodeId(peerId)
+            .setStatus(AcknowledgementStatus.ACKNOWLEDGEMENT_STATUS_DURABLY_STORED)
+            .setRecordedAtUnixMs(1_800_000_000_000)
+            .build()
 }

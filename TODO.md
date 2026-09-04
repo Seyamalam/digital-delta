@@ -90,7 +90,7 @@ This checklist tracks implementation. Milestone exit criteria live in [MILESTONE
 - [x] Implement the active relay as an Android `connectedDevice` foreground service.
 - [ ] Use WorkManager only for deferred retries, queue cleanup, and maintenance.
 - [x] Implement neighbor advertising and discovery with an explicit human accept or reject step.
-- [ ] Authenticate peers before accepting payloads. Nearby comparison digits are displayed, but signed application identity binding remains.
+- [ ] Authenticate peers before accepting payloads. Nearby comparison digits are displayed and every acknowledgement is now RSA-PSS-signed and verified against the provisioned peer directory before the sender advances its outbox; mutual signed challenge-response binding still remains.
 - [x] Build persistent Android inbox/outbox/seen-message state with bounded retry and dead-letter transitions; Go retains its durable Bolt inbox.
 - [x] Implement the store-and-forward relay engine with atomic durable receipt and connect it to the Nearby byte transport.
 - [x] Implement TTL and hop-limit enforcement in both Android and Go durable ingress.

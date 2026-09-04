@@ -37,7 +37,12 @@ class RoomMeshIngressTest {
     fun durableRelaySurvivesRestartAndRejectsDuplicate() = runTest {
         val now = 1_800_000_000_000
         val original = envelope("relay-survives", now, expiresAt = now + 60_000, hopCount = 0, hopLimit = 3)
-        val ingress = RoomMeshIngress(database, localNodeId = "B", nowUnixMs = { now })
+        val ingress = RoomMeshIngress(
+            database,
+            localNodeId = "B",
+            acknowledgementSigner = PASSTHROUGH_SIGNER,
+            nowUnixMs = { now },
+        )
 
         val accepted = ingress.receive(MeshWireCodec.encode(original))
 
@@ -50,7 +55,12 @@ class RoomMeshIngressTest {
         database = openDatabase()
         assertEquals("relay-survives", database.outboxDao().pending(now, 10).single().messageId)
 
-        val duplicate = RoomMeshIngress(database, localNodeId = "B", nowUnixMs = { now + 1 })
+        val duplicate = RoomMeshIngress(
+            database,
+            localNodeId = "B",
+            acknowledgementSigner = PASSTHROUGH_SIGNER,
+            nowUnixMs = { now + 1 },
+        )
             .receive(MeshWireCodec.encode(original))
         assertEquals(AcknowledgementStatus.ACKNOWLEDGEMENT_STATUS_REJECTED, duplicate.status)
         assertEquals("DUPLICATE", duplicate.reasonCode)
@@ -60,7 +70,12 @@ class RoomMeshIngressTest {
     @Test
     fun expiredAndHopLimitedMessagesAreRejectedWithoutPersistence() = runTest {
         val now = 1_800_000_000_000
-        val ingress = RoomMeshIngress(database, localNodeId = "B", nowUnixMs = { now })
+        val ingress = RoomMeshIngress(
+            database,
+            localNodeId = "B",
+            acknowledgementSigner = PASSTHROUGH_SIGNER,
+            nowUnixMs = { now },
+        )
 
         val expired = ingress.receive(
             MeshWireCodec.encode(envelope("expired", now - 10, expiresAt = now, hopCount = 0, hopLimit = 3)),
@@ -101,5 +116,6 @@ class RoomMeshIngressTest {
 
     companion object {
         private const val TEST_DATABASE = "room-mesh-ingress-test"
+        private val PASSTHROUGH_SIGNER = MeshAcknowledgementSigner { it }
     }
 }

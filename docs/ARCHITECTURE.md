@@ -273,7 +273,7 @@ Every transition checks role, current custodian, delivery ID, nonce, credential 
 2. The app converts localized form choices into language-neutral domain codes.
 3. The app signs and stores `ReliefRequestCreated` before attempting transfer.
 4. The outbox encrypts the payload for its authorized destination and creates an envelope.
-5. Nearby neighbors acknowledge durable receipt. The sender retains the envelope until policy permits removal.
+5. Nearby neighbors return an RSA-PSS-signed durable receipt. The sender verifies its exact message ID, node, status, reason, timestamp, credential lifetime, and provisioned signing key before advancing the outbox.
 6. Each relay verifies envelope integrity, stores it, increments the hop count, and forwards later.
 7. The recipient decrypts, verifies, deduplicates, appends the event, and rebuilds projections.
 8. Routing and triage react to the new event locally.
@@ -283,7 +283,7 @@ Every transition checks role, current custodian, delivery ID, nonce, credential 
 ## Failure handling
 
 - Commit local events before network transfer.
-- Treat acknowledgement as durable receipt, not final domain acceptance.
+- Treat a verified signed acknowledgement as durable receipt, not final domain acceptance. Unsigned, stale, altered, unknown-key, expired-key, revoked-key, or wrong-node acknowledgements remain retryable failures.
 - Retry with bounded exponential backoff and urgency-aware scheduling.
 - Preserve failed envelopes in a dead-letter queue with a visible reason.
 - Rebuild projections after policy or application upgrade.

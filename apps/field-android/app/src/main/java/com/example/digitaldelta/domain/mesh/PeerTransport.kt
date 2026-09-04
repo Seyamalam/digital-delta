@@ -22,6 +22,7 @@ data class DispatchReport(
 class MeshOutboxDispatcher(
     private val database: DeltaDatabase,
     private val transport: PeerTransport,
+    private val acknowledgementVerifier: MeshAcknowledgementVerifier,
     private val nowUnixMs: () -> Long = System::currentTimeMillis,
 ) {
     suspend fun dispatch(peerId: String, limit: Int = 20): DispatchReport {
@@ -47,7 +48,9 @@ class MeshOutboxDispatcher(
                     retried += 1
                     continue
                 }
-            if (acknowledgement.messageId != item.messageId || acknowledgement.nodeId != peerId) {
+            if (acknowledgement.messageId != item.messageId ||
+                !acknowledgementVerifier.verify(acknowledgement, peerId, nowUnixMs())
+            ) {
                 database.outboxDao().scheduleRetry(item.messageId, now + retryDelayMillis(item))
                 retried += 1
                 continue

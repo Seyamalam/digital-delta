@@ -1,6 +1,7 @@
 package com.example.digitaldelta.di
 
 import com.example.digitaldelta.data.local.DeltaDatabase
+import com.example.digitaldelta.domain.identity.AndroidDeviceIdentityKeyStore
 import com.example.digitaldelta.domain.identity.RecipientProvisioningRepository
 import com.example.digitaldelta.domain.mesh.MeshRuntimeStateStore
 import dagger.hilt.EntryPoint
@@ -15,6 +16,7 @@ import dagger.hilt.components.SingletonComponent
 @InstallIn(SingletonComponent::class)
 interface DigitalDeltaGraphEntryPoint {
     fun database(): DeltaDatabase
+    fun deviceIdentityKeyStore(): AndroidDeviceIdentityKeyStore
     fun recipientProvisioningRepository(): RecipientProvisioningRepository
     fun meshRuntimeStateStore(): MeshRuntimeStateStore
 }

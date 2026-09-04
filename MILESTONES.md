@@ -127,6 +127,8 @@ Exit criteria:
 - Duplicate messages do not duplicate cargo or receipts.
 - Phone B can display envelope metadata but cannot decrypt the cargo payload.
 
+Current acknowledgement evidence: Android ingress signs each durable or rejected receipt with the receiving node's non-exportable RSA-PSS key. Dispatch verifies the exact receipt against the active provisioned peer record before changing queue state. JVM tests cover mutation, missing signatures, wrong node, stale time, unknown identity, expiry, and revocation; Android Keystore integration compiles for connected execution. Mutual connection challenge-response and the physical three-phone recovery run remain exit-criteria work.
+
 ## Milestone 5: dynamic routing dashboard
 
 **Goal:** Make route selection, failure, and recovery visible and measurable.
