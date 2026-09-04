@@ -68,6 +68,33 @@ class RoomHybridFleetEventRecorderTest {
         assertEquals("CUSTODY_ACCEPTED", events[3].vehicleStateChanged.stateCode)
     }
 
+    @Test
+    fun delayedBoatPositionAndReplanAreStoredWithoutInventingSensorData() = runTest {
+        val recorder = RoomHybridFleetEventRecorder(
+            database = database,
+            nowUnixMs = { 1_800_000_000_000L },
+            eventId = { "fleet-delay-event" },
+        )
+        val previous = plan()
+        val revised = previous.copy(
+            rendezvous = previous.rendezvous.copy(
+                point = NamedPoint("R3", GeoPoint(25.0200, 91.7000)),
+                boatStartDelayMinutes = 18.0,
+            ),
+        )
+        val report = BoatDelayReport(18, GeoPoint(25.0400, 91.8000), simulated = true)
+
+        recorder.recordBoatDelay(previous, revised, report)
+
+        val operation = database.operationLogDao().forMission(previous.mission.missionId).single()
+        val event = DomainEvent.parseFrom(operation.payloadBytes)
+        assertEquals("VEHICLE_STATE_CHANGED", operation.eventType)
+        assertEquals("DELAYED_18_MIN_R2_TO_R3", event.vehicleStateChanged.stateCode)
+        assertEquals(report.observedPosition.latitude, event.vehicleStateChanged.latitudeDegrees, 0.000001)
+        assertEquals(report.observedPosition.longitude, event.vehicleStateChanged.longitudeDegrees, 0.000001)
+        assertTrue(event.simulated)
+    }
+
     private fun plan(): HybridFleetPlan {
         val mission = HybridFleetMission(
             missionId = "mission-drone-demo-01",

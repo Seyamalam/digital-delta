@@ -23,6 +23,12 @@ data class HybridFleetPlan(
     val rendezvous: RendezvousPlan,
 )
 
+data class BoatDelayReport(
+    val delayMinutes: Int,
+    val observedPosition: GeoPoint,
+    val simulated: Boolean = true,
+)
+
 enum class HybridFleetBlockReason {
     DESTINATION_NOT_DRONE_REQUIRED,
     NO_SUPPORTED_ROUTE,
@@ -33,6 +39,11 @@ enum class HybridFleetBlockReason {
 sealed interface HybridFleetState {
     data object Unavailable : HybridFleetState
     data class Ready(val plan: HybridFleetPlan) : HybridFleetState
+    data class Replanned(
+        val previousPlan: HybridFleetPlan,
+        val plan: HybridFleetPlan,
+        val report: BoatDelayReport,
+    ) : HybridFleetState
     data class BoatArrived(val plan: HybridFleetPlan) : HybridFleetState
     data class PreparingDroneOffer(val plan: HybridFleetPlan) : HybridFleetState
     data class DroneArrived(val plan: HybridFleetPlan, val offer: DeliveryOfferReady) : HybridFleetState
@@ -50,12 +61,14 @@ sealed interface HybridFleetState {
 
 interface HybridFleetWorkflow {
     fun snapshot(): HybridFleetState
+    suspend fun reportBoatDelay(report: BoatDelayReport): HybridFleetState
     suspend fun advance(): HybridFleetState
     fun reset(): HybridFleetState
 }
 
 interface HybridFleetEventRecorder {
     suspend fun recordRendezvous(plan: HybridFleetPlan)
+    suspend fun recordBoatDelay(previousPlan: HybridFleetPlan, revisedPlan: HybridFleetPlan, report: BoatDelayReport)
     suspend fun recordBoatArrival(plan: HybridFleetPlan)
     suspend fun recordDroneArrival(plan: HybridFleetPlan)
     suspend fun recordDroneCustodyAccepted(plan: HybridFleetPlan)
@@ -63,6 +76,7 @@ interface HybridFleetEventRecorder {
 
 object NoOpHybridFleetEventRecorder : HybridFleetEventRecorder {
     override suspend fun recordRendezvous(plan: HybridFleetPlan) = Unit
+    override suspend fun recordBoatDelay(previousPlan: HybridFleetPlan, revisedPlan: HybridFleetPlan, report: BoatDelayReport) = Unit
     override suspend fun recordBoatArrival(plan: HybridFleetPlan) = Unit
     override suspend fun recordDroneArrival(plan: HybridFleetPlan) = Unit
     override suspend fun recordDroneCustodyAccepted(plan: HybridFleetPlan) = Unit
@@ -78,10 +92,44 @@ class DefaultHybridFleetWorkflow(
 
     override fun snapshot(): HybridFleetState = state
 
+    override suspend fun reportBoatDelay(report: BoatDelayReport): HybridFleetState {
+        require(report.delayMinutes > 0)
+        val previousPlan = when (val current = state) {
+            is HybridFleetState.Ready -> current.plan
+            is HybridFleetState.Replanned -> current.plan
+            else -> return current
+        }
+        val revisedMission = mission.copy(
+            rendezvousInputs = mission.rendezvousInputs.copy(
+                boatPosition = report.observedPosition,
+                boatStartDelayMinutes = report.delayMinutes.toDouble(),
+            ),
+        )
+        val revisedRendezvous = try {
+            orchestrator.computeRendezvous(revisedMission.rendezvousInputs)
+        } catch (_: NoFeasibleRendezvousException) {
+            state = HybridFleetState.Blocked(HybridFleetBlockReason.LOW_BATTERY, revisedMission)
+            return state
+        }
+        val revisedPlan = HybridFleetPlan(
+            mission = revisedMission,
+            reachability = previousPlan.reachability,
+            rendezvous = revisedRendezvous,
+        )
+        eventRecorder.recordBoatDelay(previousPlan, revisedPlan, report)
+        eventRecorder.recordRendezvous(revisedPlan)
+        state = HybridFleetState.Replanned(previousPlan, revisedPlan, report)
+        return state
+    }
+
     override suspend fun advance(): HybridFleetState {
         state = when (val current = state) {
             is HybridFleetState.Ready -> {
                 eventRecorder.recordRendezvous(current.plan)
+                eventRecorder.recordBoatArrival(current.plan)
+                HybridFleetState.BoatArrived(current.plan)
+            }
+            is HybridFleetState.Replanned -> {
                 eventRecorder.recordBoatArrival(current.plan)
                 HybridFleetState.BoatArrived(current.plan)
             }

@@ -175,6 +175,7 @@
     <string name="hybrid_fleet_title">নৌযান → ড্রোন শেষ-মাইল হস্তান্তর</string>
     <string name="hybrid_fleet_subtitle">ক্লিনিকে বৈধ সড়ক বা নৌপথ নেই। এই ফোন ব্যাটারি-নিরাপদ মিলনস্থল বেছে নিয়ে অফলাইনে হেফাজত হস্তান্তর করে।</string>
     <string name="hybrid_phase_ready">মিলনস্থলের পরিকল্পনা প্রস্তুত</string>
+    <string name="hybrid_phase_replanned">নৌযান বিলম্বে মিলনস্থল পুনর্নির্ধারিত</string>
     <string name="hybrid_phase_boat_arrived">নৌযান মিলনস্থলে পৌঁছেছে</string>
     <string name="hybrid_phase_preparing_offer">নৌযান-থেকে-ড্রোন প্রস্তাব স্বাক্ষর হচ্ছে…</string>
     <string name="hybrid_phase_drone_arrived">সিমুলেটেড ড্রোন পৌঁছেছে</string>
@@ -183,6 +184,9 @@
     <string name="hybrid_phase_blocked">ব্যাটারি-নিরাপদ মিলনস্থল নেই</string>
     <string name="hybrid_phase_loading">অফলাইন বহর পরিকল্পনা লোড হচ্ছে…</string>
     <string name="hybrid_start_boat">নৌযান পৌঁছানো সিমুলেট করুন</string>
+    <string name="hybrid_start_replanned_boat">সংশোধিত মিলনস্থলে এগিয়ে যান</string>
+    <string name="hybrid_simulate_delay">নৌযানের ১৮ মিনিট বিলম্ব সিমুলেট করুন</string>
+    <string name="hybrid_replan_label">স্থানীয় পুনঃপরিকল্পনা</string>
     <string name="hybrid_generate_qr">স্বাক্ষরিত নৌযান → ড্রোন QR তৈরি করুন</string>
     <string name="hybrid_accept_custody">সিমুলেটেড ড্রোন স্বাক্ষর করে গ্রহণ করবে</string>
     <string name="hybrid_reset">হাইব্রিড হস্তান্তর মহড়া রিসেট করুন</string>

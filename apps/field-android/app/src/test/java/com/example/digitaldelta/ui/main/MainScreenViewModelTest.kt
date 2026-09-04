@@ -35,6 +35,7 @@ import com.example.digitaldelta.domain.prediction.RouteRiskPrediction
 import com.example.digitaldelta.domain.prediction.RouteRiskPredictor
 import com.example.digitaldelta.domain.prediction.RouteRiskRuntime
 import com.example.digitaldelta.domain.fleet.DefaultHybridFleetWorkflow
+import com.example.digitaldelta.domain.fleet.BoatDelayReport
 import com.example.digitaldelta.domain.fleet.FleetOrchestrator
 import com.example.digitaldelta.domain.fleet.GeoPoint
 import com.example.digitaldelta.domain.fleet.HybridFleetInputs
@@ -320,6 +321,10 @@ class MainScreenViewModelTest {
         )
 
         assertEquals(true, viewModel.hybridFleetState.value is HybridFleetState.Ready)
+        viewModel.reportBoatDelay()
+        advanceUntilIdle()
+        assertEquals(true, viewModel.hybridFleetState.value is HybridFleetState.Replanned)
+        assertEquals(1, hybrid.delayReports)
         viewModel.advanceHybridFleet()
         advanceUntilIdle()
         assertEquals(true, viewModel.hybridFleetState.value is HybridFleetState.BoatArrived)
@@ -370,8 +375,13 @@ private class CountingHybridFleetWorkflow : HybridFleetWorkflow {
         proofOfDelivery = FakeProofOfDeliveryWorkflow(),
     )
     var advanceCalls = 0
+    var delayReports = 0
 
     override fun snapshot(): HybridFleetState = delegate.snapshot()
+    override suspend fun reportBoatDelay(report: BoatDelayReport): HybridFleetState {
+        delayReports += 1
+        return delegate.reportBoatDelay(report)
+    }
     override suspend fun advance(): HybridFleetState {
         advanceCalls += 1
         return delegate.advance()

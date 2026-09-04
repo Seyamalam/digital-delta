@@ -174,7 +174,7 @@ This checklist tracks implementation. Milestone exit criteria live in [MILESTONE
 - [x] Simulate boat and drone arrival events as visibly labelled Protobuf ledger entries.
 - [x] Reuse M5 for a sender-and-recipient-signed boat-to-drone custody transfer.
 - [x] Display simulated vehicle state clearly in Bangla and English.
-- [ ] Complete fleet edge-case coverage. No feasible rendezvous, low battery, unreachable graph, and changed destination pass; delayed-boat replanning remains.
+- [ ] Complete fleet edge-case evidence. No feasible rendezvous, low battery, unreachable graph, changed destination, and delayed-boat R3-to-R2 replanning pass at the unit/domain layer. The bilingual connected test is compiled but still needs an emulator run and persistent screenshot.
 
 ## Command dashboard and Disaster Control
 

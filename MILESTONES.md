@@ -197,7 +197,7 @@ Exit criteria:
 
 **Goal:** Coordinate boat, truck, and simulated drone ownership without physical vehicles.
 
-Module status: Demoable on the Android emulator; verification still requires delayed-boat coverage, target phones, and three unchanged full passes.
+Module status: Demoable on the Android emulator; delayed-boat replanning now has passing domain tests and a compiled bilingual connected journey. Verification still requires running and capturing that new journey, target phones, and three unchanged full passes.
 
 Deliverables:
 
@@ -216,7 +216,7 @@ Exit criteria:
 - Boat-to-drone custody appears in the receipt chain.
 - No screen or pitch implies that a physical drone was used.
 
-Current evidence: N7 is air-only in the bundled graph, the engine chooses R3 by delivery-completion time while preserving a 20 percent reserve, Room stores `RendezvousPlanned` and `VehicleStateChanged` Protobuf events, and the existing M5 cryptography records a two-party boat-to-simulated-drone receipt. The complete bilingual journey passes in the 37-test connected suite and has paired ready/transferred captures under `artifacts/screenshots/`.
+Current evidence: N7 is air-only in the bundled graph, the engine chooses R3 by delivery-completion time while preserving a 20 percent reserve, Room stores `RendezvousPlanned` and `VehicleStateChanged` Protobuf events, and the existing M5 cryptography records a two-party boat-to-simulated-drone receipt. A reported simulated 18-minute delay plus updated boat position now causes a fresh local optimization from R3 to R2, writes the delayed vehicle event and revised rendezvous, and continues the handoff from that plan. Domain tests pass and the new bilingual Compose journey compiles; emulator execution and the delayed-state capture remain. The previous complete bilingual handoff journey passed in the 37-test connected baseline and has paired ready/transferred captures under `artifacts/screenshots/`.
 
 ## Milestone 9: command center and disaster control
 

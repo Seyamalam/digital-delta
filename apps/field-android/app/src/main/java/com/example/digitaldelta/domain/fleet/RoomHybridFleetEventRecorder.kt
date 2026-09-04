@@ -34,6 +34,21 @@ class RoomHybridFleetEventRecorder(
         append(plan, EVENT_RENDEZVOUS_PLANNED) { it.setRendezvousPlanned(body) }
     }
 
+    override suspend fun recordBoatDelay(
+        previousPlan: HybridFleetPlan,
+        revisedPlan: HybridFleetPlan,
+        report: BoatDelayReport,
+    ) {
+        recordVehicle(
+            plan = revisedPlan,
+            vehicleId = revisedPlan.mission.boatVehicleId,
+            mode = TransportMode.TRANSPORT_MODE_WATERWAY,
+            stateCode = "DELAYED_${report.delayMinutes}_MIN_${previousPlan.rendezvous.point.id}_TO_${revisedPlan.rendezvous.point.id}",
+            batteryPercent = 0,
+            coordinate = report.observedPosition,
+        )
+    }
+
     override suspend fun recordBoatArrival(plan: HybridFleetPlan) {
         recordVehicle(
             plan = plan,
@@ -70,8 +85,8 @@ class RoomHybridFleetEventRecorder(
         mode: TransportMode,
         stateCode: String,
         batteryPercent: Int,
+        coordinate: GeoPoint = plan.rendezvous.point.coordinate,
     ) {
-        val coordinate = plan.rendezvous.point.coordinate
         val body = VehicleStateChanged.newBuilder()
             .setVehicleId(vehicleId)
             .setMode(mode)

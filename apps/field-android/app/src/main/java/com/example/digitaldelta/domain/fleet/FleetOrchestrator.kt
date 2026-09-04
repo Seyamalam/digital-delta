@@ -30,6 +30,7 @@ data class RendezvousPlan(
     val deliveryArrivalMinutes: Double,
     val droneMissionDistanceKm: Double,
     val projectedDroneBatteryPercent: Double,
+    val boatStartDelayMinutes: Double = 0.0,
     val objective: String = "minimize-delivery-completion-with-reserve",
     val simulated: Boolean = true,
 )
@@ -44,6 +45,7 @@ data class HybridFleetInputs(
     val droneBatteryPercent: Int,
     val droneRangeAtFullChargeKm: Double,
     val reserveBatteryPercent: Int,
+    val boatStartDelayMinutes: Double = 0.0,
 )
 
 class NoFeasibleRendezvousException(message: String) : IllegalStateException(message)
@@ -99,9 +101,10 @@ class FleetOrchestrator(
         require(inputs.reserveBatteryPercent in 0..100)
         require(inputs.droneRangeAtFullChargeKm > 0.0)
         require(inputs.reserveBatteryPercent <= inputs.droneBatteryPercent)
+        require(inputs.boatStartDelayMinutes >= 0.0)
 
         return inputs.candidates.mapNotNull { candidate ->
-            val boatMinutes = travelMinutes(
+            val boatMinutes = inputs.boatStartDelayMinutes + travelMinutes(
                 inputs.boatPosition,
                 candidate.coordinate,
                 inputs.boatSpeedKph,
@@ -124,6 +127,7 @@ class FleetOrchestrator(
                 deliveryArrivalMinutes = handoffReadyMinutes + lastMileMinutes,
                 droneMissionDistanceKm = missionDistanceKm,
                 projectedDroneBatteryPercent = projectedBattery,
+                boatStartDelayMinutes = inputs.boatStartDelayMinutes,
             )
         }.minWithOrNull(
             compareBy(

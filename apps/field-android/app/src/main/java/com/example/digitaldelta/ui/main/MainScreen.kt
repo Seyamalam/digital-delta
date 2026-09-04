@@ -197,6 +197,7 @@ fun DigitalDeltaApp(
     onVerifyHandoff: ((Boolean) -> Unit)? = null,
     onPrepareNextHandoff: (() -> Unit)? = null,
     hybridFleetState: HybridFleetState = HybridFleetState.Unavailable,
+    onReportBoatDelay: (() -> Unit)? = null,
     onAdvanceHybridFleet: (() -> Unit)? = null,
     onResetHybridFleet: (() -> Unit)? = null,
 ) {
@@ -242,6 +243,7 @@ fun DigitalDeltaApp(
                 onVerifyHandoff = onVerifyHandoff,
                 onPrepareNextHandoff = onPrepareNextHandoff,
                 hybridFleetState = hybridFleetState,
+                onReportBoatDelay = onReportBoatDelay,
                 onAdvanceHybridFleet = onAdvanceHybridFleet,
                 onResetHybridFleet = onResetHybridFleet,
             )
@@ -353,6 +355,7 @@ private fun DeltaShell(
     onVerifyHandoff: ((Boolean) -> Unit)?,
     onPrepareNextHandoff: (() -> Unit)?,
     hybridFleetState: HybridFleetState,
+    onReportBoatDelay: (() -> Unit)?,
     onAdvanceHybridFleet: (() -> Unit)?,
     onResetHybridFleet: (() -> Unit)?,
 ) {
@@ -447,6 +450,7 @@ private fun DeltaShell(
                 DeltaDestination.HANDOFF -> HandoffScreen(
                     language = language,
                     hybridFleetState = hybridFleetState,
+                    onReportBoatDelay = onReportBoatDelay,
                     onAdvanceHybridFleet = onAdvanceHybridFleet,
                     onResetHybridFleet = onResetHybridFleet,
                     state = proofOfDeliveryState,
@@ -1652,11 +1656,13 @@ private fun MeshRelayCard(
 private fun HybridFleetCard(
     language: AppLanguage,
     state: HybridFleetState,
+    onDelay: (() -> Unit)?,
     onAdvance: (() -> Unit)?,
     onReset: (() -> Unit)?,
 ) {
     val plan = when (state) {
         is HybridFleetState.Ready -> state.plan
+        is HybridFleetState.Replanned -> state.plan
         is HybridFleetState.BoatArrived -> state.plan
         is HybridFleetState.PreparingDroneOffer -> state.plan
         is HybridFleetState.DroneArrived -> state.plan
@@ -1668,6 +1674,7 @@ private fun HybridFleetCard(
     }
     val phase = when (state) {
         is HybridFleetState.Ready -> 0
+        is HybridFleetState.Replanned -> 0
         is HybridFleetState.BoatArrived,
         is HybridFleetState.PreparingDroneOffer,
         -> 1
@@ -1681,6 +1688,7 @@ private fun HybridFleetCard(
     }
     val statusText = when (state) {
         is HybridFleetState.Ready -> text(R.string.hybrid_phase_ready, language)
+        is HybridFleetState.Replanned -> text(R.string.hybrid_phase_replanned, language)
         is HybridFleetState.BoatArrived -> text(R.string.hybrid_phase_boat_arrived, language)
         is HybridFleetState.PreparingDroneOffer -> text(R.string.hybrid_phase_preparing_offer, language)
         is HybridFleetState.DroneArrived -> text(R.string.hybrid_phase_drone_arrived, language)
@@ -1691,6 +1699,7 @@ private fun HybridFleetCard(
     }
     val actionText = when (state) {
         is HybridFleetState.Ready -> text(R.string.hybrid_start_boat, language)
+        is HybridFleetState.Replanned -> text(R.string.hybrid_start_replanned_boat, language)
         is HybridFleetState.BoatArrived -> text(R.string.hybrid_generate_qr, language)
         is HybridFleetState.DroneArrived -> text(R.string.hybrid_accept_custody, language)
         is HybridFleetState.Transferred,
@@ -1798,6 +1807,23 @@ private fun HybridFleetCard(
                 }
             }
             if (plan != null) {
+                if (state is HybridFleetState.Replanned) {
+                    Surface(
+                        modifier = Modifier.fillMaxWidth().testTag("hybrid-fleet-replanned"),
+                        color = RiskAmber.copy(alpha = .14f),
+                        contentColor = Color(0xFF6C4300),
+                        shape = RoundedCornerShape(13.dp),
+                    ) {
+                        Text(
+                            "${text(R.string.hybrid_replan_label, language)} " +
+                                "${state.previousPlan.rendezvous.point.id} → ${state.plan.rendezvous.point.id} • " +
+                                "${state.report.delayMinutes} ${text(R.string.minutes_short, language)}",
+                            modifier = Modifier.padding(13.dp),
+                            style = MaterialTheme.typography.bodyMedium,
+                            fontWeight = FontWeight.Bold,
+                        )
+                    }
+                }
                 DetailRow(
                     text(R.string.hybrid_destination, language),
                     "N7 • ${text(R.string.hybrid_destination_name, language)}",
@@ -1863,6 +1889,17 @@ private fun HybridFleetCard(
                 }
             }
             if (loading) LinearProgressIndicator(Modifier.fillMaxWidth().testTag("hybrid-fleet-loading"))
+            if (state is HybridFleetState.Ready) {
+                OutlinedButton(
+                    onClick = { onDelay?.invoke() },
+                    enabled = onDelay != null,
+                    modifier = Modifier.fillMaxWidth().height(48.dp).testTag("hybrid-fleet-delay"),
+                ) {
+                    Icon(Icons.Default.AccessTime, null)
+                    Spacer(Modifier.width(8.dp))
+                    Text(text(R.string.hybrid_simulate_delay, language))
+                }
+            }
             Button(
                 onClick = {
                     if (state is HybridFleetState.Transferred || state is HybridFleetState.Blocked) onReset?.invoke()
@@ -1943,6 +1980,7 @@ private fun HybridPhaseRow(icon: ImageVector, label: String, complete: Boolean, 
 private fun HandoffScreen(
     language: AppLanguage,
     hybridFleetState: HybridFleetState,
+    onReportBoatDelay: (() -> Unit)?,
     onAdvanceHybridFleet: (() -> Unit)?,
     onResetHybridFleet: (() -> Unit)?,
     state: ProofOfDeliveryUiState,
@@ -1972,6 +2010,7 @@ private fun HandoffScreen(
             HybridFleetCard(
                 language = language,
                 state = hybridFleetState,
+                onDelay = onReportBoatDelay,
                 onAdvance = onAdvanceHybridFleet,
                 onReset = onResetHybridFleet,
             )

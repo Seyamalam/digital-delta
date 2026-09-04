@@ -30,6 +30,8 @@ import com.example.digitaldelta.domain.prediction.RouteRiskPredictor
 import com.example.digitaldelta.domain.routing.DynamicRouteDecision
 import com.example.digitaldelta.domain.fleet.HybridFleetState
 import com.example.digitaldelta.domain.fleet.HybridFleetWorkflow
+import com.example.digitaldelta.domain.fleet.BoatDelayReport
+import com.example.digitaldelta.domain.fleet.GeoPoint
 import com.example.digitaldelta.proto.v1.PriorityClass
 import dagger.hilt.android.lifecycle.HiltViewModel
 import javax.inject.Inject
@@ -299,6 +301,22 @@ class MainScreenViewModel @Inject constructor(
         }
     }
 
+    fun reportBoatDelay() {
+        val current = mutableHybridFleetState.value
+        if (current !is HybridFleetState.Ready && current !is HybridFleetState.Replanned) return
+        viewModelScope.launch {
+            runCatching {
+                hybridFleetWorkflow.reportBoatDelay(
+                    BoatDelayReport(
+                        delayMinutes = 18,
+                        observedPosition = GeoPoint(25.0400, 91.8000),
+                        simulated = true,
+                    ),
+                )
+            }.onSuccess { mutableHybridFleetState.value = it }
+        }
+    }
+
     fun resetHybridFleet() {
         mutableHybridFleetState.value = hybridFleetWorkflow.reset()
     }
@@ -374,6 +392,7 @@ private object UnavailableProofOfDeliveryWorkflow : ProofOfDeliveryWorkflow {
 
 private object UnavailableHybridFleetWorkflow : HybridFleetWorkflow {
     override fun snapshot(): HybridFleetState = HybridFleetState.Unavailable
+    override suspend fun reportBoatDelay(report: BoatDelayReport): HybridFleetState = HybridFleetState.Unavailable
     override suspend fun advance(): HybridFleetState = HybridFleetState.Unavailable
     override fun reset(): HybridFleetState = HybridFleetState.Unavailable
 }

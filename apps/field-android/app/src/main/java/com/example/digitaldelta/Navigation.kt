@@ -99,6 +99,7 @@ fun MainNavigation(meshRuntimeStateStore: MeshRuntimeStateStore) {
     onVerifyHandoff = viewModel::verifyHandoff,
     onPrepareNextHandoff = viewModel::prepareNextHandoff,
     hybridFleetState = hybridFleetState,
+    onReportBoatDelay = viewModel::reportBoatDelay,
     onAdvanceHybridFleet = viewModel::advanceHybridFleet,
     onResetHybridFleet = viewModel::resetHybridFleet,
   )

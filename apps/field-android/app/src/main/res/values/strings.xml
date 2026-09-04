@@ -175,6 +175,7 @@
     <string name="hybrid_fleet_title">Boat → drone last-mile handoff</string>
     <string name="hybrid_fleet_subtitle">The clinic has no valid road or water route. This phone selects a battery-safe rendezvous and transfers custody offline.</string>
     <string name="hybrid_phase_ready">Rendezvous plan ready</string>
+    <string name="hybrid_phase_replanned">Boat delay rerouted the rendezvous</string>
     <string name="hybrid_phase_boat_arrived">Boat arrived at rendezvous</string>
     <string name="hybrid_phase_preparing_offer">Signing boat-to-drone offer…</string>
     <string name="hybrid_phase_drone_arrived">Simulated drone arrived</string>
@@ -183,6 +184,9 @@
     <string name="hybrid_phase_blocked">No battery-safe rendezvous</string>
     <string name="hybrid_phase_loading">Loading offline fleet plan…</string>
     <string name="hybrid_start_boat">Simulate boat arrival</string>
+    <string name="hybrid_start_replanned_boat">Continue to revised rendezvous</string>
+    <string name="hybrid_simulate_delay">Simulate 18 min boat delay</string>
+    <string name="hybrid_replan_label">Local replan</string>
     <string name="hybrid_generate_qr">Generate signed boat → drone QR</string>
     <string name="hybrid_accept_custody">Simulated drone signs and accepts</string>
     <string name="hybrid_reset">Reset hybrid handoff demo</string>

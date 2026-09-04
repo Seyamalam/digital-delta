@@ -54,6 +54,34 @@ class HybridFleetWorkflowTest {
         assertEquals(0, proof.prepareCalls)
     }
 
+    @Test
+    fun `delayed boat report persists a new rendezvous before handoff continues`() = runTest {
+        val events = FakeHybridFleetEventRecorder()
+        val workflow = DefaultHybridFleetWorkflow(
+            mission(),
+            FleetOrchestrator(),
+            FakeDroneProofOfDelivery(),
+            events,
+        )
+        val original = workflow.snapshot() as HybridFleetState.Ready
+
+        val replanned = workflow.reportBoatDelay(
+            BoatDelayReport(
+                delayMinutes = 18,
+                observedPosition = GeoPoint(25.04, 91.80),
+            ),
+        ) as HybridFleetState.Replanned
+
+        assertEquals("R3", original.plan.rendezvous.point.id)
+        assertEquals("R2", replanned.plan.rendezvous.point.id)
+        assertEquals(18, replanned.report.delayMinutes)
+        assertEquals(listOf("boat-delayed:18", "rendezvous"), events.recorded)
+
+        val arrived = workflow.advance() as HybridFleetState.BoatArrived
+        assertEquals("R2", arrived.plan.rendezvous.point.id)
+        assertEquals("boat-arrived", events.recorded.last())
+    }
+
     private fun mission(): HybridFleetMission {
         val nodes = listOf(
             MapNode("N1", "Sylhet Hub", 24.8949, 91.8687),
@@ -94,6 +122,14 @@ private class FakeHybridFleetEventRecorder : HybridFleetEventRecorder {
 
     override suspend fun recordRendezvous(plan: HybridFleetPlan) {
         recorded += "rendezvous"
+    }
+
+    override suspend fun recordBoatDelay(
+        previousPlan: HybridFleetPlan,
+        revisedPlan: HybridFleetPlan,
+        report: BoatDelayReport,
+    ) {
+        recorded += "boat-delayed:${report.delayMinutes}"
     }
 
     override suspend fun recordBoatArrival(plan: HybridFleetPlan) {

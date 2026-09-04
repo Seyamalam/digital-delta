@@ -36,6 +36,7 @@ import com.example.digitaldelta.domain.pod.CustodyReceiptRecord
 import com.example.digitaldelta.domain.pod.DeliveryOfferReady
 import com.example.digitaldelta.domain.pod.DeliveryOfferRejection
 import com.example.digitaldelta.domain.fleet.FleetOrchestrator
+import com.example.digitaldelta.domain.fleet.BoatDelayReport
 import com.example.digitaldelta.domain.fleet.GeoPoint
 import com.example.digitaldelta.domain.fleet.HybridFleetInputs
 import com.example.digitaldelta.domain.fleet.HybridFleetMission
@@ -174,6 +175,22 @@ class MainScreenTest {
                     },
                     onPrepareNextHandoff = { proofState.value = ProofOfDeliveryUiState.Ready(podOffer()) },
                     hybridFleetState = hybridState.value,
+                    onReportBoatDelay = {
+                        val previous = (hybridState.value as HybridFleetState.Ready).plan
+                        val report = BoatDelayReport(18, GeoPoint(25.04, 91.80))
+                        val revisedMission = previous.mission.copy(
+                            rendezvousInputs = previous.mission.rendezvousInputs.copy(
+                                boatPosition = report.observedPosition,
+                                boatStartDelayMinutes = report.delayMinutes.toDouble(),
+                            ),
+                        )
+                        val revised = HybridFleetPlan(
+                            revisedMission,
+                            previous.reachability,
+                            FleetOrchestrator().computeRendezvous(revisedMission.rendezvousInputs),
+                        )
+                        hybridState.value = HybridFleetState.Replanned(previous, revised, report)
+                    },
                     onAdvanceHybridFleet = {
                         hybridState.value = when (val current = hybridState.value) {
                             is HybridFleetState.Ready -> HybridFleetState.BoatArrived(current.plan)
@@ -262,6 +279,21 @@ class MainScreenTest {
         composeTestRule.onNodeWithText("ড্রোনের কাছে হেফাজত হস্তান্তরিত").assertExists()
         composeTestRule.onNodeWithText("দুই পক্ষের রসিদ হেফাজত ধারায় সংযুক্ত").assertExists()
         composeTestRule.onNodeWithText("SIMULATED • সিমুলেটেড").assertExists()
+    }
+
+    @Test
+    fun delayedBoatReplansToNewRendezvousInBothLanguages() {
+        composeTestRule.onNodeWithText("English").performClick()
+        composeTestRule.onNodeWithText("Handoff").performClick()
+        composeTestRule.onNode(hasTestTag("hybrid-fleet-delay")).performScrollTo().performClick()
+
+        composeTestRule.onNodeWithText("Boat delay rerouted the rendezvous").assertExists()
+        composeTestRule.onNodeWithText("Local replan R3 → R2 • 18 min").assertExists()
+        composeTestRule.onNodeWithText("R2 • 25.0715, 91.7554").assertExists()
+
+        composeTestRule.onNodeWithText("বাংলা").performClick()
+        composeTestRule.onNodeWithText("নৌযান বিলম্বে মিলনস্থল পুনর্নির্ধারিত").assertExists()
+        composeTestRule.onNodeWithText("স্থানীয় পুনঃপরিকল্পনা R3 → R2 • 18 মিনিট").assertExists()
     }
 
     @Test
@@ -445,7 +477,11 @@ class MainScreenTest {
                 boatPosition = GeoPoint(25.04, 91.57),
                 droneBase = GeoPoint(24.9632, 91.8668),
                 droneDestination = GeoPoint(25.12, 91.68),
-                candidates = listOf(NamedPoint("R2", GeoPoint(25.0715, 91.7554))),
+                candidates = listOf(
+                    NamedPoint("R1", GeoPoint(25.0658, 91.6073)),
+                    NamedPoint("R2", GeoPoint(25.0715, 91.7554)),
+                    NamedPoint("R3", GeoPoint(25.0200, 91.7000)),
+                ),
                 boatSpeedKph = 24.0,
                 droneSpeedKph = 55.0,
                 droneBatteryPercent = 74,

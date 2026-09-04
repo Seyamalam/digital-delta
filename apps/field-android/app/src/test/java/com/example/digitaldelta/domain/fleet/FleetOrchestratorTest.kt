@@ -103,6 +103,38 @@ class FleetOrchestratorTest {
     }
 
     @Test
+    fun `delayed boat position recomputes the rendezvous instead of only adding minutes`() {
+        val inputs = HybridFleetInputs(
+            boatPosition = GeoPoint(25.04, 91.57),
+            droneBase = GeoPoint(24.9632, 91.8668),
+            droneDestination = GeoPoint(25.12, 91.68),
+            candidates = listOf(
+                NamedPoint("R1", GeoPoint(25.0658, 91.6073)),
+                NamedPoint("R2", GeoPoint(25.0715, 91.7554)),
+                NamedPoint("R3", GeoPoint(25.02, 91.70)),
+            ),
+            boatSpeedKph = 24.0,
+            droneSpeedKph = 55.0,
+            droneBatteryPercent = 74,
+            droneRangeAtFullChargeKm = 60.0,
+            reserveBatteryPercent = 20,
+        )
+
+        val original = orchestrator.computeRendezvous(inputs)
+        val replanned = orchestrator.computeRendezvous(
+            inputs.copy(
+                boatPosition = GeoPoint(25.04, 91.80),
+                boatStartDelayMinutes = 18.0,
+            ),
+        )
+
+        assertEquals("R3", original.point.id)
+        assertEquals("R2", replanned.point.id)
+        assertEquals(18.0, replanned.boatStartDelayMinutes, 0.001)
+        assertTrue(replanned.deliveryArrivalMinutes < 45.0)
+    }
+
+    @Test
     fun `destination with no supported edge is unreachable`() {
         val graph = TransportGraph(
             nodes = listOf(
