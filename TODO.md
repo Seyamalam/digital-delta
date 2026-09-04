@@ -2,6 +2,8 @@
 
 This checklist tracks implementation. Milestone exit criteria live in [MILESTONES.md](MILESTONES.md). Requirement identifiers map to [docs/TRACEABILITY.md](docs/TRACEABILITY.md).
 
+Current count: 151 of 167 checklist items complete (90.4 percent). All eight software module paths and the final submission artifacts are implemented. The 16 open items are external release evidence requiring organizers, physical phones, named booth equipment, human reviewers, or repeated rehearsals; they must not be closed from emulator or generated evidence.
+
 ## Documentation and decisions
 
 - [x] Record Bangla and English as equal product interfaces.
@@ -207,5 +209,6 @@ This checklist tracks implementation. Milestone exit criteria live in [MILESTONE
 - [ ] Capture every required item in `SCREENSHOTS.md`. The live observer dashboard overview is now stored in both languages at 1366x768 and 1920x1080; remaining field, fault-state, and physical-device evidence stays listed there.
 - [ ] Rehearse the ten-minute script twenty times.
 - [ ] Record three unchanged successful final passes.
-- [ ] Create the architecture diagram, model card, deck, and backup video. The Mermaid architecture diagram, model card, and complete ten-slide pitch manuscript now exist; editable PPTX export and backup video remain.
-- [ ] Audit every claim for evidence or a visible simulation label.
+- [x] Create the architecture diagram, model card, final report, and editable fair deck. The Mermaid architecture diagram, model card, 16-page DOCX/PDF report, and validated eight-slide PPTX are complete.
+- [ ] Record the optional backup video.
+- [x] Audit every public claim for evidence or a visible simulation label. The signed-off matrix is in `artifacts/reports/claim-audit/2026-09-04.md`.

@@ -21,3 +21,5 @@ artifacts/reports/local-verify/
 # Recoverable local demo state and backups are machine-local.
 .demo-state/
 artifacts/demo-state-backups/
+# Generated inspection intermediates stay local; final DOCX, PDF, and PPTX are versioned.
+output/qa/

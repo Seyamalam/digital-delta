@@ -128,7 +128,7 @@ Humanitarian records create privacy risks even when offline. A phone may carry c
 
 The repository uses local verification only. It has no GitHub Actions workflow. `scripts/verify-local.sh` lints the shared schema, checks bilingual resource parity, verifies font and map hashes, reproduces the ML artifacts, runs Android unit tests, builds debug and minified release APKs, checks the bundled barcode model, runs Go race tests and vet, builds all Go commands, tests and builds the Next.js dashboard, and tests the Cloudflare archive with a Wrangler dry run.
 
-The connected suite contains 56 Android tests after the large-text case. Earlier unchanged runs passed 55 tests on both Android 15 and Android 16 emulators. Seventeen dashboard tests cover bilingual content, deterministic scenarios, observer reconnect, local maps, security rejections, archive sanitization, and projector viewports. Go tests cover durable mesh restart, gRPC acknowledgements, signed provisioning and revocation, observer persistence, cursor replay, SSE sanitization, and deterministic drills.
+The connected suite contains 60 Android tests. The unchanged suite passed on both Android 15 and Android 16 emulators on 4 September 2026. It includes the 150 percent text-scale path and adaptive relay selection alongside identity, request, mesh, route, risk, triage, custody, and hybrid-fleet journeys. Seventeen dashboard tests cover bilingual content, deterministic scenarios, observer reconnect, local maps, security rejections, archive sanitization, and projector viewports. Go tests cover durable mesh restart, gRPC acknowledgements, signed provisioning and revocation, observer persistence, cursor replay, SSE sanitization, and deterministic drills.
 
 A Go load run opened 10,000 independent gRPC streams. Each stream received a durable acknowledgement and remained open for five seconds under the recorded local conditions. This is a concurrency demonstration, not a claim about district radio capacity or production throughput.
 
@@ -193,7 +193,7 @@ The project is not yet field verified. The following evidence must remain open u
 - twenty rehearsals and three unchanged successful final passes;
 - organizer confirmation of participation, event date, pitch duration, and booth equipment.
 
-These are release gates, not hidden defects. The repository tracks them in `TODO.md`, `SCREENSHOTS.md`, and `docs/PHYSICAL_DEVICE_TEST.md`.
+They remain release gates. The repository tracks them in `TODO.md`, `SCREENSHOTS.md`, and `docs/PHYSICAL_DEVICE_TEST.md`.
 
 ## Team
 

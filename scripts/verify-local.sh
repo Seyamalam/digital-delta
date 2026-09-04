@@ -13,7 +13,7 @@ echo "[proto] lint shared wire contract"
 (cd "${repo_dir}/packages/proto" && buf lint)
 echo "[proto] verify stored v1 wire fixture remains readable"
 compat_fixture="${repo_dir}/packages/proto/fixtures/v1-envelope.pb.b64"
-compat_text="$({ openssl base64 -d -A -in "${compat_fixture}"; printf '\n'; } | \
+compat_text="$(openssl base64 -d -A -in "${compat_fixture}" | \
   protoc \
     -I "${repo_dir}/packages/proto" \
     --decode=digitaldelta.v1.Envelope \

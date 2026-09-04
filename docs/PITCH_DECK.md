@@ -1,132 +1,131 @@
-# Five-minute pitch deck
+# Eight-slide innovation fair pitch
 
-Ten slides, including the cover. Target pace: 25 to 35 seconds per slide. Product interfaces appear in Bangla and English; technical identifiers remain language-neutral.
+Editable deck: `output/presentation/digital-delta-innovation-fair.pptx`
 
-## Slide 1: Relief coordination after the network fails
+This manuscript matches the official Bangladesh Innovation Fair requirement for seven to eight slides. It covers originality, practical impact, commercialization, technical capability, Sustainable Development Goals, leadership, inclusion, ethics and safety, and market demand.
 
-**Offline relief coordination for Bangladesh**  
-**ইন্টারনেট না থাকলেও ত্রাণ সমন্বয়**
+## Slide 1 Digital Delta
 
-One Android application for field teams. One optional local command view for the projector.
+### On screen
 
-Visual: `artifacts/screenshots/command-bn/02-command-bn-live-overview-1920x1080.png`
+Relief logistics that keep working when the internet and power do not.
 
-Speaker note: Flood response loses more than roads. Power and commercial communications may disappear together. This project keeps the field workflow on the phones and treats the laptop as an observer.
+Field first. Bangla and English. Android. Protobuf. Signed custody.
 
-## Slide 2: The operational break
+### Say
 
-### When the internet disappears
+This is not another cloud dashboard. The field mission lives on the phones. The projector only observes it.
 
-- Clinics cannot publish urgent supply requests.
-- Drivers lose route updates when roads fail.
-- Teams cannot prove who handed cargo to whom.
-- A central dashboard becomes a single point of failure.
+## Slide 2 One flood can break every dependency at once
 
-Speaker note: The project focuses on the coordination gap. Environmental and vehicle inputs in the fair scenario are simulations. The cryptography, local storage, routing, model inference, and protocol flows run in the prototype.
+### On screen
 
-## Slide 3: One mission, eight working systems
+- 7.2 million people affected in the 2022 northeast floods.
+- 3.74 million affected across six districts in 2024.
+- 1.4 million needed urgent assistance in the 2024 response plan.
+- Electricity, mobile communication, roads, storage, and airport access can fail together.
 
-### The field mission
+### Say
 
-A clinic queues P0 blood and medicine offline. Nearby phones relay the encrypted request. A failed road triggers a boat route. The triage engine predicts an SLA breach. A computed rendezvous transfers custody to a simulated drone. Both parties sign the receipt.
+Excellent central systems can still be unreachable. A clinic must preserve the request, a driver must receive the route, and both sides must prove the handoff while the outage continues.
 
-On-screen labels identify every simulated flood and vehicle event.
+### Sources
 
-Visual: `artifacts/screenshots/field-bn/22-field-bn-hybrid-transferred.png`
+- https://rapid.ddm.gov.bd/risk/riskinfo
+- https://bangladesh.un.org/en/188010-flash-floods-humanitarian-response-plan-2022-united-nations-bangladesh-coordinated-appeal
+- https://bangladesh.un.org/sites/default/files/2024-10/Bangladesh-HCTT-Humanitarian%20Response%20Plan-Cyclone%20and%20Monsoon%20Floods%202024-29-09-2024%20%28June%202024%20to%20March%202025%29.pdf
 
-Speaker note: Walk through this as one story rather than eight disconnected features. The same mission data moves through identity, sync, mesh, routing, custody, triage, prediction, and fleet orchestration.
+## Slide 3 The mission lives on the phones
 
-## Slide 4: The laptop can disappear
+### On screen
 
-### Offline architecture
+Clinic creates a P0 request. A nearby relay stores it before acknowledging it. The hospital decrypts and decides. The Go observer and Next.js headquarters receive only ordered, sanitized presentation events.
 
-```text
-Clinic phone        Relay phone        Hospital phone
-Room + keys    ⇄    durable queue  ⇄   Room + keys
-       framed Protobuf over Nearby Connections
+### Say
 
-                     optional observation
-                              ↓
-                  Go gRPC service + SSE
-                              ↓
-                   projector dashboard
-```
+The encrypted field payload uses Protobuf. Nearby carries framed Protobuf. Supported IP links use gRPC. JSON exists only at the browser presentation boundary. Disconnect the laptop and the request, relay, route, triage, and custody paths continue on Android.
 
-CAP choice: field nodes preserve availability and accept temporary divergence. Vector clocks and human review restore safe convergence later.
+## Slide 4 Eight modules, one continuous mission
 
-Speaker note: Closing the browser does not stop field publication. An automated fault test disconnects the SSE client, publishes two more events, then replays both in order after reconnection.
+### On screen
 
-## Slide 5: Relays carry ciphertext, not cargo details
+1. Offline identity and authorization.
+2. Vector-clock conflict handling.
+3. Authenticated store-and-forward relay.
+4. Road, water, and simulated-air routing.
+5. Signed QR custody and replay rejection.
+6. SLA prediction and safe preemption.
+7. On-device ONNX route-risk advisory.
+8. Hybrid-fleet rendezvous and signed handoff.
 
-### Zero-trust nearby exchange
+### Say
 
-- Administrator-signed device credentials bind node, role, and public keys.
-- Peers prove possession with fresh nonce challenges and RSA-PSS signatures.
-- AES-256-GCM encrypts each payload. RSA-OAEP wraps the key for the final recipient.
-- TTL, hop limit, durable acknowledgement, and deduplication protect the queue.
+These are not isolated cards. Each module changes the same mission. Simulated weather and vehicle movement are labelled. Cryptography, storage, routing, and decisions are real code paths.
 
-Visual: `artifacts/screenshots/field-bn/10-field-bn-nearby-relay-active-1280x2856.png`
+## Slide 5 One failure changes route and priority
 
-Speaker note: A relay can read only the routing metadata needed to forward an envelope. It never receives the content key. Acknowledgements are also signed before a sender advances its outbox.
+### On screen
 
-## Slide 6: Route risk changes the plan before a road closes
+1. A simulated E3 failure invalidates the truck path.
+2. The route engine selects boat edges E6 and E7 with a 200-minute ETA.
+3. The required 30 percent slowdown case predicts a P0 SLA breach.
+4. A coordinator confirms the P2 deposit at N3.
 
-### Routing, prediction, and triage
+### Say
 
-The phone runs a bundled ONNX classifier over visibly simulated rainfall, elevation, and soil saturation. Risk adds a cost to the directed graph. Confirmed failures remove an edge. Vehicle constraints prevent trucks from using waterways and prevent boats from using roads.
+The system never silently moves cargo. It calculates the consequence, explains it, and waits for the authorized human before changing the assignment.
 
-Measured model result on held-out synthetic data: precision 0.613, recall 0.837, F1 0.708.
+## Slide 6 Trust is verified at every handoff
 
-Visual: `artifacts/screenshots/field-en/20-field-en-onnx-risk-reroute.png`
+### On screen
 
-Speaker note: The interface never presents a prediction as a confirmed flood. When the risk-adjusted ETA threatens the P0 SLA under a 30 percent slowdown, the phone proposes a safe P2 drop at N3 and waits for a coordinator.
+- Administrator-signed role credentials.
+- Fresh peer challenge and RSA-PSS proof.
+- RSA-OAEP wrapped AES-256-GCM payload.
+- Atomic nonce claim and linked receipt hash.
+- Signed durable acknowledgements.
+- 60 connected Android journeys on Android 15 and 16.
+- 10,000 acknowledged gRPC streams in the recorded load run.
+- 17 headquarters tests and a production build.
 
-## Slide 7: Every handoff leaves a verifiable chain
+### Say
 
-### Offline proof of delivery
+The first QR is accepted. Reusing its nonce is rejected without changing custody. The 10,000-stream run proves local connection capacity, not district radio throughput. The real three-phone and camera-in-airplane-mode tests remain release gates.
 
-The QR contains the delivery ID, sender key, payload hash, nonce, timestamp, and previous receipt hash. The recipient verifies the signature offline, claims the nonce atomically, signs the result, and extends the custody chain.
+## Slide 7 Start with one district exercise
 
-Tampering and replay produce different rejection reasons without changing the verified ledger.
+### On screen
 
-Visual: `artifacts/screenshots/field-en/18-field-en-pod-replay-rejected.png`
+The product sits between existing tools. Sahana covers relief logistics, KoboCollect covers offline forms, Briar covers secure nearby messaging, and Meshtastic covers off-grid radio with extra hardware. The continuity gap is the combined operational workflow on ordinary Android phones.
 
-Speaker note: This is real local cryptography and Room persistence around a simulated vehicle handoff. CameraX and the barcode model are bundled, while a two-phone airplane-mode camera run remains required before claiming physical evidence.
+The practical beachhead is the six northeastern districts in the 2024 assessment, about 64 upazilas and 360 unions. The first deployment is one district, one health referral path, and one experienced relief partner.
 
-## Slide 8: The ten-minute live demonstration
+### Say
 
-### What the judges see
+This is public-interest infrastructure, not a consumer subscription. Cost recovery can come from deployment preparation, integration, security review, training, offline map packaging, exercise support, and maintained releases.
 
-1. Switch the phone and dashboard between Bangla and English.
-2. Queue the encrypted P0 request with commercial internet unavailable.
-3. Interrupt the relay, reconnect it, and show duplicate rejection.
-4. Inject route risk and confirmed road failure, then inspect the reroute and triage proposal.
-5. Complete the signed handoff, then reject the same QR as a replay.
-6. Disconnect and reconnect the projector while field work continues.
+### Sources
 
-Speaker note: The dashboard uses the local observer during the live path and falls back to the fixed seed if that optional link fails. Keep the test runner visible on the second laptop.
+- https://sahanafoundation.org/products/eden/
+- https://support.kobotoolbox.org/data_collection_kobocollect.html
+- https://briarproject.org/manual/
+- https://meshtastic.org/docs/
 
-## Slide 9: Evidence already in the repository
+## Slide 8 The next milestone is a real field exercise
 
-### Measured and repeatable
+### On screen
 
-- 53 connected Android tests pass unchanged on Android 15 and Android 16 emulators.
-- 13 projector tests cover observer replay, bilingual parity, local map sources, and faults.
-- 10,000 independent gRPC streams received durable acknowledgements and stayed open together for five seconds.
-- The ARM64 emulator measured 67,504 KB peak PSS after on-device model inference.
+Ask a district authority, health facility, and relief partner to run one controlled three-phone exercise.
 
-Limit: the 10,000-client burst reached 57.645 seconds p95 acknowledgement latency. It proves capacity, not production throughput.
+Success means:
 
-Speaker note: State the limitation before a judge asks. Physical three-phone radio recovery and target-phone measurements remain the last hardware evidence, not completed claims.
+- A to B to C relay with the middle phone restarted.
+- Camera provisioning and custody in airplane mode.
+- Target-phone memory, route latency, and battery measurements.
+- Bangla, English, TalkBack, and operator task review.
 
-## Slide 10: A practical field trial
+### Say
 
-### Next validation step
+The fair build proves the hard software boundary. I am not asking for a national rollout. I am asking for one controlled exercise that can turn emulator evidence into measured field evidence.
 
-Run the complete mission on three ordinary Android phones in airplane mode with Bluetooth and local Wi-Fi enabled. Record relay recovery, camera handoff, phone memory, route latency, and three unchanged demo passes.
-
-The fair build controls no drone or sensor. It coordinates people and records simulated vehicle events safely.
-
-**Repository:** `github.com/Seyamalam/digital-delta`
-
-Speaker note: Ask for access to field responders, disaster-management mentors, and representative Android phones. End on the Bangla interface and the tested ability to keep working without the command laptop.
+The project supports SDGs 3, 9, 11, 13, and 16 through health continuity, resilient infrastructure, accountable custody, and climate preparedness. It was built independently by Touhidul Alam Seyam.

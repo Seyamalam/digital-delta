@@ -271,6 +271,8 @@ Exit criteria:
 - The backup video and screenshots match the final build.
 - Every public claim points to a test result, source, or explicit simulation label.
 
+Current evidence: the final local gate passes Protobuf compatibility, bilingual Android resources, offline-map provenance, reproducible ML export and ONNX parity, Android unit and minified-release builds, 60 connected tests on both Android 15 and Android 16, Go race/vet/build checks, 17 Next.js tests plus production build, and three Cloudflare archive tests plus Wrangler dry run. A 16-page editable DOCX and PDF report, an editable eight-slide PPTX, a claim audit, and a final verification record are complete. The PDF is also uploaded to Paper Amigo. Physical phone, human accessibility, rehearsal, and organizer-confirmation gates remain open and are itemized in `TODO.md` and `docs/SUBMISSION_PACKAGE.md`.
+
 ## Stretch milestones
 
 These remain software-only:

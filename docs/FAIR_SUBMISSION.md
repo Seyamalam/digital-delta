@@ -42,3 +42,12 @@ The eight-slide deck should map directly to the application criteria:
 6. Users market demand and commercialization
 7. Pilot plan social inclusion and SDG contribution
 8. Evidence limitations and requested partnership
+
+## Prepared package
+
+- Editable eight-slide deck: `output/presentation/digital-delta-innovation-fair.pptx`
+- Editable full report: `output/docx/digital-delta-report.docx`
+- Submission PDF: `output/pdf/digital-delta-report.pdf`
+- Package manifest, checksums, and remaining release gates: `docs/SUBMISSION_PACKAGE.md`
+
+The package is ready for upload once the organizer confirms the applicable submission route and timing. The optional supporting document should be the PDF report. A representative bilingual dashboard or Android field screenshot should be used as the optional project photo.
