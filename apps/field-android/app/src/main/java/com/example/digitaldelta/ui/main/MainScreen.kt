@@ -1667,12 +1667,25 @@ private fun RouteAndMeshScreen(
     LazyColumn(Modifier.fillMaxSize(), contentPadding = PaddingValues(bottom = 20.dp)) {
         item {
             Box(Modifier.fillMaxWidth().height(470.dp)) {
-                FloodMap(
+                OfflineGeographicMap(
                     routeProgress = progress.value,
                     showFailure = flooded,
                     showRisk = riskActive,
-                    detailed = true,
                     routeVehicle = decision?.routeVehicle ?: VehicleType.TRUCK,
+                    contentDescription = text(R.string.offline_geographic_map_description, language),
+                    loadingLabel = text(R.string.offline_map_loading, language),
+                    unavailableLabel = text(R.string.offline_map_unavailable, language),
+                    localSourceLabel = text(R.string.offline_map_local_source, language),
+                    attributionLabel = text(R.string.openstreetmap_attribution, language),
+                    fallback = {
+                        FloodMap(
+                            routeProgress = progress.value,
+                            showFailure = flooded,
+                            showRisk = riskActive,
+                            detailed = true,
+                            routeVehicle = decision?.routeVehicle ?: VehicleType.TRUCK,
+                        )
+                    },
                 )
                 MapLegend(
                     language = language,

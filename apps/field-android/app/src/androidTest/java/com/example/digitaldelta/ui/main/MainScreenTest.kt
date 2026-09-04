@@ -409,6 +409,26 @@ class MainScreenTest {
     }
 
     @Test
+    fun routeScreenRendersVerifiedOfflineGeographicMapInBothLanguages() {
+        composeTestRule.onNodeWithText("পথ ও মেশ").performClick()
+        composeTestRule.waitUntil(timeoutMillis = 20_000) {
+            composeTestRule.onAllNodes(hasTestTag("offline-geographic-map"))
+                .fetchSemanticsNodes()
+                .isNotEmpty()
+        }
+
+        composeTestRule.onNode(hasTestTag("offline-geographic-map")).assertIsDisplayed()
+        composeTestRule.onNodeWithText("স্থানীয় OSM • যাচাইকৃত").assertIsDisplayed()
+        composeTestRule.onNodeWithText("© OpenStreetMap অবদানকারীরা").assertIsDisplayed()
+        composeTestRule.onNode(hasTestTag("offline-map-fallback")).assertDoesNotExist()
+        composeTestRule.onNode(hasTestTag("map-renderer-failed")).assertDoesNotExist()
+
+        composeTestRule.onNodeWithText("English").performClick()
+        composeTestRule.onNodeWithText("LOCAL OSM • VERIFIED").assertIsDisplayed()
+        composeTestRule.onNodeWithText("© OpenStreetMap contributors").assertIsDisplayed()
+    }
+
+    @Test
     fun onDeviceRiskPredictionIsVisiblySimulatedAndProactivelyReroutes() {
         composeTestRule.onNodeWithText("পথ ও মেশ").performClick()
         composeTestRule.onNode(hasTestTag("toggle-route-risk")).performScrollTo().performClick()

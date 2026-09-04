@@ -256,4 +256,9 @@
     <string name="wrong_qr_purpose">এই QR অন্য কাজের জন্য। কোনো তথ্য যোগ করা হয়নি।</string>
     <string name="close_scanner">QR স্ক্যানার বন্ধ করুন</string>
     <string name="grant_camera">ক্যামেরা অনুমতি দিন</string>
+    <string name="offline_geographic_map_description">সিলেট দুর্যোগ এলাকার অফলাইন ভৌগোলিক মানচিত্র</string>
+    <string name="offline_map_loading">যাচাইকৃত অফলাইন মানচিত্র প্রস্তুত হচ্ছে…</string>
+    <string name="offline_map_unavailable">ভৌগোলিক রেন্ডারার অনুপলব্ধ — রুট চিত্র দেখানো হচ্ছে</string>
+    <string name="offline_map_local_source">স্থানীয় OSM • যাচাইকৃত</string>
+    <string name="openstreetmap_attribution">© OpenStreetMap অবদানকারীরা</string>
 </resources>

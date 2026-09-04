@@ -7,6 +7,7 @@ import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
 import org.junit.Test
 import org.junit.runner.RunWith
+import org.json.JSONObject
 
 @RunWith(AndroidJUnit4::class)
 class SylhetMapAssetTest {
@@ -38,5 +39,25 @@ class SylhetMapAssetTest {
                 "N7",
             ),
         )
+    }
+
+    @Test
+    fun bundledGeographicBasemapIsPinnedOsmDerivedAndCoversMissionBounds() {
+        val context = ApplicationProvider.getApplicationContext<Context>()
+        val fixture = context.assets.open(OfflineMapContract.BASEMAP_ASSET)
+            .bufferedReader()
+            .use { it.readText() }
+        val root = JSONObject(fixture)
+        val metadata = root.getJSONObject("metadata")
+        val bounds = metadata.getJSONArray("bounds")
+
+        assertEquals("FeatureCollection", root.getString("type"))
+        assertTrue(root.getJSONArray("features").length() >= 1_500)
+        assertTrue(metadata.getString("source").contains("OpenStreetMap"))
+        assertEquals(OfflineMapContract.SOURCE_ARCHIVE_SHA256, metadata.getString("archive_sha256"))
+        assertTrue(bounds.getDouble(0) <= 91.4073)
+        assertTrue(bounds.getDouble(1) <= 24.3840)
+        assertTrue(bounds.getDouble(2) >= 92.2611)
+        assertTrue(bounds.getDouble(3) >= 25.1200)
     }
 }

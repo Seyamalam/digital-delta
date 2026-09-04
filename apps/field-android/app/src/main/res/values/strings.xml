@@ -256,4 +256,9 @@
     <string name="wrong_qr_purpose">That QR belongs to a different workflow. Nothing was imported.</string>
     <string name="close_scanner">Close QR scanner</string>
     <string name="grant_camera">Allow camera</string>
+    <string name="offline_geographic_map_description">Offline geographic map of the Sylhet response area</string>
+    <string name="offline_map_loading">Preparing verified offline map…</string>
+    <string name="offline_map_unavailable">Geographic renderer unavailable — route diagram shown</string>
+    <string name="offline_map_local_source">LOCAL OSM • VERIFIED</string>
+    <string name="openstreetmap_attribution">© OpenStreetMap contributors</string>
 </resources>

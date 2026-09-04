@@ -6,6 +6,7 @@ repo_dir="$(cd "${script_dir}/.." && pwd)"
 android_dir="${repo_dir}/apps/field-android"
 model_dir="${repo_dir}/models/route-decay"
 map_dir="${repo_dir}/apps/command/public/maps"
+android_map_dir="${android_dir}/app/src/main/assets/maps"
 java_runtime="${JAVA_HOME:-/opt/homebrew/opt/openjdk@17/libexec/openjdk.jdk/Contents/Home}"
 
 echo "[proto] lint shared wire contract"
@@ -28,6 +29,17 @@ fi
 if [[ -f "${map_dir}/sylhet.pmtiles" ]]; then
   echo "[map] verify reviewed offline Sylhet archive"
   (cd "${map_dir}" && shasum -a 256 -c SHA256SUMS)
+fi
+
+if [[ -f "${android_map_dir}/sylhet_osm_basemap.geojson" ]]; then
+  echo "[map] verify Android offline geographic extract"
+  (cd "${android_map_dir}" && shasum -a 256 -c SHA256SUMS)
+  archive_sha="$(shasum -a 256 "${map_dir}/sylhet.pmtiles" | cut -d ' ' -f 1)"
+  embedded_archive_sha="$(jq -r '.metadata.archive_sha256' "${android_map_dir}/sylhet_osm_basemap.geojson")"
+  if [[ "${archive_sha}" != "${embedded_archive_sha}" ]]; then
+    echo "Android map provenance does not match the reviewed PMTiles archive." >&2
+    exit 1
+  fi
 fi
 
 if rg -n '(^|[^A-Za-z])json([^A-Za-z]|$)' \
