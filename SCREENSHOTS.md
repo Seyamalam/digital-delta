@@ -58,6 +58,8 @@ These are real emulator captures from the working application, not final submiss
 | Surface | Bangla | English | Evidence |
 |---|---:|---:|---|
 | Offline PIN setup gate | Captured | Captured | `artifacts/screenshots/field-bn/01-field-bn-offline-pin-setup-1280x2856.png`, `artifacts/screenshots/field-en/01-field-en-offline-pin-setup-1280x2856.png` |
+| First-run bilingual language choice | Captured | Same bilingual gate | `artifacts/screenshots/field-bn/00-field-bilingual-language-choice-1280x2856.png` |
+| P0 medicine request form | Captured | Captured | `artifacts/screenshots/field-bn/03-field-bn-p0-request-1280x2856.png`, `artifacts/screenshots/field-en/03-field-en-p0-request-1280x2856.png`; the capture shows the honest unprovisioned submission boundary |
 | Signed-role conflict denial | Captured | Captured | `artifacts/screenshots/field-bn/02-field-bn-role-denied-1280x2856.png`, `artifacts/screenshots/field-en/02-field-en-role-denied-1280x2856.png` |
 | Offline device enrollment and pinned administrator | Captured | Captured | `artifacts/screenshots/field-bn/09-field-bn-offline-provisioning-trusted-1280x2856.png`, `artifacts/screenshots/field-en/09-field-en-offline-provisioning-trusted-1280x2856.png` |
 | Nearby foreground relay active on Android 15 | Captured | Captured | `artifacts/screenshots/field-bn/10-field-bn-nearby-relay-active-1280x2856.png`, `artifacts/screenshots/field-en/10-field-en-nearby-relay-active-1280x2856.png` |
@@ -73,17 +75,18 @@ These are real emulator captures from the working application, not final submiss
 | On-device ONNX risk prediction and proactive boat reroute | Captured | Captured | `artifacts/screenshots/field-bn/20-field-bn-onnx-risk-reroute.png`, `artifacts/screenshots/field-en/20-field-en-onnx-risk-reroute.png` |
 | Drone-required reachability, rendezvous, ETA, and battery reserve | Captured | Captured | `artifacts/screenshots/field-bn/21-field-bn-hybrid-ready.png`, `artifacts/screenshots/field-en/21-field-en-hybrid-ready.png` |
 | Signed boat-to-simulated-drone custody receipt | Captured | Captured | `artifacts/screenshots/field-bn/22-field-bn-hybrid-transferred.png`, `artifacts/screenshots/field-en/22-field-en-hybrid-transferred.png` |
+| Delayed-boat rendezvous replanning from R3 to R2 | Captured | Captured | `artifacts/screenshots/field-bn/24-field-bn-hybrid-replanned-1280x2856.png`, `artifacts/screenshots/field-en/24-field-en-hybrid-replanned-1280x2856.png` |
 | Verified offline Android geographic map | Captured | Captured | `artifacts/screenshots/field-bn/23-field-bn-offline-geographic-map-1280x2856.png`, `artifacts/screenshots/field-en/23-field-en-offline-geographic-map-1280x2856.png` |
 | Camera scanner for provisioning and PoD | Pending physical-device pair | Pending physical-device pair | CameraX and bundled-model implementation is verified; do not substitute a camera-less emulator capture for the required evidence. |
 
 ## Field application shots
 
-- [ ] First-run language choice
+- [x] First-run language choice
 - [x] Bangla offline PIN setup
 - [x] English offline PIN setup
 - [x] Role-restricted action denial
-- [ ] New request form in Bangla
-- [ ] New request form in English
+- [x] New request form in Bangla; the captured unprovisioned state does not claim a queued request
+- [x] New request form in English; the captured unprovisioned state does not claim a queued request
 - [ ] P0 to P3 priority explanation
 - [ ] Local outbox with pending relay
 - [ ] Nearby-node list; the active zero-peer discovery state is captured, while a physical peer remains required.
@@ -100,7 +103,7 @@ These are real emulator captures from the working application, not final submiss
 - [x] Simulated route-risk inputs, ONNX probability, threshold, overlay, and proactive reroute in both languages
 - [ ] Full chain-of-custody timeline; current UI shows the verified count and latest hash
 - [ ] Low-battery broadcast reduction
-- [x] Simulated drone-required plan and signed handoff in both languages; delayed-boat failure shot remains
+- [x] Simulated drone-required plan, signed handoff, and delayed-boat R3-to-R2 replanning in both languages
 - [ ] Accessibility large-text state
 - [ ] Empty and error states
 

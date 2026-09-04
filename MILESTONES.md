@@ -205,7 +205,7 @@ Exit criteria:
 
 **Goal:** Coordinate boat, truck, and simulated drone ownership without physical vehicles.
 
-Module status: Demoable on Android 15 and 16 emulators; delayed-boat replanning has passing domain and bilingual connected journeys. Verification still requires a persistent capture, target phones, and three unchanged full passes.
+Module status: Demoable on Android 15 and 16 emulators; delayed-boat replanning has passing domain and bilingual connected journeys plus paired persistent captures. Verification still requires target phones and three unchanged full passes.
 
 Deliverables:
 
@@ -224,7 +224,7 @@ Exit criteria:
 - Boat-to-drone custody appears in the receipt chain.
 - No screen or pitch implies that a physical drone was used.
 
-Current evidence: N7 is air-only in the bundled graph, the engine chooses R3 by delivery-completion time while preserving a 20 percent reserve, Room stores `RendezvousPlanned` and `VehicleStateChanged` Protobuf events, and the existing M5 cryptography records a two-party boat-to-simulated-drone receipt. A reported simulated 18-minute delay plus updated boat position now causes a fresh local optimization from R3 to R2, writes the delayed vehicle event and revised rendezvous, and continues the handoff from that plan. Domain tests and the bilingual Compose journey pass on Android 15 and 16 emulators; the delayed-state capture remains. The complete handoff journey has paired ready/transferred captures under `artifacts/screenshots/`.
+Current evidence: N7 is air-only in the bundled graph, the engine chooses R3 by delivery-completion time while preserving a 20 percent reserve, Room stores `RendezvousPlanned` and `VehicleStateChanged` Protobuf events, and the existing M5 cryptography records a two-party boat-to-simulated-drone receipt. A reported simulated 18-minute delay plus updated boat position now causes a fresh local optimization from R3 to R2, writes the delayed vehicle event and revised rendezvous, and continues the handoff from that plan. Domain tests and the bilingual Compose journey pass on Android 15 and 16 emulators. The complete ready, transferred, and delayed-replanning journey has paired captures under `artifacts/screenshots/`.
 
 ## Milestone 9: command center and disaster control
 
