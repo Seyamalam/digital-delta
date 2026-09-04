@@ -58,6 +58,7 @@ These are real emulator captures from the working application, not final submiss
 | Surface | Bangla | English | Evidence |
 |---|---:|---:|---|
 | Offline PIN setup gate | Captured | Captured | `artifacts/screenshots/field-bn/01-field-bn-offline-pin-setup-1280x2856.png`, `artifacts/screenshots/field-en/01-field-en-offline-pin-setup-1280x2856.png` |
+| Signed-role conflict denial | Captured | Captured | `artifacts/screenshots/field-bn/02-field-bn-role-denied-1280x2856.png`, `artifacts/screenshots/field-en/02-field-en-role-denied-1280x2856.png` |
 | Offline device enrollment and pinned administrator | Captured | Captured | `artifacts/screenshots/field-bn/09-field-bn-offline-provisioning-trusted-1280x2856.png`, `artifacts/screenshots/field-en/09-field-en-offline-provisioning-trusted-1280x2856.png` |
 | Nearby foreground relay active on Android 15 | Captured | Captured | `artifacts/screenshots/field-bn/10-field-bn-nearby-relay-active-1280x2856.png`, `artifacts/screenshots/field-en/10-field-en-nearby-relay-active-1280x2856.png` |
 | Safety-sensitive concurrent edit awaiting review | Captured | Captured | `artifacts/screenshots/field-bn/11-field-bn-conflict-review-1280x2856.png`, `artifacts/screenshots/field-en/11-field-en-conflict-review-1280x2856.png` |
@@ -79,7 +80,7 @@ These are real emulator captures from the working application, not final submiss
 - [ ] First-run language choice
 - [x] Bangla offline PIN setup
 - [x] English offline PIN setup
-- [ ] Role-restricted action denial
+- [x] Role-restricted action denial
 - [ ] New request form in Bangla
 - [ ] New request form in English
 - [ ] P0 to P3 priority explanation
