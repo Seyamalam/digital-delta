@@ -41,6 +41,10 @@ The integrated M8 tests classify air-only N7 as drone-required and reject an ent
 
 ## Test layers
 
+### Go connection load
+
+`scripts/load-test-10000.sh` builds an isolated server and client, creates fresh temporary Bolt stores, opens one bidirectional gRPC stream per simulated node, sends one unique Protobuf envelope, requires its durable acknowledgement, and holds every acknowledged stream simultaneously. A 2026-09-04 local run passed 10,000/10,000 streams with a five-second full-concurrency hold and no error-level server log entry. The measured p95 acknowledgement latency was 57.645 seconds and peak server RSS was approximately 1.19 GiB, so this is connection-capacity evidence rather than a production latency claim. Full conditions and limits are in `artifacts/reports/load/2026-09-04-go-10000.md`; the ordinary Go test suite runs the same harness at 64 connections.
+
 ### Unit tests
 
 - domain-event validation;

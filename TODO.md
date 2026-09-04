@@ -196,7 +196,7 @@ This checklist tracks implementation. Milestone exit criteria live in [MILESTONE
 - [ ] Create integration tests for the full event lifecycle.
 - [ ] Create a three-phone manual test sheet.
 - [ ] Run fault-injection tests.
-- [ ] Run 10,000 simulated connections against the Go service and record the conditions.
+- [x] Run 10,000 simulated connections against the Go service and record the conditions. All 10,000 independent gRPC streams received durable acknowledgements and remained open together for five seconds; measured limitations are recorded in `artifacts/reports/load/2026-09-04-go-10000.md`.
 - [ ] Measure route recomputation on target hardware.
 - [ ] Measure field-app RAM on target hardware.
 - [ ] Measure relay recovery and duplicate rejection.
