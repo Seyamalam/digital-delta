@@ -27,7 +27,7 @@ Laptop B should face the presenter. Its Disaster Control actions appear on the p
 ## Before the audience arrives
 
 - Build and install the exact tagged release.
-- During setup with dependencies available, run `cd apps/command && pnpm install --frozen-lockfile && pnpm build`. At the fair, serve the already-built local bundle with `pnpm exec vite preview --host 0.0.0.0`; no remote tile, API, language pack, or font request is required.
+- During setup with dependencies available, run `cd apps/command && pnpm install --frozen-lockfile && pnpm build`. At the fair, serve the production Next.js build with `pnpm start`; no remote tile, API, language pack, or font request is required.
 - Set every device clock and verify tolerated skew.
 - Charge all devices above 80 percent.
 - Disable mobile data and disconnect commercial Wi-Fi.

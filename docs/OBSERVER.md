@@ -28,7 +28,7 @@ Terminal two starts the projector app:
 
 ```bash
 cd apps/command
-VITE_OBSERVER_URL=http://127.0.0.1:7071/observer/events pnpm dev
+NEXT_PUBLIC_OBSERVER_URL=http://127.0.0.1:7071/observer/events pnpm dev
 ```
 
 Terminal three can publish the repeatable rehearsal. These are synthetic disaster and vehicle facts and every event is marked `simulated=true` with the supplied scenario seed:
