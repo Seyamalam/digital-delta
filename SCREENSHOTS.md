@@ -106,10 +106,10 @@ These are real emulator captures from the working application, not final submiss
 
 ## Command dashboard shots
 
-The earlier layout is stored as lossless PNG evidence at both target viewports in Bangla and English. The redesigned Next.js operational-headquarters view has passed live visual inspection locally and on Vercel, but its final lossless capture set must replace the earlier files before submission. Final local captures must show `LIVE SEQ 7` from the Go observer bridge and the checksum-pinned PMTiles map with OpenStreetMap attribution; all drill inputs remain visibly labelled simulated.
+The redesigned Next.js operational-headquarters layout is stored as lossless PNG evidence at both target viewports in Bangla and English. Each local capture shows `LIVE SEQ 7` from the Go observer bridge and the checksum-pinned PMTiles map with OpenStreetMap attribution; all drill inputs remain visibly labelled simulated. The reproducible capture command is `cd apps/command && pnpm capture:dashboard` while `make demo` is running.
 
-- [ ] Redesigned Next.js full network overview at 1920 by 1080
-- [ ] Redesigned Next.js full network overview at 1366 by 768
+- [x] Redesigned Next.js full network overview at 1920 by 1080
+- [x] Redesigned Next.js full network overview at 1366 by 768
 - [x] Offline map with road, water, and air legend
 - [x] Node status and battery panel
 - [x] Mesh queue and relay topology

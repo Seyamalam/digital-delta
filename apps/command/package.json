@@ -9,6 +9,7 @@
     "dev": "next dev --hostname 0.0.0.0",
     "prebuild": "node scripts/copy-maplibre-worker.mjs",
     "build": "next build --webpack",
+    "capture:dashboard": "node scripts/capture-dashboard.mjs",
     "start": "next start --hostname 0.0.0.0",
     "export:android-map": "node scripts/export-android-map.mjs",
     "test": "vitest",
