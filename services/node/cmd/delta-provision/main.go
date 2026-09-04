@@ -28,16 +28,75 @@ func main() {
 
 func run(args []string) error {
 	if len(args) == 0 {
-		return errors.New("use init-admin or issue")
+		return errors.New("use init-admin, issue, or revoke")
 	}
 	switch args[0] {
 	case "init-admin":
 		return initAdmin(args[1:])
 	case "issue":
 		return issue(args[1:])
+	case "revoke":
+		return revoke(args[1:])
 	default:
-		return fmt.Errorf("unknown command %q; use init-admin or issue", args[0])
+		return fmt.Errorf("unknown command %q; use init-admin, issue, or revoke", args[0])
 	}
+}
+
+func revoke(args []string) error {
+	flags := flag.NewFlagSet("revoke", flag.ContinueOnError)
+	credentialPath := flags.String("credential", "", "binary credential previously written by issue --out")
+	privatePath := flags.String("admin-private", "demo-secrets/admin-private.pem", "administrator private key path")
+	issuerID := flags.String("issuer-id", "delta-admin-1", "administrator identity ID")
+	issuerKeyID := flags.String("issuer-key-id", "admin-signing-1", "administrator signing key ID")
+	reasonCode := flags.String("reason", "DEVICE_LOST", "machine-readable revocation reason")
+	outPath := flags.String("out", "", "optional binary revocation output path")
+	if err := flags.Parse(args); err != nil {
+		return err
+	}
+	if *credentialPath == "" {
+		return errors.New("--credential is required")
+	}
+	credentialBytes, err := os.ReadFile(*credentialPath)
+	if err != nil {
+		return fmt.Errorf("read credential: %w", err)
+	}
+	credential := new(deltav1.IdentityProvisioningCredential)
+	if err := proto.Unmarshal(credentialBytes, credential); err != nil {
+		return fmt.Errorf("parse credential: %w", err)
+	}
+	claims := credential.GetClaims()
+	if claims == nil {
+		return errors.New("credential claims are missing")
+	}
+	adminKey, err := readPrivateKey(*privatePath)
+	if err != nil {
+		return err
+	}
+	revocation, err := provisioning.IssueRevocation(provisioning.RevocationOptions{
+		CredentialID:     claims.GetCredentialId(),
+		IdentityID:       claims.GetIdentityId(),
+		NodeID:           claims.GetNodeId(),
+		ReasonCode:       strings.TrimSpace(*reasonCode),
+		IssuerIdentityID: *issuerID,
+		IssuerKeyID:      *issuerKeyID,
+		IssuerPrivateKey: adminKey,
+		RevokedAt:        time.Now(),
+	})
+	if err != nil {
+		return err
+	}
+	revocationBytes, err := proto.MarshalOptions{Deterministic: true}.Marshal(revocation)
+	if err != nil {
+		return fmt.Errorf("encode revocation: %w", err)
+	}
+	if *outPath != "" {
+		if err := writeExclusive(*outPath, revocationBytes, 0o644); err != nil {
+			return err
+		}
+	}
+	fmt.Printf("Credential revoked for %s (%s).\n", claims.GetIdentityId(), claims.GetNodeId())
+	fmt.Printf("DIGITALDELTA:REVOCATION:%s\n", base64.RawURLEncoding.EncodeToString(revocationBytes))
+	return nil
 }
 
 func initAdmin(args []string) error {

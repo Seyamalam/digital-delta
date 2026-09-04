@@ -1576,6 +1576,7 @@ type DomainEvent struct {
 	//	*DomainEvent_VehicleStateChanged
 	//	*DomainEvent_RendezvousPlanned
 	//	*DomainEvent_AuthorizationAudit
+	//	*DomainEvent_CredentialRevoked
 	Body          isDomainEvent_Body `protobuf_oneof:"body"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
@@ -1777,6 +1778,15 @@ func (x *DomainEvent) GetAuthorizationAudit() *SignedAuthorizationAuditEntry {
 	return nil
 }
 
+func (x *DomainEvent) GetCredentialRevoked() *SignedCredentialRevocation {
+	if x != nil {
+		if x, ok := x.Body.(*DomainEvent_CredentialRevoked); ok {
+			return x.CredentialRevoked
+		}
+	}
+	return nil
+}
+
 type isDomainEvent_Body interface {
 	isDomainEvent_Body()
 }
@@ -1833,6 +1843,10 @@ type DomainEvent_AuthorizationAudit struct {
 	AuthorizationAudit *SignedAuthorizationAuditEntry `protobuf:"bytes,32,opt,name=authorization_audit,json=authorizationAudit,proto3,oneof"`
 }
 
+type DomainEvent_CredentialRevoked struct {
+	CredentialRevoked *SignedCredentialRevocation `protobuf:"bytes,33,opt,name=credential_revoked,json=credentialRevoked,proto3,oneof"`
+}
+
 func (*DomainEvent_ReliefRequestCreated) isDomainEvent_Body() {}
 
 func (*DomainEvent_EdgeStatusChanged) isDomainEvent_Body() {}
@@ -1858,6 +1872,8 @@ func (*DomainEvent_VehicleStateChanged) isDomainEvent_Body() {}
 func (*DomainEvent_RendezvousPlanned) isDomainEvent_Body() {}
 
 func (*DomainEvent_AuthorizationAudit) isDomainEvent_Body() {}
+
+func (*DomainEvent_CredentialRevoked) isDomainEvent_Body() {}
 
 var File_digitaldelta_v1_events_proto protoreflect.FileDescriptor
 
@@ -2024,8 +2040,7 @@ const file_digitaldelta_v1_events_proto_rawDesc = "" +
 	"\x16previous_record_sha256\x18\t \x01(\fR\x14previousRecordSha256\"\xa4\x01\n" +
 	"\x1dSignedAuthorizationAuditEntry\x12>\n" +
 	"\x05entry\x18\x01 \x01(\v2(.digitaldelta.v1.AuthorizationAuditEntryR\x05entry\x12C\n" +
-	"\x0factor_signature\x18\x02 \x01(\v2\x1a.digitaldelta.v1.SignatureR\x0eactorSignature\"\xd7\n" +
-	"\n" +
+	"\x0factor_signature\x18\x02 \x01(\v2\x1a.digitaldelta.v1.SignatureR\x0eactorSignature\"\xb5\v\n" +
 	"\vDomainEvent\x12\x19\n" +
 	"\bevent_id\x18\x01 \x01(\tR\aeventId\x12%\n" +
 	"\x0eschema_version\x18\x02 \x01(\rR\rschemaVersion\x12*\n" +
@@ -2045,7 +2060,8 @@ const file_digitaldelta_v1_events_proto_rawDesc = "" +
 	"\x15mission_field_updated\x18\x1d \x01(\v2$.digitaldelta.v1.MissionFieldUpdatedH\x00R\x13missionFieldUpdated\x12Z\n" +
 	"\x15vehicle_state_changed\x18\x1e \x01(\v2$.digitaldelta.v1.VehicleStateChangedH\x00R\x13vehicleStateChanged\x12S\n" +
 	"\x12rendezvous_planned\x18\x1f \x01(\v2\".digitaldelta.v1.RendezvousPlannedH\x00R\x11rendezvousPlanned\x12a\n" +
-	"\x13authorization_audit\x18  \x01(\v2..digitaldelta.v1.SignedAuthorizationAuditEntryH\x00R\x12authorizationAuditB\x06\n" +
+	"\x13authorization_audit\x18  \x01(\v2..digitaldelta.v1.SignedAuthorizationAuditEntryH\x00R\x12authorizationAudit\x12\\\n" +
+	"\x12credential_revoked\x18! \x01(\v2+.digitaldelta.v1.SignedCredentialRevocationH\x00R\x11credentialRevokedB\x06\n" +
 	"\x04bodyBu\n" +
 	"!com.example.digitaldelta.proto.v1H\x03P\x01ZLgithub.com/Seyamalam/digital-delta/services/node/gen/digitaldelta/v1;deltav1b\x06proto3"
 
@@ -2086,6 +2102,7 @@ var file_digitaldelta_v1_events_proto_goTypes = []any{
 	(*VectorClock)(nil),                   // 20: digitaldelta.v1.VectorClock
 	(*Signature)(nil),                     // 21: digitaldelta.v1.Signature
 	(IdentityRole)(0),                     // 22: digitaldelta.v1.IdentityRole
+	(*SignedCredentialRevocation)(nil),    // 23: digitaldelta.v1.SignedCredentialRevocation
 }
 var file_digitaldelta_v1_events_proto_depIdxs = []int32{
 	18, // 0: digitaldelta.v1.CargoItem.priority:type_name -> digitaldelta.v1.PriorityClass
@@ -2116,11 +2133,12 @@ var file_digitaldelta_v1_events_proto_depIdxs = []int32{
 	13, // 25: digitaldelta.v1.DomainEvent.vehicle_state_changed:type_name -> digitaldelta.v1.VehicleStateChanged
 	14, // 26: digitaldelta.v1.DomainEvent.rendezvous_planned:type_name -> digitaldelta.v1.RendezvousPlanned
 	16, // 27: digitaldelta.v1.DomainEvent.authorization_audit:type_name -> digitaldelta.v1.SignedAuthorizationAuditEntry
-	28, // [28:28] is the sub-list for method output_type
-	28, // [28:28] is the sub-list for method input_type
-	28, // [28:28] is the sub-list for extension type_name
-	28, // [28:28] is the sub-list for extension extendee
-	0,  // [0:28] is the sub-list for field type_name
+	23, // 28: digitaldelta.v1.DomainEvent.credential_revoked:type_name -> digitaldelta.v1.SignedCredentialRevocation
+	29, // [29:29] is the sub-list for method output_type
+	29, // [29:29] is the sub-list for method input_type
+	29, // [29:29] is the sub-list for extension type_name
+	29, // [29:29] is the sub-list for extension extendee
+	0,  // [0:29] is the sub-list for field type_name
 }
 
 func init() { file_digitaldelta_v1_events_proto_init() }
@@ -2143,6 +2161,7 @@ func file_digitaldelta_v1_events_proto_init() {
 		(*DomainEvent_VehicleStateChanged)(nil),
 		(*DomainEvent_RendezvousPlanned)(nil),
 		(*DomainEvent_AuthorizationAudit)(nil),
+		(*DomainEvent_CredentialRevoked)(nil),
 	}
 	type x struct{}
 	out := protoimpl.TypeBuilder{

@@ -138,6 +138,22 @@ message IdentityProvisioningCredential {
   Signature issuer_signature = 2;
 }
 
+message CredentialRevocationClaims {
+  string revocation_id = 1;
+  string credential_id = 2;
+  string identity_id = 3;
+  string node_id = 4;
+  int64 revoked_at_unix_ms = 5;
+  string reason_code = 6;
+  string issuer_identity_id = 7;
+  bytes nonce = 8;
+}
+
+message SignedCredentialRevocation {
+  CredentialRevocationClaims claims = 1;
+  Signature issuer_signature = 2;
+}
+
 message IdentityEnrollmentRequest {
   string identity_id = 1;
   string node_id = 2;

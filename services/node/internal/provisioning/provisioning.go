@@ -25,6 +25,17 @@ type IssueOptions struct {
 	ValidFor         time.Duration
 }
 
+type RevocationOptions struct {
+	CredentialID     string
+	IdentityID       string
+	NodeID           string
+	ReasonCode       string
+	IssuerIdentityID string
+	IssuerKeyID      string
+	IssuerPrivateKey *rsa.PrivateKey
+	RevokedAt        time.Time
+}
+
 func Issue(enrollment *deltav1.IdentityEnrollmentRequest, options IssueOptions) (*deltav1.IdentityProvisioningCredential, error) {
 	if err := validateEnrollment(enrollment); err != nil {
 		return nil, err
@@ -110,6 +121,91 @@ func Verify(credential *deltav1.IdentityProvisioningCredential, trustedIssuer *r
 	return nil
 }
 
+func IssueRevocation(options RevocationOptions) (*deltav1.SignedCredentialRevocation, error) {
+	if options.CredentialID == "" || options.IdentityID == "" || options.NodeID == "" || options.ReasonCode == "" {
+		return nil, errors.New("credential, identity, node, and reason are required")
+	}
+	if options.IssuerIdentityID == "" || options.IssuerKeyID == "" || options.IssuerPrivateKey == nil {
+		return nil, errors.New("issuer identity, key ID, and private key are required")
+	}
+	if options.IssuerPrivateKey.N.BitLen() < 2048 {
+		return nil, errors.New("issuer RSA key must be at least 2048 bits")
+	}
+	if options.RevokedAt.IsZero() {
+		return nil, errors.New("revocation time is required")
+	}
+	revocationID, err := randomIdentifier("revocation")
+	if err != nil {
+		return nil, err
+	}
+	nonce := make([]byte, 16)
+	if _, err := rand.Read(nonce); err != nil {
+		return nil, fmt.Errorf("generate revocation nonce: %w", err)
+	}
+	claims := &deltav1.CredentialRevocationClaims{
+		RevocationId:     revocationID,
+		CredentialId:     options.CredentialID,
+		IdentityId:       options.IdentityID,
+		NodeId:           options.NodeID,
+		RevokedAtUnixMs:  options.RevokedAt.UnixMilli(),
+		ReasonCode:       options.ReasonCode,
+		IssuerIdentityId: options.IssuerIdentityID,
+		Nonce:            nonce,
+	}
+	signature, err := signDeterministicMessage(claims, options.IssuerPrivateKey)
+	if err != nil {
+		return nil, fmt.Errorf("sign revocation claims: %w", err)
+	}
+	return &deltav1.SignedCredentialRevocation{
+		Claims: claims,
+		IssuerSignature: &deltav1.Signature{
+			KeyId:             options.IssuerKeyID,
+			Rsa_2048PssSha256: signature,
+			Algorithm:         signatureAlgorithm,
+		},
+	}, nil
+}
+
+func VerifyRevocation(
+	revocation *deltav1.SignedCredentialRevocation,
+	trustedIssuer *rsa.PublicKey,
+	now time.Time,
+) error {
+	if revocation == nil || revocation.GetClaims() == nil || revocation.GetIssuerSignature() == nil {
+		return errors.New("revocation, claims, and signature are required")
+	}
+	if trustedIssuer == nil || trustedIssuer.N.BitLen() < 2048 {
+		return errors.New("trusted issuer RSA key must be at least 2048 bits")
+	}
+	claims := revocation.GetClaims()
+	if claims.GetRevocationId() == "" || claims.GetCredentialId() == "" || claims.GetIdentityId() == "" ||
+		claims.GetNodeId() == "" || claims.GetReasonCode() == "" || claims.GetIssuerIdentityId() == "" ||
+		len(claims.GetNonce()) < 16 || claims.GetRevokedAtUnixMs() <= 0 {
+		return errors.New("complete revocation claims are required")
+	}
+	if claims.GetRevokedAtUnixMs() > now.Add(5*time.Minute).UnixMilli() {
+		return errors.New("revocation time is too far in the future")
+	}
+	if revocation.GetIssuerSignature().GetAlgorithm() != signatureAlgorithm {
+		return errors.New("unsupported revocation signature algorithm")
+	}
+	canonical, err := proto.MarshalOptions{Deterministic: true}.Marshal(claims)
+	if err != nil {
+		return fmt.Errorf("marshal revocation claims: %w", err)
+	}
+	digest := sha256.Sum256(canonical)
+	if err := rsa.VerifyPSS(
+		trustedIssuer,
+		crypto.SHA256,
+		digest[:],
+		revocation.GetIssuerSignature().GetRsa_2048PssSha256(),
+		&rsa.PSSOptions{SaltLength: rsa.PSSSaltLengthEqualsHash, Hash: crypto.SHA256},
+	); err != nil {
+		return fmt.Errorf("verify revocation signature: %w", err)
+	}
+	return nil
+}
+
 func validateEnrollment(enrollment *deltav1.IdentityEnrollmentRequest) error {
 	if enrollment == nil || enrollment.GetIdentityId() == "" || enrollment.GetNodeId() == "" || enrollment.GetDisplayName() == "" {
 		return errors.New("complete enrollment identity is required")
@@ -137,9 +233,25 @@ func validateEnrollment(enrollment *deltav1.IdentityEnrollmentRequest) error {
 }
 
 func randomID() (string, error) {
+	return randomIdentifier("credential")
+}
+
+func randomIdentifier(prefix string) (string, error) {
 	value := make([]byte, 16)
 	if _, err := rand.Read(value); err != nil {
-		return "", fmt.Errorf("generate credential ID: %w", err)
+		return "", fmt.Errorf("generate %s ID: %w", prefix, err)
 	}
-	return "credential-" + hex.EncodeToString(value), nil
+	return prefix + "-" + hex.EncodeToString(value), nil
+}
+
+func signDeterministicMessage(message proto.Message, privateKey *rsa.PrivateKey) ([]byte, error) {
+	canonical, err := proto.MarshalOptions{Deterministic: true}.Marshal(message)
+	if err != nil {
+		return nil, err
+	}
+	digest := sha256.Sum256(canonical)
+	return rsa.SignPSS(rand.Reader, privateKey, crypto.SHA256, digest[:], &rsa.PSSOptions{
+		SaltLength: rsa.PSSSaltLengthEqualsHash,
+		Hash:       crypto.SHA256,
+	})
 }

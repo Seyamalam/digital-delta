@@ -1200,6 +1200,158 @@ func (x *IdentityProvisioningCredential) GetIssuerSignature() *Signature {
 	return nil
 }
 
+type CredentialRevocationClaims struct {
+	state            protoimpl.MessageState `protogen:"open.v1"`
+	RevocationId     string                 `protobuf:"bytes,1,opt,name=revocation_id,json=revocationId,proto3" json:"revocation_id,omitempty"`
+	CredentialId     string                 `protobuf:"bytes,2,opt,name=credential_id,json=credentialId,proto3" json:"credential_id,omitempty"`
+	IdentityId       string                 `protobuf:"bytes,3,opt,name=identity_id,json=identityId,proto3" json:"identity_id,omitempty"`
+	NodeId           string                 `protobuf:"bytes,4,opt,name=node_id,json=nodeId,proto3" json:"node_id,omitempty"`
+	RevokedAtUnixMs  int64                  `protobuf:"varint,5,opt,name=revoked_at_unix_ms,json=revokedAtUnixMs,proto3" json:"revoked_at_unix_ms,omitempty"`
+	ReasonCode       string                 `protobuf:"bytes,6,opt,name=reason_code,json=reasonCode,proto3" json:"reason_code,omitempty"`
+	IssuerIdentityId string                 `protobuf:"bytes,7,opt,name=issuer_identity_id,json=issuerIdentityId,proto3" json:"issuer_identity_id,omitempty"`
+	Nonce            []byte                 `protobuf:"bytes,8,opt,name=nonce,proto3" json:"nonce,omitempty"`
+	unknownFields    protoimpl.UnknownFields
+	sizeCache        protoimpl.SizeCache
+}
+
+func (x *CredentialRevocationClaims) Reset() {
+	*x = CredentialRevocationClaims{}
+	mi := &file_digitaldelta_v1_common_proto_msgTypes[11]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *CredentialRevocationClaims) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*CredentialRevocationClaims) ProtoMessage() {}
+
+func (x *CredentialRevocationClaims) ProtoReflect() protoreflect.Message {
+	mi := &file_digitaldelta_v1_common_proto_msgTypes[11]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use CredentialRevocationClaims.ProtoReflect.Descriptor instead.
+func (*CredentialRevocationClaims) Descriptor() ([]byte, []int) {
+	return file_digitaldelta_v1_common_proto_rawDescGZIP(), []int{11}
+}
+
+func (x *CredentialRevocationClaims) GetRevocationId() string {
+	if x != nil {
+		return x.RevocationId
+	}
+	return ""
+}
+
+func (x *CredentialRevocationClaims) GetCredentialId() string {
+	if x != nil {
+		return x.CredentialId
+	}
+	return ""
+}
+
+func (x *CredentialRevocationClaims) GetIdentityId() string {
+	if x != nil {
+		return x.IdentityId
+	}
+	return ""
+}
+
+func (x *CredentialRevocationClaims) GetNodeId() string {
+	if x != nil {
+		return x.NodeId
+	}
+	return ""
+}
+
+func (x *CredentialRevocationClaims) GetRevokedAtUnixMs() int64 {
+	if x != nil {
+		return x.RevokedAtUnixMs
+	}
+	return 0
+}
+
+func (x *CredentialRevocationClaims) GetReasonCode() string {
+	if x != nil {
+		return x.ReasonCode
+	}
+	return ""
+}
+
+func (x *CredentialRevocationClaims) GetIssuerIdentityId() string {
+	if x != nil {
+		return x.IssuerIdentityId
+	}
+	return ""
+}
+
+func (x *CredentialRevocationClaims) GetNonce() []byte {
+	if x != nil {
+		return x.Nonce
+	}
+	return nil
+}
+
+type SignedCredentialRevocation struct {
+	state           protoimpl.MessageState      `protogen:"open.v1"`
+	Claims          *CredentialRevocationClaims `protobuf:"bytes,1,opt,name=claims,proto3" json:"claims,omitempty"`
+	IssuerSignature *Signature                  `protobuf:"bytes,2,opt,name=issuer_signature,json=issuerSignature,proto3" json:"issuer_signature,omitempty"`
+	unknownFields   protoimpl.UnknownFields
+	sizeCache       protoimpl.SizeCache
+}
+
+func (x *SignedCredentialRevocation) Reset() {
+	*x = SignedCredentialRevocation{}
+	mi := &file_digitaldelta_v1_common_proto_msgTypes[12]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *SignedCredentialRevocation) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*SignedCredentialRevocation) ProtoMessage() {}
+
+func (x *SignedCredentialRevocation) ProtoReflect() protoreflect.Message {
+	mi := &file_digitaldelta_v1_common_proto_msgTypes[12]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use SignedCredentialRevocation.ProtoReflect.Descriptor instead.
+func (*SignedCredentialRevocation) Descriptor() ([]byte, []int) {
+	return file_digitaldelta_v1_common_proto_rawDescGZIP(), []int{12}
+}
+
+func (x *SignedCredentialRevocation) GetClaims() *CredentialRevocationClaims {
+	if x != nil {
+		return x.Claims
+	}
+	return nil
+}
+
+func (x *SignedCredentialRevocation) GetIssuerSignature() *Signature {
+	if x != nil {
+		return x.IssuerSignature
+	}
+	return nil
+}
+
 type IdentityEnrollmentRequest struct {
 	state                          protoimpl.MessageState `protogen:"open.v1"`
 	IdentityId                     string                 `protobuf:"bytes,1,opt,name=identity_id,json=identityId,proto3" json:"identity_id,omitempty"`
@@ -1218,7 +1370,7 @@ type IdentityEnrollmentRequest struct {
 
 func (x *IdentityEnrollmentRequest) Reset() {
 	*x = IdentityEnrollmentRequest{}
-	mi := &file_digitaldelta_v1_common_proto_msgTypes[11]
+	mi := &file_digitaldelta_v1_common_proto_msgTypes[13]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1230,7 +1382,7 @@ func (x *IdentityEnrollmentRequest) String() string {
 func (*IdentityEnrollmentRequest) ProtoMessage() {}
 
 func (x *IdentityEnrollmentRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_digitaldelta_v1_common_proto_msgTypes[11]
+	mi := &file_digitaldelta_v1_common_proto_msgTypes[13]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1243,7 +1395,7 @@ func (x *IdentityEnrollmentRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use IdentityEnrollmentRequest.ProtoReflect.Descriptor instead.
 func (*IdentityEnrollmentRequest) Descriptor() ([]byte, []int) {
-	return file_digitaldelta_v1_common_proto_rawDescGZIP(), []int{11}
+	return file_digitaldelta_v1_common_proto_rawDescGZIP(), []int{13}
 }
 
 func (x *IdentityEnrollmentRequest) GetIdentityId() string {
@@ -1406,6 +1558,20 @@ const file_digitaldelta_v1_common_proto_rawDesc = "" +
 	"\x05nonce\x18\r \x01(\fR\x05nonce\"\xac\x01\n" +
 	"\x1eIdentityProvisioningCredential\x12C\n" +
 	"\x06claims\x18\x01 \x01(\v2+.digitaldelta.v1.IdentityProvisioningClaimsR\x06claims\x12E\n" +
+	"\x10issuer_signature\x18\x02 \x01(\v2\x1a.digitaldelta.v1.SignatureR\x0fissuerSignature\"\xb2\x02\n" +
+	"\x1aCredentialRevocationClaims\x12#\n" +
+	"\rrevocation_id\x18\x01 \x01(\tR\frevocationId\x12#\n" +
+	"\rcredential_id\x18\x02 \x01(\tR\fcredentialId\x12\x1f\n" +
+	"\videntity_id\x18\x03 \x01(\tR\n" +
+	"identityId\x12\x17\n" +
+	"\anode_id\x18\x04 \x01(\tR\x06nodeId\x12+\n" +
+	"\x12revoked_at_unix_ms\x18\x05 \x01(\x03R\x0frevokedAtUnixMs\x12\x1f\n" +
+	"\vreason_code\x18\x06 \x01(\tR\n" +
+	"reasonCode\x12,\n" +
+	"\x12issuer_identity_id\x18\a \x01(\tR\x10issuerIdentityId\x12\x14\n" +
+	"\x05nonce\x18\b \x01(\fR\x05nonce\"\xa8\x01\n" +
+	"\x1aSignedCredentialRevocation\x12C\n" +
+	"\x06claims\x18\x01 \x01(\v2+.digitaldelta.v1.CredentialRevocationClaimsR\x06claims\x12E\n" +
 	"\x10issuer_signature\x18\x02 \x01(\v2\x1a.digitaldelta.v1.SignatureR\x0fissuerSignature\"\xd0\x03\n" +
 	"\x19IdentityEnrollmentRequest\x12\x1f\n" +
 	"\videntity_id\x18\x01 \x01(\tR\n" +
@@ -1458,7 +1624,7 @@ func file_digitaldelta_v1_common_proto_rawDescGZIP() []byte {
 }
 
 var file_digitaldelta_v1_common_proto_enumTypes = make([]protoimpl.EnumInfo, 4)
-var file_digitaldelta_v1_common_proto_msgTypes = make([]protoimpl.MessageInfo, 12)
+var file_digitaldelta_v1_common_proto_msgTypes = make([]protoimpl.MessageInfo, 14)
 var file_digitaldelta_v1_common_proto_goTypes = []any{
 	(PriorityClass)(0),                     // 0: digitaldelta.v1.PriorityClass
 	(TransportMode)(0),                     // 1: digitaldelta.v1.TransportMode
@@ -1475,7 +1641,9 @@ var file_digitaldelta_v1_common_proto_goTypes = []any{
 	(*PeerIdentityProof)(nil),              // 12: digitaldelta.v1.PeerIdentityProof
 	(*IdentityProvisioningClaims)(nil),     // 13: digitaldelta.v1.IdentityProvisioningClaims
 	(*IdentityProvisioningCredential)(nil), // 14: digitaldelta.v1.IdentityProvisioningCredential
-	(*IdentityEnrollmentRequest)(nil),      // 15: digitaldelta.v1.IdentityEnrollmentRequest
+	(*CredentialRevocationClaims)(nil),     // 15: digitaldelta.v1.CredentialRevocationClaims
+	(*SignedCredentialRevocation)(nil),     // 16: digitaldelta.v1.SignedCredentialRevocation
+	(*IdentityEnrollmentRequest)(nil),      // 17: digitaldelta.v1.IdentityEnrollmentRequest
 }
 var file_digitaldelta_v1_common_proto_depIdxs = []int32{
 	4,  // 0: digitaldelta.v1.VectorClock.entries:type_name -> digitaldelta.v1.VectorClockEntry
@@ -1495,12 +1663,14 @@ var file_digitaldelta_v1_common_proto_depIdxs = []int32{
 	3,  // 14: digitaldelta.v1.IdentityProvisioningClaims.role:type_name -> digitaldelta.v1.IdentityRole
 	13, // 15: digitaldelta.v1.IdentityProvisioningCredential.claims:type_name -> digitaldelta.v1.IdentityProvisioningClaims
 	6,  // 16: digitaldelta.v1.IdentityProvisioningCredential.issuer_signature:type_name -> digitaldelta.v1.Signature
-	3,  // 17: digitaldelta.v1.IdentityEnrollmentRequest.role:type_name -> digitaldelta.v1.IdentityRole
-	18, // [18:18] is the sub-list for method output_type
-	18, // [18:18] is the sub-list for method input_type
-	18, // [18:18] is the sub-list for extension type_name
-	18, // [18:18] is the sub-list for extension extendee
-	0,  // [0:18] is the sub-list for field type_name
+	15, // 17: digitaldelta.v1.SignedCredentialRevocation.claims:type_name -> digitaldelta.v1.CredentialRevocationClaims
+	6,  // 18: digitaldelta.v1.SignedCredentialRevocation.issuer_signature:type_name -> digitaldelta.v1.Signature
+	3,  // 19: digitaldelta.v1.IdentityEnrollmentRequest.role:type_name -> digitaldelta.v1.IdentityRole
+	20, // [20:20] is the sub-list for method output_type
+	20, // [20:20] is the sub-list for method input_type
+	20, // [20:20] is the sub-list for extension type_name
+	20, // [20:20] is the sub-list for extension extendee
+	0,  // [0:20] is the sub-list for field type_name
 }
 
 func init() { file_digitaldelta_v1_common_proto_init() }
@@ -1520,7 +1690,7 @@ func file_digitaldelta_v1_common_proto_init() {
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_digitaldelta_v1_common_proto_rawDesc), len(file_digitaldelta_v1_common_proto_rawDesc)),
 			NumEnums:      4,
-			NumMessages:   12,
+			NumMessages:   14,
 			NumExtensions: 0,
 			NumServices:   0,
 		},

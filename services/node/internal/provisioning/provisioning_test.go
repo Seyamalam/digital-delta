@@ -72,3 +72,39 @@ func TestIssueAndVerifyOfflineCredential(t *testing.T) {
 		t.Fatal("expired credential verified")
 	}
 }
+
+func TestIssueAndVerifyCredentialRevocation(t *testing.T) {
+	admin, err := rsa.GenerateKey(rand.Reader, 2048)
+	if err != nil {
+		t.Fatal(err)
+	}
+	revokedAt := time.UnixMilli(1_788_380_000_000)
+	revocation, err := IssueRevocation(RevocationOptions{
+		CredentialID:     "credential-n4",
+		IdentityID:       "clinic-sylhet-01",
+		NodeID:           "N4",
+		ReasonCode:       "DEVICE_LOST",
+		IssuerIdentityID: "delta-admin-1",
+		IssuerKeyID:      "admin-signing-1",
+		IssuerPrivateKey: admin,
+		RevokedAt:        revokedAt,
+	})
+	if err != nil {
+		t.Fatalf("issue revocation: %v", err)
+	}
+	if err := VerifyRevocation(revocation, &admin.PublicKey, revokedAt.Add(time.Minute)); err != nil {
+		t.Fatalf("verify revocation: %v", err)
+	}
+	if got := revocation.GetClaims().GetCredentialId(); got != "credential-n4" {
+		t.Fatalf("credential ID = %q", got)
+	}
+
+	tampered := proto.Clone(revocation).(*deltav1.SignedCredentialRevocation)
+	tampered.Claims.NodeId = "N6"
+	if err := VerifyRevocation(tampered, &admin.PublicKey, revokedAt.Add(time.Minute)); err == nil {
+		t.Fatal("tampered revocation verified")
+	}
+	if err := VerifyRevocation(revocation, &admin.PublicKey, revokedAt.Add(-10*time.Minute)); err == nil {
+		t.Fatal("future revocation verified")
+	}
+}

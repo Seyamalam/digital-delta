@@ -37,6 +37,20 @@ go run ./cmd/delta-provision issue \
 
 The phone verifies the administrator signature and validity window offline, then stores only public keys and the signed credential in Room. If the credential exactly matches this phone's selected profile and Keystore public keys, its role permissions become active; a mismatched credential may remain usable as a peer key but cannot authorize local actions. Private keys remain non-exportable in Android Keystore.
 
+## Issue a credential revocation
+
+Keep the binary credential when issuing an identity by adding `--out credential-n4.pb`. If that credential must be withdrawn, the trusted laptop can create a signed, portable Protobuf revocation without internet:
+
+```bash
+go run ./cmd/delta-provision revoke \
+  --admin-private demo-secrets/admin-private.pem \
+  --credential credential-n4.pb \
+  --reason DEVICE_LOST \
+  --out revocation-n4.pb
+```
+
+The command binds the revocation to the credential ID, identity ID, and node ID copied from the original credential, adds a random 128-bit nonce and revocation time, and signs the canonical claims with RSA-PSS. It prints a `DIGITALDELTA:REVOCATION:...` transfer code. Android import and encrypted mesh forwarding of that code are the next implementation checkpoint; until those land, this command alone is not evidence that revocation has propagated to phones.
+
 ## Multi-phone demo order
 
 Enroll all three profiles independently and install each phone's own credential on that phone. Each phone pins the same administrator public key. During Nearby pairing, the signed challenge-response carries and verifies the remote public credential, then stores it in the local directory; no private key ever leaves its originating phone.

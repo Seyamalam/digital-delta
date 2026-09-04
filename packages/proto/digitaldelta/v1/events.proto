@@ -197,5 +197,6 @@ message DomainEvent {
     VehicleStateChanged vehicle_state_changed = 30;
     RendezvousPlanned rendezvous_planned = 31;
     SignedAuthorizationAuditEntry authorization_audit = 32;
+    SignedCredentialRevocation credential_revoked = 33;
   }
 }
