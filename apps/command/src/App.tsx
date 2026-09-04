@@ -11,6 +11,8 @@ type ScenarioState = {
   observerConnected: boolean;
   failedRoad: boolean;
   predictedRisk: boolean;
+  rainfallMmPerHour: number;
+  soilSaturationPercent: number;
   conflict: boolean;
   custodyVerified: boolean;
   droneBattery: number;
@@ -26,6 +28,8 @@ const initialScenario: ScenarioState = {
   observerConnected: true,
   failedRoad: false,
   predictedRisk: false,
+  rainfallMmPerHour: 28,
+  soilSaturationPercent: 48,
   conflict: false,
   custodyVerified: false,
   droneBattery: 74,
@@ -41,6 +45,8 @@ type Action =
   | { type: "TOGGLE_OBSERVER" }
   | { type: "FLOOD" }
   | { type: "RISK" }
+  | { type: "RAINFALL"; value: number }
+  | { type: "SATURATION"; value: number }
   | { type: "CONFLICT" }
   | { type: "BATTERY" }
   | { type: "VERIFY" }
@@ -60,6 +66,8 @@ export function scenarioReducer(state: ScenarioState, action: Action): ScenarioS
         observerConnected: state.observerConnected,
         step: next,
         predictedRisk: next >= 1,
+        rainfallMmPerHour: next >= 1 ? 82 : 28,
+        soilSaturationPercent: next >= 1 ? 91 : 48,
         failedRoad: next >= 2,
         conflict: next === 3,
         custodyVerified: next >= 5,
@@ -68,7 +76,19 @@ export function scenarioReducer(state: ScenarioState, action: Action): ScenarioS
     }
     case "TOGGLE_OBSERVER": return { ...state, observerConnected: !state.observerConnected };
     case "FLOOD": return { ...state, failedRoad: !state.failedRoad };
-    case "RISK": return { ...state, predictedRisk: !state.predictedRisk };
+    case "RISK": return state.predictedRisk
+      ? { ...state, predictedRisk: false, rainfallMmPerHour: 28, soilSaturationPercent: 48 }
+      : { ...state, predictedRisk: true, rainfallMmPerHour: 82, soilSaturationPercent: 91 };
+    case "RAINFALL": return {
+      ...state,
+      rainfallMmPerHour: action.value,
+      predictedRisk: action.value >= 72 && state.soilSaturationPercent >= 72,
+    };
+    case "SATURATION": return {
+      ...state,
+      soilSaturationPercent: action.value,
+      predictedRisk: state.rainfallMmPerHour >= 72 && action.value >= 72,
+    };
     case "CONFLICT": return { ...state, conflict: !state.conflict };
     case "BATTERY": return { ...state, droneBattery: state.droneBattery < 30 ? 74 : 25 };
     case "VERIFY": return { ...state, custodyVerified: !state.custodyVerified };
@@ -106,6 +126,8 @@ const copy = {
     reset: "বীজে রিসেট",
     road: "E3 সড়ক বন্ধ",
     risk: "ঝুঁকি পূর্বাভাস",
+    rainfall: "সিমুলেটেড বৃষ্টিপাত",
+    saturation: "সিমুলেটেড মাটির স্যাচুরেশন",
     conflict: "দ্বন্দ্ব তৈরি",
     battery: "ড্রোন ২৫%",
     verify: "হেফাজত যাচাই",
@@ -162,6 +184,8 @@ const copy = {
     reset: "Reset to seed",
     road: "Fail road E3",
     risk: "Predict route risk",
+    rainfall: "Simulated rainfall",
+    saturation: "Simulated soil saturation",
     conflict: "Create conflict",
     battery: "Drone to 25%",
     verify: "Verify custody",
@@ -220,6 +244,7 @@ export function App({ observerConnect: injectedObserverConnect, observerUrl = im
     vehicleDelayed: state.vehicleDelayed || projection.delayedVehicleIds.size > 0,
   };
   const liveEta = liveRoute?.etaMinutes ?? null;
+  const useFallbackRoute = displayState.failedRoad || displayState.predictedRisk;
   const events = useMemo(() => buildEvents(state, language, observations), [state, language, observations]);
   const observerConnector = injectedObserverConnect ?? (typeof EventSource === "undefined" ? null : connectObserver);
 
@@ -271,7 +296,7 @@ export function App({ observerConnect: injectedObserverConnect, observerUrl = im
         : "offline";
   const routeLabel = liveRoute
     ? `${liveRouteIsWaterway ? (language === "bn" ? "নৌযান" : "Boat") : (language === "bn" ? "ট্রাক" : "Truck")} • ${liveEdgeIds.join(" → ")}`
-    : state.failedRoad ? t.routeValue : t.truckRoute;
+    : useFallbackRoute ? t.routeValue : t.truckRoute;
   const rendezvousLabel = projection.rendezvous?.candidateId ?? "R3";
   const rendezvousCoordinates = projection.rendezvous?.latitudeDegrees !== undefined && projection.rendezvous.longitudeDegrees !== undefined
     ? `${projection.rendezvous.latitudeDegrees.toFixed(4)}, ${projection.rendezvous.longitudeDegrees.toFixed(4)}`
@@ -306,7 +331,7 @@ export function App({ observerConnect: injectedObserverConnect, observerUrl = im
         <section className="map-panel panel">
           <PanelHeading eyebrow="M4 + M7 + M8" title={t.route} meta="24.8949°N / 91.8687°E" />
           <Suspense fallback={<OfflineMapModuleFallback language={language} />}>
-            <OfflineDeltaMap useWaterRoute={displayState.failedRoad} showRisk={displayState.predictedRisk} simulated={liveRoute?.simulated ?? true} language={language} />
+            <OfflineDeltaMap useWaterRoute={useFallbackRoute} showRisk={displayState.predictedRisk} simulated={liveRoute?.simulated ?? true} language={language} />
           </Suspense>
           <div className="route-caption">
             <div><span>{t.route}</span><strong>{routeLabel}</strong></div>
@@ -349,14 +374,28 @@ export function App({ observerConnect: injectedObserverConnect, observerUrl = im
             <button role="tab" aria-selected={controlMode === "core"} onClick={() => setControlMode("core")}>{t.core}</button>
             <button role="tab" aria-selected={controlMode === "faults"} onClick={() => setControlMode("faults")}>{t.faults}</button>
           </div>
+          {controlMode === "core" && <div className="environment-controls">
+            <EnvironmentControl
+              label={t.rainfall}
+              valueLabel={`${state.rainfallMmPerHour} mm/h`}
+              value={state.rainfallMmPerHour}
+              max={140}
+              onChange={(value) => dispatch({ type: "RAINFALL", value })}
+            />
+            <EnvironmentControl
+              label={t.saturation}
+              valueLabel={`${state.soilSaturationPercent}%`}
+              value={state.soilSaturationPercent}
+              max={100}
+              onChange={(value) => dispatch({ type: "SATURATION", value })}
+            />
+          </div>}
           <div className="control-grid">
             {controlMode === "core" ? <>
-              <Control active={state.predictedRisk} onClick={() => dispatch({ type: "RISK" })} label={t.risk} code="M7" />
               <Control active={state.failedRoad} onClick={() => dispatch({ type: "FLOOD" })} label={t.road} code="M4" />
               <Control active={state.conflict} onClick={() => dispatch({ type: "CONFLICT" })} label={t.conflict} code="M2" />
               <Control active={state.droneBattery < 30} onClick={() => dispatch({ type: "BATTERY" })} label={t.battery} code="M3" />
               <Control active={state.custodyVerified} onClick={() => dispatch({ type: "VERIFY" })} label={t.verify} code="M5" />
-              <Control active={!state.observerConnected} onClick={() => dispatch({ type: "TOGGLE_OBSERVER" })} label={state.observerConnected ? t.disconnect : t.reconnect} code="SYS" />
             </> : <>
               <Control active={state.syncing} onClick={() => dispatch({ type: "SYNC" })} label={t.showSync} code="SYNC" />
               <Control active={state.nodeOffline} onClick={() => dispatch({ type: "NODE" })} label={t.nodeOffline} code="M3" />
@@ -406,13 +445,21 @@ function Control({ active, onClick, label, code }: { active: boolean; onClick: (
   return <button className={`control ${active ? "active" : ""}`} aria-pressed={active} onClick={onClick}><code>{code}</code><span>{label}</span><i /></button>;
 }
 
+function EnvironmentControl({ label, valueLabel, value, max, onChange }: { label: string; valueLabel: string; value: number; max: number; onChange: (value: number) => void }) {
+  return <label className="environment-control">
+    <span>{label}</span>
+    <strong>{valueLabel}</strong>
+    <input aria-label={label} type="range" min="0" max={max} value={value} onChange={(event) => onChange(Number(event.target.value))} />
+  </label>;
+}
+
 function buildEvents(state: ScenarioState, language: Language, observations: PresentationObservation[] = []) {
   const en = language === "en";
   const events = [
     { id: "REQ…A19F", time: "08:01:04", tone: "teal", title: en ? "P0 request stored offline" : "P0 অনুরোধ অফলাইনে সংরক্ষিত", detail: "N4 → N7 • PROTOBUF" },
     { id: "ROUTE…C821", time: "08:01:06", tone: "blue", title: en ? "Truck route selected" : "ট্রাকের পথ নির্বাচিত", detail: "E1 + E3 • 65 MIN" },
   ];
-  if (state.predictedRisk) events.push({ id: "RISK…94D2", time: "08:01:18", tone: "amber", title: en ? "E3 risk predicted at 97.3%" : "E3 ঝুঁকি ৯৭.৩% পূর্বাভাস", detail: "ONNX • SIMULATED INPUTS" });
+  if (state.predictedRisk) events.push({ id: "RISK…94D2", time: "08:01:18", tone: "amber", title: en ? "E3 risk predicted at 97.3%" : "E3 ঝুঁকি ৯৭.৩% পূর্বাভাস", detail: `${state.rainfallMmPerHour} MM/H • ${state.soilSaturationPercent}% SOIL • SIMULATED INPUTS` });
   if (state.failedRoad) events.push({ id: "RV…7A11", time: "08:01:22", tone: "coral", title: en ? "R3 rendezvous planned" : "R3 মিলনস্থল পরিকল্পিত", detail: "BOAT → SIMULATED DRONE" });
   if (state.conflict) events.push({ id: "CRDT…91B0", time: "08:01:25", tone: "amber", title: en ? "Destination conflict needs review" : "গন্তব্য দ্বন্দ্বে মানব সিদ্ধান্ত প্রয়োজন", detail: "VECTOR CLOCKS CONCURRENT" });
   if (state.droneBattery < 30) events.push({ id: "MESH…0A7C", time: "08:01:31", tone: "blue", title: en ? "Broadcast reduced by 60%" : "সম্প্রচার ৬০% কমানো হয়েছে", detail: "DRONE-07 • 25%" });

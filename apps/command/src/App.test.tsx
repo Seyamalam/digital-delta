@@ -28,6 +28,7 @@ describe("Delta Command", () => {
   it("shows that field work continues when the observer disconnects", () => {
     render(<App />);
     fireEvent.click(screen.getByRole("button", { name: "English" }));
+    fireEvent.click(screen.getByRole("tab", { name: "Fault lab" }));
     fireEvent.click(screen.getByRole("button", { name: /Disconnect dashboard/ }));
     expect(screen.getByRole("status")).toHaveTextContent("Observer disconnected");
     expect(screen.getByRole("status")).toHaveTextContent("Field work continues");
@@ -53,6 +54,19 @@ describe("Delta Command", () => {
     fireEvent.click(screen.getByRole("button", { name: /Delay boat/ }));
     expect(screen.getByText("offline • queue retained")).toBeVisible();
     expect(screen.getByText("Boat delayed by 18 min")).toBeVisible();
+  });
+
+  it("changes labelled simulated rainfall and saturation before showing route risk", () => {
+    render(<App />);
+    fireEvent.click(screen.getByRole("button", { name: "English" }));
+
+    fireEvent.change(screen.getByRole("slider", { name: "Simulated rainfall" }), { target: { value: "82" } });
+    fireEvent.change(screen.getByRole("slider", { name: "Simulated soil saturation" }), { target: { value: "91" } });
+
+    expect(screen.getByText("82 mm/h")).toBeVisible();
+    expect(screen.getByText("91%")).toBeVisible();
+    expect(screen.getByText("E3 risk predicted at 97.3%")).toBeVisible();
+    expect(screen.getByText("Boat → R3 → simulated drone")).toBeVisible();
   });
 
   it("starts and pauses deterministic automatic replay", () => {
@@ -97,7 +111,7 @@ describe("Delta Command", () => {
   });
 
   it("reset preserves the observer link choice but clears scenario effects", () => {
-    const disconnected = scenarioReducer({ step: 5, observerConnected: false, failedRoad: true, predictedRisk: true, conflict: true, custodyVerified: true, droneBattery: 25, syncing: true, nodeOffline: true, vehicleDelayed: true, duplicateRejected: true, tamperRejected: true }, { type: "RESET" });
+    const disconnected = scenarioReducer({ step: 5, observerConnected: false, failedRoad: true, predictedRisk: true, rainfallMmPerHour: 82, soilSaturationPercent: 91, conflict: true, custodyVerified: true, droneBattery: 25, syncing: true, nodeOffline: true, vehicleDelayed: true, duplicateRejected: true, tamperRejected: true }, { type: "RESET" });
     expect(disconnected).toEqual({ ...scenarioReducer(disconnected, { type: "RESET" }), observerConnected: false });
     expect(disconnected.failedRoad).toBe(false);
     expect(disconnected.custodyVerified).toBe(false);

@@ -183,7 +183,7 @@ This checklist tracks implementation. Milestone exit criteria live in [MILESTONE
 - [x] Add route map, inventory, node status, mesh queue, risk, and custody panels.
 - [x] Add Offline, Syncing, Conflict, and Verified states.
 - [x] Add Bangla and English dashboard modes.
-- [ ] Add simulated rainfall, saturation, edge failure, node failure, delay, and battery controls.
+- [x] Add simulated rainfall, saturation, edge failure, node failure, delay, and battery controls.
 - [x] Add duplicate-message and QR-tamper injection with unchanged-chain narration.
 - [x] Add deterministic event narration with module-labelled evidence rows.
 - [x] Add scenario pause, resume, step, reset, and automatic replay.
