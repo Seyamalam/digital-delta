@@ -180,6 +180,9 @@ This checklist tracks implementation. Milestone exit criteria live in [MILESTONE
 ## Command dashboard and Disaster Control
 
 - [x] Build projector layout for 1366 by 768 and 1920 by 1080.
+- [x] Rebuild the headquarters as a Next.js 16 App Router dashboard with shadcn/ui and project-owned styling.
+- [x] Publish the locally verified prebuilt headquarters to Vercel without GitHub Actions or hosted CI.
+- [x] Add an optional Cloudflare Worker and D1 archive for allow-listed presentation summaries; keep field state and encrypted mesh content out of it.
 - [x] Add route map, inventory, node status, mesh queue, risk, and custody panels.
 - [x] Add Offline, Syncing, Conflict, and Verified states.
 - [x] Add Bangla and English dashboard modes.

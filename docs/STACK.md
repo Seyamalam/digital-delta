@@ -58,15 +58,17 @@ The nearby path carries framed Protocol Buffer envelopes. It is not called gRPC.
 
 | Concern | Choice |
 |---|---|
-| Dashboard | React and TypeScript |
-| Build tool | Vite |
+| Dashboard | Next.js 16 App Router, React, and TypeScript |
+| Component system | shadcn/ui primitives with Tailwind CSS 4 and project-owned tokens |
+| Build and public host | Local Next.js production build; optional public copy deployed to Vercel from a locally verified prebuilt artifact |
 | Package manager | pnpm |
 | Map | MapLibre GL JS with a checksum-pinned local PMTiles region derived from OpenStreetMap; simulated mission GeoJSON is rendered as a separate labelled overlay |
 | Styling | CSS variables and an accessible Digital Delta component system |
 | Local connection | Protobuf gRPC publication/replay into Go; allow-listed SSE projection into the browser |
 | Projector targets | 1366 by 768 and 1920 by 1080 |
+| Optional archive | Cloudflare Worker and D1 containing allow-listed presentation metadata only |
 
-The dashboard is an observer. It can disappear without stopping the phones.
+The dashboard is an observer. It can disappear without stopping the phones. Vercel and D1 improve public presentation and sanitized history, but neither participates in field identity, routing, mesh relay, triage, or custody.
 
 ## Go services
 
@@ -97,6 +99,7 @@ Training uses Python, pandas, scikit-learn, and skl2onnx. The repository stores 
 | Android integration | Instrumentation tests on physical phones |
 | Go | Standard Go test, race detector, benchmarks, and load harness |
 | Dashboard | Vitest, Testing Library, and browser tests |
+| Optional archive | Vitest, TypeScript, Wrangler dry-run, and D1 migration checks |
 | Protocol | Cross-language golden fixtures and compatibility checks |
 
 ## Deliberate exclusions

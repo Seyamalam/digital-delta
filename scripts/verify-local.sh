@@ -107,8 +107,18 @@ if [[ -f "${repo_dir}/services/node/go.mod" ]]; then
 fi
 
 if [[ -f "${repo_dir}/apps/command/package.json" ]]; then
-  echo "[command] tests and build"
-  (cd "${repo_dir}/apps/command" && pnpm test --run && pnpm build)
+  echo "[command] tests, typecheck, and Next.js production build"
+  (cd "${repo_dir}/apps/command" && pnpm test --run && pnpm typecheck && pnpm build)
+fi
+
+if [[ -f "${repo_dir}/services/headquarters-archive/package.json" ]]; then
+  echo "[archive] tests, typecheck, and Cloudflare deployment dry run"
+  (
+    cd "${repo_dir}/services/headquarters-archive"
+    pnpm test
+    pnpm typecheck
+    pnpm exec wrangler deploy --dry-run
+  )
 fi
 
 echo "Local verification passed."

@@ -217,6 +217,8 @@ Acceptance criteria:
 - The dashboard works at common projector resolutions.
 - Disconnecting it does not stop field operations.
 - Bangla and English modes contain the same information.
+- The live fair view runs locally; a hosted public copy is optional and never becomes a field dependency.
+- Any cloud archive contains sanitized presentation metadata only and cannot issue commands.
 
 ## Disaster Control
 
@@ -255,4 +257,3 @@ These are explicit boundaries rather than removed ambitions:
 - public production deployment with real citizen data;
 - claiming nation-scale performance from a laptop-only load test;
 - hiding simulation behind production-looking labels.
-

@@ -19,7 +19,7 @@ cleanup() {
 }
 trap cleanup EXIT INT TERM
 
-for port in 7070 7071 5173; do
+for port in 7070 7071 3000; do
   if lsof -nP -iTCP:"${port}" -sTCP:LISTEN >/dev/null 2>&1; then
     echo "Port ${port} is already in use. Stop the previous demo process first." >&2
     exit 1
@@ -39,11 +39,11 @@ node_pid="$!"
 echo "[demo] start offline projector dashboard"
 (
   cd "${repo_dir}/apps/command"
-  exec pnpm dev --host 127.0.0.1
+  exec pnpm dev --hostname 127.0.0.1 --port 3000
 ) &
 dashboard_pid="$!"
 
-for port in 7070 7071 5173; do
+for port in 7070 7071 3000; do
   ready=false
   for _ in $(seq 1 150); do
     if nc -z 127.0.0.1 "${port}"; then
@@ -65,6 +65,6 @@ echo "[demo] publish deterministic, visibly simulated Protobuf drill"
 )
 
 echo ""
-echo "Digital Delta is ready at http://127.0.0.1:5173/"
+echo "Digital Delta is ready at http://127.0.0.1:3000/"
 echo "Commercial internet is not required. Press Ctrl-C to stop the local services."
 wait "${node_pid}" "${dashboard_pid}"

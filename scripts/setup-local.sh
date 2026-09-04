@@ -19,6 +19,9 @@ fi
 echo "[setup] dashboard dependencies"
 (cd "${repo_dir}/apps/command" && pnpm install --frozen-lockfile)
 
+echo "[setup] optional headquarters archive dependencies"
+(cd "${repo_dir}/services/headquarters-archive" && pnpm install --frozen-lockfile)
+
 echo "[setup] Go modules"
 (cd "${repo_dir}/services/node" && go mod download)
 

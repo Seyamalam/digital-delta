@@ -15,7 +15,8 @@ lint:
 	cd packages/proto && buf lint && buf format --diff --exit-code
 	cd services/node && test -z "$$(gofmt -l .)" && go vet ./...
 	cd apps/field-android && env JAVA_HOME="$${JAVA_HOME:-/opt/homebrew/opt/openjdk@17/libexec/openjdk.jdk/Contents/Home}" ./gradlew lintDebug
-	cd apps/command && pnpm exec tsc -b
+	cd apps/command && pnpm typecheck
+	cd services/headquarters-archive && pnpm typecheck
 
 format:
 	cd packages/proto && buf format -w

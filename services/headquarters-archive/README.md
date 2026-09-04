@@ -11,4 +11,6 @@ pnpm d1:migrate:local
 pnpm dev
 ```
 
-Replace the placeholder D1 database ID in `wrangler.jsonc` after running `wrangler d1 create digital-delta-hq`. Set `ALLOWED_ORIGINS` to the exact Vercel production origin before deployment. Apply migrations remotely before `pnpm deploy`.
+The checked configuration targets the `digital-delta-hq` D1 database and the production Vercel origin. For a new Cloudflare account, create a replacement database, update its ID, set the exact allowed origin, and apply migrations before `pnpm deploy`.
+
+Production endpoint: `https://digital-delta-headquarters-archive.seyamalam41.workers.dev`

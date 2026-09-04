@@ -23,9 +23,11 @@ flowchart LR
     E -->|Signed simulated events| B
     E -->|Signed simulated events| C
     E --> D
+    D -. optional sanitized summaries .-> F[Cloudflare Worker + D1\nnon-authoritative archive]
+    G[Vercel\npublic Next.js presentation] -. reads optional archive .-> F
 ```
 
-The dotted observer links can fail without stopping the field mission. Disaster Control events use the same event pipeline as field changes and carry an explicit simulation marker.
+Every dotted link can fail without stopping the field mission. Disaster Control events use the same event pipeline as field changes and carry an explicit simulation marker. Vercel and D1 never sit between field phones.
 
 ## Components
 
@@ -71,7 +73,18 @@ Responsibilities:
 - observer-only event ingestion;
 - scenario replay.
 
-The dashboard holds a disposable projection. Rebuilding it from signed events must yield the same visible mission.
+The Next.js dashboard holds a disposable projection. Rebuilding it from signed events must yield the same visible mission. The fair runs it locally; the Vercel copy is an optional public presentation.
+
+### Sanitized headquarters archive
+
+Responsibilities:
+
+- accept only allow-listed presentation metadata;
+- retain an ordered public-demo history in Cloudflare D1;
+- reject unknown, malformed, oversized, or sensitive-labelled summaries;
+- remain optional and visibly non-authoritative.
+
+The archive cannot issue commands, authenticate field operators, route cargo, accept custody, or decrypt any mesh content.
 
 ### Disaster Control
 
@@ -162,7 +175,9 @@ For a non-simulated handoff, the QR's sender key is accepted only when it matche
 
 Field nodes publish `DomainEvent` messages to the Go `ObserverService` over local gRPC when the laptop is reachable. The Go service assigns a durable ordered sequence and supports cursor replay. A server-sent event bridge converts each stored event into a strict allow-listed JSON presentation object for the browser. It never serializes mesh envelopes, encrypted payloads, wrapped content keys, or signature bytes. JSON exists only across this laptop-local presentation boundary and must never be confused with the Protobuf mesh format.
 
-The React dashboard is a disposable projection and starts from the deterministic seed if the observer is unavailable. When events are available it rebuilds hazard, route, rendezvous, vehicle, and ledger state in sequence order. Closing either the SSE connection or the entire laptop cannot block Room operations, routing, triage, queueing, or custody workflows on a field phone. Observer publication remains on the controlled local network until signed peer authentication is completed.
+The Next.js headquarters dashboard is a disposable projection and starts from the deterministic seed if the observer is unavailable. When events are available it rebuilds hazard, route, rendezvous, vehicle, and ledger state in sequence order. Closing either the SSE connection or the entire laptop cannot block Room operations, routing, triage, queueing, or custody workflows on a field phone. Observer publication remains on the controlled local network until signed peer authentication is completed.
+
+The public Vercel deployment is a presentation surface, not the live fair control plane. The local Next.js process can consume the laptop's Go observer directly. A browser viewing the public deployment uses the deterministic, visibly simulated fallback unless it can reach an explicitly configured local observer. An optional Cloudflare Worker stores only allow-listed event metadata and a short operational summary in D1. It does not receive encrypted mesh envelopes, ciphertext, wrapped keys, signatures, credentials, medical details, or authoritative field state. Losing Vercel, the Worker, D1, or the entire internet leaves every field workflow unchanged.
 
 The projector map does not fetch public raster tiles at runtime. MapLibre GL reads the reviewed `public/maps/sylhet.pmtiles` archive over the laptop's local HTTP server; its SHA-256 is checked by the local verification gate. The vector archive supplies real OpenStreetMap-derived geography and attribution. Route, risk, node, rendezvous, and simulated-airway facts remain in a separate mission GeoJSON source so rehearsed data cannot be mistaken for map observations.
 

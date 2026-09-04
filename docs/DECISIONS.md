@@ -68,7 +68,7 @@ Use this log for choices that affect scope, claims, compatibility, or safety.
 
 **Status:** Accepted
 
-**Decision:** Use Kotlin and Jetpack Compose for the field application. Use Room over SQLite for mission data, Proto DataStore for small settings, Nearby Connections for nearby communication, a foreground service for an active relay session, Hilt for dependency injection, and Coroutines with Flow for asynchronous state. Use Go for node and simulation services, React and TypeScript for the dashboard, and ONNX Runtime Android for inference.
+**Decision:** Use Kotlin and Jetpack Compose for the field application. Use Room over SQLite for mission data, Proto DataStore for small settings, Nearby Connections for nearby communication, a foreground service for an active relay session, Hilt for dependency injection, and Coroutines with Flow for asynchronous state. Use Go for node and simulation services, Next.js with React and TypeScript for the dashboard, and ONNX Runtime Android for inference.
 
 **Reason:** The highest-risk features are Android-specific radio, background execution, local persistence, secure key handling, and device lifecycle behavior. Native Android removes a cross-platform plugin boundary from those paths.
 
@@ -189,6 +189,16 @@ Use this log for choices that affect scope, claims, compatibility, or safety.
 **Consequences:** The fair scenario chooses R3 with 33-minute boat, 19-minute drone, and 45-minute delivery estimates, leaving 25 percent projected battery against a 20 percent reserve. Vehicle movement is always visibly simulated; reachability, route math, Android Keystore signatures, Protobuf encoding, and Room writes are real. The current model uses great-circle travel at fixed scenario speeds and does not model wind, payload-dependent drain, launch constraints, or aviation approval. Delayed-boat replanning and physical-device evidence remain required.
 
 **Evidence:** `FleetOrchestratorTest`, `HybridFleetWorkflowTest`, `RoomHybridFleetEventRecorderTest`, the custom drone scenario in `RoomProofOfDeliveryWorkflowTest`, `MainScreenViewModelTest`, `MainScreenTest`, the 37-test connected gate, and paired M8 captures under `artifacts/screenshots/`.
+
+## DD-018: hosted headquarters is optional and non-authoritative
+
+**Status:** Accepted
+
+**Decision:** Build the projector headquarters with Next.js 16 and shadcn/ui. Run its live observer path locally at the fair, and publish an optional prebuilt copy to Vercel. Store only an allow-listed presentation summary in an optional Cloudflare Worker and D1 archive.
+
+**Reason:** A public URL makes the project easy to review, while a local runtime preserves the offline demonstration. D1 can retain safe presentation history without creating a cloud dependency or leaking mesh content.
+
+**Consequences:** The Go observer and Android event stores remain authoritative. The public deployment must visibly fall back to seeded simulated data when it cannot reach the local observer. D1 may contain event identifiers, ordered sequence, source node, event kind, time, simulation flag, and a short allow-listed summary only. Hosted deployment is performed manually from a locally verified prebuilt artifact; GitHub Actions and hosted CI remain excluded.
 
 ## New decision template
 
