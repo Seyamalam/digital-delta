@@ -9,6 +9,9 @@ import com.example.digitaldelta.domain.identity.AcceptedRecipient
 import com.example.digitaldelta.domain.identity.IdentityProvisioningCoordinator
 import com.example.digitaldelta.domain.identity.IdentityProvisioningSnapshot
 import com.example.digitaldelta.domain.identity.DeviceProfiles
+import com.example.digitaldelta.domain.identity.OfflineCredential
+import com.example.digitaldelta.domain.identity.Permission
+import com.example.digitaldelta.domain.identity.toAuthorizationRole
 import com.example.digitaldelta.domain.mesh.RecipientKeyUnavailableException
 import com.example.digitaldelta.domain.sync.ConflictCoordinator
 import com.example.digitaldelta.domain.sync.ConflictSide
@@ -77,7 +80,7 @@ class MainScreenViewModelTest {
         val viewModel = MainScreenViewModel(
             repository,
             FakeRequestSubmission(),
-            FakeIdentityCoordinator(),
+            FakeIdentityCoordinator(DeviceProfiles.COORDINATOR),
             FakeConflictCoordinator(),
             FakeRouteScenario(),
         )
@@ -100,6 +103,7 @@ class MainScreenViewModelTest {
             FakeConflictCoordinator(),
             FakeRouteScenario(),
         )
+        advanceUntilIdle()
 
         viewModel.queueRequest(medicine = 11, ors = 20, tarpaulin = 5, priorityCode = "P0")
         advanceUntilIdle()
@@ -117,6 +121,7 @@ class MainScreenViewModelTest {
             FakeConflictCoordinator(),
             FakeRouteScenario(),
         )
+        advanceUntilIdle()
 
         viewModel.queueRequest(medicine = 10, ors = 20, tarpaulin = 5, priorityCode = "P0")
         advanceUntilIdle()
@@ -210,7 +215,7 @@ class MainScreenViewModelTest {
         val viewModel = MainScreenViewModel(
             FakeSettingsRepository(),
             FakeRequestSubmission(),
-            FakeIdentityCoordinator(),
+            FakeIdentityCoordinator(DeviceProfiles.COORDINATOR),
             conflicts,
             FakeRouteScenario(),
         )
@@ -226,11 +231,81 @@ class MainScreenViewModelTest {
     }
 
     @Test
+    fun `clinic credential is rejected below UI when resolving coordinator conflict`() = runTest(dispatcher) {
+        val conflicts = FakeConflictCoordinator()
+        val viewModel = MainScreenViewModel(
+            FakeSettingsRepository(),
+            FakeRequestSubmission(),
+            FakeIdentityCoordinator(DeviceProfiles.CLINIC),
+            conflicts,
+            FakeRouteScenario(),
+        )
+        advanceUntilIdle()
+        viewModel.simulateConflict()
+        advanceUntilIdle()
+
+        viewModel.resolveConflict("conflict-1", ConflictSide.RIGHT)
+        advanceUntilIdle()
+
+        assertEquals(0, conflicts.resolveCalls)
+        assertEquals(true, viewModel.conflictState.value is MissionConflictSnapshot.Open)
+        assertEquals(Permission.RESOLVE_CONFLICT, viewModel.authorizationState.value.denial?.permission)
+        assertEquals(AuthorizationFailure.ROLE_FORBIDDEN, viewModel.authorizationState.value.denial?.reason)
+    }
+
+    @Test
+    fun `unsigned selected profile cannot create request`() = runTest(dispatcher) {
+        val submission = FakeRequestSubmission()
+        val viewModel = MainScreenViewModel(
+            FakeSettingsRepository(),
+            submission,
+            FakeIdentityCoordinator(DeviceProfiles.CLINIC, provisioned = false),
+            FakeConflictCoordinator(),
+            FakeRouteScenario(),
+        )
+        advanceUntilIdle()
+
+        viewModel.queueRequest(10, 20, 5, "P0")
+        advanceUntilIdle()
+
+        assertEquals(null, submission.received)
+        assertEquals(AuthorizationFailure.CREDENTIAL_REQUIRED, viewModel.authorizationState.value.denial?.reason)
+    }
+
+    @Test
+    fun `relay startup requires a signed forwarding role below UI`() = runTest(dispatcher) {
+        var clinicStarted = false
+        val clinic = MainScreenViewModel(
+            FakeSettingsRepository(),
+            FakeRequestSubmission(),
+            FakeIdentityCoordinator(DeviceProfiles.CLINIC),
+            FakeConflictCoordinator(),
+            FakeRouteScenario(),
+        )
+        advanceUntilIdle()
+        clinic.startRelay { clinicStarted = true }
+
+        var relayStarted = false
+        val relay = MainScreenViewModel(
+            FakeSettingsRepository(),
+            FakeRequestSubmission(),
+            FakeIdentityCoordinator(DeviceProfiles.RELAY),
+            FakeConflictCoordinator(),
+            FakeRouteScenario(),
+        )
+        advanceUntilIdle()
+        relay.startRelay { relayStarted = true }
+
+        assertEquals(false, clinicStarted)
+        assertEquals(true, relayStarted)
+    }
+
+    @Test
     fun `route failure replaces unreachable truck with measured boat fallback`() = runTest(dispatcher) {
         val viewModel = MainScreenViewModel(
             FakeSettingsRepository(),
             FakeRequestSubmission(),
-            FakeIdentityCoordinator(),
+            FakeIdentityCoordinator(DeviceProfiles.COORDINATOR),
             FakeConflictCoordinator(),
             FakeRouteScenario(),
         )
@@ -285,11 +360,12 @@ class MainScreenViewModelTest {
         val viewModel = MainScreenViewModel(
             FakeSettingsRepository(),
             FakeRequestSubmission(),
-            FakeIdentityCoordinator(),
+            FakeIdentityCoordinator(DeviceProfiles.COORDINATOR),
             FakeConflictCoordinator(),
             FakeRouteScenario(),
             triage,
         )
+        advanceUntilIdle()
 
         viewModel.toggleRouteFailure()
         viewModel.confirmPreemption()
@@ -308,7 +384,7 @@ class MainScreenViewModelTest {
         val viewModel = MainScreenViewModel(
             FakeSettingsRepository(),
             FakeRequestSubmission(),
-            FakeIdentityCoordinator(),
+            FakeIdentityCoordinator(DeviceProfiles.HOSPITAL),
             FakeConflictCoordinator(),
             FakeRouteScenario(),
             DefaultTriageWorkflow(),
@@ -337,7 +413,7 @@ class MainScreenViewModelTest {
         val viewModel = MainScreenViewModel(
             FakeSettingsRepository(),
             FakeRequestSubmission(),
-            FakeIdentityCoordinator(),
+            FakeIdentityCoordinator(DeviceProfiles.HOSPITAL),
             FakeConflictCoordinator(),
             FakeRouteScenario(),
             DefaultTriageWorkflow(),
@@ -358,11 +434,12 @@ class MainScreenViewModelTest {
         val viewModel = MainScreenViewModel(
             FakeSettingsRepository(),
             FakeRequestSubmission(),
-            FakeIdentityCoordinator(),
+            FakeIdentityCoordinator(DeviceProfiles.RELAY),
             FakeConflictCoordinator(),
             FakeRouteScenario(),
             hybridFleetWorkflow = hybrid,
         )
+        advanceUntilIdle()
 
         assertEquals(true, viewModel.hybridFleetState.value is HybridFleetState.Ready)
         viewModel.reportBoatDelay()
@@ -513,10 +590,13 @@ private class FakeRequestSubmission(private val failure: Throwable? = null) : Re
     }
 }
 
-private class FakeIdentityCoordinator : IdentityProvisioningCoordinator {
+private class FakeIdentityCoordinator(
+    profileCode: String = DeviceProfiles.CLINIC,
+    private val provisioned: Boolean = true,
+) : IdentityProvisioningCoordinator {
     var importedCode: String? = null
     private var fingerprint: String? = null
-    private var profile = DeviceProfiles.all.first()
+    private var profile = DeviceProfiles.require(profileCode)
 
     override suspend fun snapshot(): IdentityProvisioningSnapshot = IdentityProvisioningSnapshot(
         profileCode = profile.code,
@@ -527,6 +607,15 @@ private class FakeIdentityCoordinator : IdentityProvisioningCoordinator {
         localEncryptionKeyId = "rsa-local-1",
         enrollmentCode = "enrollment-code",
         trustedIssuerFingerprint = fingerprint,
+        localCredential = if (provisioned) {
+            OfflineCredential(
+                subjectId = profile.identityId,
+                role = profile.role.toAuthorizationRole(),
+                expiresAtMillis = Long.MAX_VALUE,
+            )
+        } else {
+            null
+        },
     )
 
     override suspend fun selectProfile(profileCode: String): IdentityProvisioningSnapshot {
@@ -548,6 +637,7 @@ private class FakeIdentityCoordinator : IdentityProvisioningCoordinator {
 
 private class FakeConflictCoordinator : ConflictCoordinator {
     private var current: MissionConflictSnapshot = MissionConflictSnapshot.Idle
+    var resolveCalls = 0
 
     override suspend fun snapshot(): MissionConflictSnapshot = current
 
@@ -573,7 +663,10 @@ private class FakeConflictCoordinator : ConflictCoordinator {
         selectedValue = if (selectedSide == ConflictSide.RIGHT) "N6" else "N3",
         resolverIdentityId = resolverIdentityId,
         convergenceHash = "a4e96ff28c89d214d02a3c87f01778e7ad3f139307376afaacd1a10da45a9b22",
-    ).also { current = it }
+    ).also {
+        current = it
+        resolveCalls += 1
+    }
 }
 
 private class FakeRouteScenario(riskAware: Boolean = false) : RouteScenario by OfflineRouteScenario(

@@ -3,6 +3,7 @@ package com.example.digitaldelta.di
 import com.example.digitaldelta.data.local.DeltaDatabase
 import com.example.digitaldelta.domain.identity.AndroidDeviceIdentityKeyStore
 import com.example.digitaldelta.domain.identity.DeviceProfileRepository
+import com.example.digitaldelta.domain.identity.IdentityProvisioningCoordinator
 import com.example.digitaldelta.domain.identity.RecipientProvisioningRepository
 import com.example.digitaldelta.domain.identity.TrustAnchorRepository
 import com.example.digitaldelta.domain.mesh.MeshRuntimeStateStore
@@ -20,6 +21,7 @@ interface DigitalDeltaGraphEntryPoint {
     fun database(): DeltaDatabase
     fun deviceIdentityKeyStore(): AndroidDeviceIdentityKeyStore
     fun deviceProfileRepository(): DeviceProfileRepository
+    fun identityProvisioningCoordinator(): IdentityProvisioningCoordinator
     fun recipientProvisioningRepository(): RecipientProvisioningRepository
     fun trustAnchorRepository(): TrustAnchorRepository
     fun meshRuntimeStateStore(): MeshRuntimeStateStore

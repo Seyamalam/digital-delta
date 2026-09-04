@@ -29,6 +29,7 @@ fun MainNavigation(meshRuntimeStateStore: MeshRuntimeStateStore) {
   val unlockState by viewModel.unlockState.collectAsStateWithLifecycle()
   val requestQueueState by viewModel.requestQueueState.collectAsStateWithLifecycle()
   val identityState by viewModel.identityState.collectAsStateWithLifecycle()
+  val authorizationState by viewModel.authorizationState.collectAsStateWithLifecycle()
   val conflictState by viewModel.conflictState.collectAsStateWithLifecycle()
   val routeState by viewModel.routeState.collectAsStateWithLifecycle()
   val triageState by viewModel.triageState.collectAsStateWithLifecycle()
@@ -81,6 +82,7 @@ fun MainNavigation(meshRuntimeStateStore: MeshRuntimeStateStore) {
     requestQueueState = requestQueueState,
     onQueueRequest = viewModel::queueRequest,
     identityState = identityState,
+    authorizationState = authorizationState,
     onPinAdministrator = viewModel::pinAdministrator,
     onImportRecipientCredential = viewModel::importRecipientCredential,
     onSelectDeviceProfile = { profileCode ->
@@ -88,7 +90,7 @@ fun MainNavigation(meshRuntimeStateStore: MeshRuntimeStateStore) {
       viewModel.selectDeviceProfile(profileCode)
     },
     meshRuntimeState = meshRuntimeState,
-    onStartRelay = ::startRelay,
+    onStartRelay = { viewModel.startRelay(::startRelay) },
     onStopRelay = { context.startService(MeshRelayService.intent(context, MeshRelayService.ACTION_STOP)) },
     onAcceptPeer = { endpointId ->
       context.startService(MeshRelayService.intent(context, MeshRelayService.ACTION_ACCEPT, endpointId))

@@ -32,4 +32,12 @@ class AuthorizationPolicyTest {
             ).allowed,
         )
     }
+
+    @Test
+    fun `wire roles map to least privilege field roles`() {
+        assertTrue(policy.isAllowed(com.example.digitaldelta.proto.v1.IdentityRole.IDENTITY_ROLE_CLINIC.toAuthorizationRole(), Permission.CREATE_REQUEST))
+        assertFalse(policy.isAllowed(com.example.digitaldelta.proto.v1.IdentityRole.IDENTITY_ROLE_CLINIC.toAuthorizationRole(), Permission.RESOLVE_CONFLICT))
+        assertTrue(policy.isAllowed(com.example.digitaldelta.proto.v1.IdentityRole.IDENTITY_ROLE_DRIVER.toAuthorizationRole(), Permission.OFFER_CUSTODY))
+        assertTrue(policy.isAllowed(com.example.digitaldelta.proto.v1.IdentityRole.IDENTITY_ROLE_COORDINATOR.toAuthorizationRole(), Permission.RESOLVE_CONFLICT))
+    }
 }

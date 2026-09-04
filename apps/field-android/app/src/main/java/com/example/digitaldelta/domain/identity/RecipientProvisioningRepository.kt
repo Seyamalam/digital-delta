@@ -4,6 +4,22 @@ import com.example.digitaldelta.data.local.RecipientKeyDao
 import com.example.digitaldelta.data.local.RecipientKeyEntity
 import com.example.digitaldelta.domain.mesh.RecipientEncryptionKey
 import com.example.digitaldelta.domain.mesh.RecipientKeyDirectory
+import com.example.digitaldelta.proto.v1.IdentityRole
+
+data class InstalledIdentityCredential(
+    val credentialId: String,
+    val identityId: String,
+    val nodeId: String,
+    val role: IdentityRole,
+    val encryptionKeyId: String,
+    val encryptionPublicKeyDer: ByteArray,
+    val signingKeyId: String,
+    val signingPublicKeyDer: ByteArray,
+    val issuerIdentityId: String,
+    val issuedAtUnixMs: Long,
+    val expiresAtUnixMs: Long,
+    val revokedAtUnixMs: Long?,
+)
 
 class RecipientProvisioningRepository(
     private val dao: RecipientKeyDao,
@@ -48,6 +64,30 @@ class RecipientProvisioningRepository(
                 nodeId = entity.nodeId,
                 displayName = entity.displayName,
                 encryptionKeyId = entity.encryptionKeyId,
+            )
+        }
+
+    suspend fun installedIdentity(nodeId: String): InstalledIdentityCredential? =
+        dao.findByNodeId(nodeId)?.let { entity ->
+            val claims = runCatching {
+                com.example.digitaldelta.proto.v1.IdentityProvisioningCredential
+                    .parseFrom(entity.credentialBytes)
+                    .claims
+            }.getOrNull() ?: return@let null
+            InstalledIdentityCredential(
+                credentialId = claims.credentialId,
+                identityId = entity.identityId,
+                nodeId = entity.nodeId,
+                role = runCatching { IdentityRole.valueOf(entity.roleCode) }
+                    .getOrDefault(IdentityRole.IDENTITY_ROLE_UNSPECIFIED),
+                encryptionKeyId = entity.encryptionKeyId,
+                encryptionPublicKeyDer = entity.encryptionPublicKeyDer.copyOf(),
+                signingKeyId = entity.signingKeyId,
+                signingPublicKeyDer = entity.signingPublicKeyDer.copyOf(),
+                issuerIdentityId = entity.issuerIdentityId,
+                issuedAtUnixMs = entity.issuedAtUnixMs,
+                expiresAtUnixMs = entity.expiresAtUnixMs,
+                revokedAtUnixMs = entity.revokedAtUnixMs,
             )
         }
 }

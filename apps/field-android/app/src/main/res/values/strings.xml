@@ -152,6 +152,7 @@
     <string name="device_profile">This phone’s field role</string>
     <string name="device_profile_help">Stop the relay before changing roles. Each phone must be provisioned with the QR generated for its selected role.</string>
     <string name="profile_clinic">Companyganj clinic</string>
+    <string name="profile_coordinator">Sylhet coordinator</string>
     <string name="profile_hospital">Habiganj hospital</string>
     <string name="profile_relay">Sunamganj relay</string>
     <string name="back">Back</string>
@@ -172,6 +173,18 @@
     <string name="invalid_credential">Credential rejected: invalid signature, key, or validity time.</string>
     <string name="preparing_device_keys">Preparing protected device keys</string>
     <string name="private_keys_never_leave">RSA-2048 private keys remain non-exportable in Android Keystore.</string>
+    <string name="authorization_credential_active">Signed field credential active</string>
+    <string name="authorization_credential_required">Install this phone’s administrator-signed credential to unlock field actions.</string>
+    <string name="authorization_action_restricted">This signed role cannot perform this action.</string>
+    <string name="authorization_expired">This phone’s signed credential has expired.</string>
+    <string name="authorization_revoked">This phone’s signed credential has been revoked.</string>
+    <string name="role_coordinator">Coordinator • full field authority</string>
+    <string name="role_operator">Driver/operator • relay and custody</string>
+    <string name="role_requester">Clinic • request authority</string>
+    <string name="role_recipient">Hospital • request and receipt authority</string>
+    <string name="role_relay">Relay • forwarding authority</string>
+    <string name="role_auditor">Auditor • read-only authority</string>
+    <string name="role_unprovisioned">Unprovisioned • no field authority</string>
     <string name="signed_delivery_qr_description">Signed delivery handoff QR code</string>
     <string name="signed_offer_step">Step 1: Signed offline offer</string>
     <string name="handoff_prepare_failed">The signed offer could not be prepared. Retry from a trusted device.</string>

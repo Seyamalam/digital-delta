@@ -15,11 +15,13 @@ data class LocalDeviceProfile(
 )
 
 object DeviceProfiles {
+    const val COORDINATOR = "COORDINATOR_N1"
     const val CLINIC = "CLINIC_N4"
     const val HOSPITAL = "HOSPITAL_N6"
     const val RELAY = "RELAY_R1"
 
     val all: List<LocalDeviceProfile> = listOf(
+        LocalDeviceProfile(COORDINATOR, "N1", "coordinator-sylhet-01", "Sylhet City Hub", IdentityRole.IDENTITY_ROLE_COORDINATOR),
         LocalDeviceProfile(CLINIC, "N4", "clinic-sylhet-01", "Companyganj Outpost", IdentityRole.IDENTITY_ROLE_CLINIC),
         LocalDeviceProfile(HOSPITAL, "N6", "hospital-habiganj-01", "Habiganj Medical", IdentityRole.IDENTITY_ROLE_HOSPITAL),
         LocalDeviceProfile(RELAY, "RLY-01", "driver-relay-01", "Sunamganj Relay", IdentityRole.IDENTITY_ROLE_DRIVER),
@@ -28,7 +30,8 @@ object DeviceProfiles {
     fun require(code: String): LocalDeviceProfile = all.firstOrNull { it.code == code }
         ?: throw IllegalArgumentException("unsupported device profile")
 
-    fun resolve(code: String): LocalDeviceProfile = all.firstOrNull { it.code == code } ?: all.first()
+    fun resolve(code: String): LocalDeviceProfile = all.firstOrNull { it.code == code }
+        ?: require(CLINIC)
 }
 
 interface DeviceProfileRepository {

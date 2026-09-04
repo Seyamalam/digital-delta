@@ -2,6 +2,7 @@ package com.example.digitaldelta.ui.main
 
 import androidx.activity.ComponentActivity
 import androidx.compose.ui.test.assertIsDisplayed
+import androidx.compose.ui.test.assertIsNotEnabled
 import androidx.compose.ui.test.hasScrollAction
 import androidx.compose.ui.test.hasTestTag
 import androidx.compose.ui.test.junit4.createAndroidComposeRule
@@ -18,6 +19,8 @@ import com.example.digitaldelta.theme.DigitalDeltaTheme
 import com.example.digitaldelta.domain.mesh.MeshRuntimeState
 import com.example.digitaldelta.domain.mesh.NearbyMeshState
 import com.example.digitaldelta.domain.mesh.NearbyPeerCandidate
+import com.example.digitaldelta.domain.identity.Permission
+import com.example.digitaldelta.domain.identity.Role
 import com.example.digitaldelta.domain.sync.ConflictSide
 import com.example.digitaldelta.domain.sync.MissionConflictSnapshot
 import com.example.digitaldelta.domain.sync.MissionField
@@ -65,6 +68,7 @@ class MainScreenTest {
     private lateinit var proofState: MutableState<ProofOfDeliveryUiState>
     private lateinit var riskState: MutableState<RouteRiskUiState>
     private lateinit var hybridState: MutableState<HybridFleetState>
+    private lateinit var authorizationState: MutableState<FieldAuthorizationUiState>
     private var relayStartRequested = false
 
     @Before
@@ -77,11 +81,15 @@ class MainScreenTest {
         proofState = mutableStateOf(ProofOfDeliveryUiState.Ready(podOffer()))
         riskState = mutableStateOf(RouteRiskUiState.Idle)
         hybridState = mutableStateOf(HybridFleetState.Ready(hybridPlan()))
+        authorizationState = mutableStateOf(
+            FieldAuthorizationUiState(Role.COORDINATOR, Permission.entries.toSet()),
+        )
         relayStartRequested = false
         composeTestRule.setContent {
             DigitalDeltaTheme(darkTheme = false) {
                 DigitalDeltaApp(
                     showBootSequence = false,
+                    authorizationState = authorizationState.value,
                     requestQueueState = requestState.value,
                     meshRuntimeState = meshState.value,
                     onStartRelay = { relayStartRequested = true },
@@ -439,6 +447,23 @@ class MainScreenTest {
         composeTestRule.onNodeWithText("English").performClick()
         composeTestRule.onNodeWithText("Preemption confirmed").assertIsDisplayed()
         composeTestRule.onNodeWithText("P2 • Sunamganj Sadar Camp • P0 continues by boat").assertIsDisplayed()
+    }
+
+    @Test
+    fun clinicRoleShowsBilingualRestrictionAndCannotResolveCoordinatorConflict() {
+        authorizationState.value = FieldAuthorizationUiState(
+            role = Role.REQUESTER,
+            permissions = setOf(Permission.CREATE_REQUEST, Permission.INSPECT_AUDIT),
+        )
+        composeTestRule.onNode(hasTestTag("simulate-conflict")).performClick()
+
+        composeTestRule.onNode(hasTestTag("role-restricted-resolve_conflict")).assertIsDisplayed()
+        composeTestRule.onNodeWithText("এই স্বাক্ষরিত ভূমিকায় কাজটি করার অনুমতি নেই।").assertIsDisplayed()
+        composeTestRule.onNodeWithText("গন্তব্য করুন: সুনামগঞ্জ সদর ক্যাম্প")
+            .assertIsNotEnabled()
+
+        composeTestRule.onNodeWithText("English").performClick()
+        composeTestRule.onNodeWithText("This signed role cannot perform this action.").assertIsDisplayed()
     }
 
     private fun routeSnapshot(flooded: Boolean): RouteScenarioSnapshot {

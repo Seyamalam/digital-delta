@@ -19,7 +19,7 @@ The command refuses to overwrite either file. Keep `admin-private.pem` on the ad
 ## Enroll a field device
 
 1. On the phone, open the shield icon and select **Identity and offline keys** / **পরিচয় ও অফলাইন কী**.
-2. Choose that phone's allow-listed role: N4 clinic, N6 hospital, or RLY-01 relay. Changing roles stops the existing relay and creates a distinct Keystore identity.
+2. Choose that phone's allow-listed role: N1 coordinator, N4 clinic, N6 hospital, or RLY-01 relay. Changing roles stops the existing relay and creates a distinct Keystore identity.
 3. Copy the resulting `DIGITALDELTA:ENROLLMENT:...` code or scan its displayed QR.
 4. On the laptop, issue a signed credential:
 
@@ -35,7 +35,7 @@ go run ./cmd/delta-provision issue \
 5. On the receiving phone, scan or paste the administrator `DIGITALDELTA:TRUST:...` code and choose **Pin administrator** / **প্রশাসককে বিশ্বাস করুন**.
 6. Scan or paste that phone's issued `DIGITALDELTA:CREDENTIAL:...` code and choose **Verify and install credential** / **যাচাই করে পরিচয়পত্র ইনস্টল করুন**.
 
-The phone verifies the administrator signature and validity window offline, then stores only the recipient public keys and signed credential in Room. Its own RSA private keys remain non-exportable in Android Keystore.
+The phone verifies the administrator signature and validity window offline, then stores only public keys and the signed credential in Room. If the credential exactly matches this phone's selected profile and Keystore public keys, its role permissions become active; a mismatched credential may remain usable as a peer key but cannot authorize local actions. Private keys remain non-exportable in Android Keystore.
 
 ## Multi-phone demo order
 

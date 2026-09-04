@@ -110,7 +110,7 @@ Speaker note: The dashboard uses the local observer during the live path and fal
 
 ### Measured and repeatable
 
-- 46 connected Android tests pass unchanged on Android 15 and Android 16 emulators.
+- 48 connected Android tests pass unchanged on Android 15 and Android 16 emulators.
 - 13 projector tests cover observer replay, bilingual parity, local map sources, and faults.
 - 10,000 independent gRPC streams received durable acknowledgements and stayed open together for five seconds.
 - The ARM64 emulator measured 67,504 KB peak PSS after on-device model inference.

@@ -18,6 +18,7 @@ data class IdentityProvisioningSnapshot(
     val enrollmentCode: String,
     val trustedIssuerFingerprint: String?,
     val acceptedRecipient: AcceptedRecipient? = null,
+    val localCredential: OfflineCredential? = null,
 )
 
 data class AcceptedRecipient(
@@ -72,6 +73,22 @@ class DefaultIdentityProvisioningCoordinator(
     private suspend fun snapshotInternal(): IdentityProvisioningSnapshot {
         val profile = deviceProfiles.profile.first()
         val publicIdentity = deviceKeys.createOrGet(profile.nodeId)
+        val installedIdentity = recipients.installedIdentity(profile.nodeId)
+        val localCredential = installedIdentity?.takeIf { credential ->
+            credential.identityId == profile.identityId &&
+                credential.role == profile.role &&
+                credential.encryptionKeyId == publicIdentity.encryptionKeyId &&
+                credential.encryptionPublicKeyDer.contentEquals(publicIdentity.encryptionPublicKeyDer) &&
+                credential.signingKeyId == publicIdentity.signingKeyId &&
+                credential.signingPublicKeyDer.contentEquals(publicIdentity.signingPublicKeyDer)
+        }?.let { credential ->
+            OfflineCredential(
+                subjectId = credential.identityId,
+                role = credential.role.toAuthorizationRole(),
+                expiresAtMillis = credential.expiresAtUnixMs,
+                revoked = credential.revokedAtUnixMs != null,
+            )
+        }
         val nonce = ByteArray(16).also(secureRandom::nextBytes)
         val enrollment = enrollmentRequests.create(
             identityId = profile.identityId,
@@ -91,6 +108,7 @@ class DefaultIdentityProvisioningCoordinator(
             enrollmentCode = ENROLLMENT_PREFIX + Base64.getUrlEncoder().withoutPadding().encodeToString(enrollment),
             trustedIssuerFingerprint = trustAnchors.trustedIssuer.first()?.fingerprint,
             acceptedRecipient = recipients.mostRecentlyAccepted(),
+            localCredential = localCredential,
         )
     }
 

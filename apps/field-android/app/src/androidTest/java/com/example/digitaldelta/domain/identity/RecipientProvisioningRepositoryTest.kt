@@ -67,6 +67,10 @@ class RecipientProvisioningRepositoryTest {
             "Habiganj Medical",
             repository.mostRecentlyAccepted()?.displayName,
         )
+        val installed = repository.installedIdentity("N6")
+        assertEquals("credential-n6-1", installed?.credentialId)
+        assertEquals(IdentityRole.IDENTITY_ROLE_HOSPITAL, installed?.role)
+        assertEquals(1_000L, installed?.expiresAtUnixMs)
     }
 
     private fun rsaKeyPair() = KeyPairGenerator.getInstance("RSA").run {

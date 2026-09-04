@@ -61,12 +61,12 @@ This checklist tracks implementation. Milestone exit criteria live in [MILESTONE
 - [x] Keep private identity keys non-exportable in Android Keystore. Hardware-backed availability still requires target-phone evidence.
 - [ ] Implement offline administrator provisioning QR. Signed enrollment, administrator trust pinning, credential issue/verify, expiry checks, durable storage, bilingual display/paste, and CameraX scanning with bundled ML Kit models are complete; a real two-phone camera pass remains.
 - [x] Add a salted local six-digit PIN unlock with a persisted five-attempt offline lockout.
-- [ ] Implement roles and permission policy.
-- [ ] Hide forbidden actions and enforce the same policy below the user interface.
+- [x] Implement least-privilege roles and permission policy for coordinator, clinic, hospital, and driver/operator credentials.
+- [x] Hide forbidden actions and enforce the same signed-credential policy below the user interface.
 - [ ] Add signed audit events.
-- [ ] Add failed-login delay and lockout policy suitable for offline operation.
+- [x] Add a persisted five-attempt, 30-second offline PIN lockout.
 - [ ] Add key revocation and expiry events that propagate later.
-- [ ] Test valid, expired, revoked, malformed, and wrong-role credentials. Valid, expired, tampered, and untrusted-issuer cases pass; revocation and role-specific provisioning cases remain.
+- [ ] Test valid, expired, revoked, malformed, and wrong-role credentials. Valid, expired, tampered, untrusted-issuer, and profile/role/key mismatch cases pass; propagation of a new revocation event remains.
 
 ## M2 distributed data and CRDT sync
 
@@ -91,7 +91,7 @@ This checklist tracks implementation. Milestone exit criteria live in [MILESTONE
 - [ ] Use WorkManager only for deferred retries, queue cleanup, and maintenance.
 - [x] Implement neighbor advertising and discovery with an explicit human accept or reject step.
 - [ ] Authenticate peers before accepting payloads. Nearby comparison digits are followed by mutual fresh-nonce challenge-response using administrator-signed credentials and device RSA-PSS keys; envelopes and acknowledgements are blocked until verification, and signed receipts are checked before the outbox advances. Physical multi-phone evidence remains.
-- [x] Persist distinct N4 clinic, N6 hospital, and RLY-01 relay profiles; stop the active relay before profile changes and generate role-bound enrollment identities from the selected profile.
+- [x] Persist distinct N1 coordinator, N4 clinic, N6 hospital, and RLY-01 relay profiles; stop the active relay before profile changes and generate role-bound enrollment identities from the selected profile.
 - [x] Build persistent Android inbox/outbox/seen-message state with bounded retry and dead-letter transitions; Go retains its durable Bolt inbox.
 - [x] Implement the store-and-forward relay engine with atomic durable receipt and connect it to the Nearby byte transport.
 - [x] Implement TTL and hop-limit enforcement in both Android and Go durable ingress.

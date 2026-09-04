@@ -152,6 +152,7 @@
     <string name="device_profile">এই ফোনের মাঠ পর্যায়ের ভূমিকা</string>
     <string name="device_profile_help">ভূমিকা বদলানোর আগে রিলে বন্ধ করুন। নির্বাচিত ভূমিকার QR দিয়ে প্রতিটি ফোন আলাদাভাবে নিবন্ধন করতে হবে।</string>
     <string name="profile_clinic">কোম্পানীগঞ্জ ক্লিনিক</string>
+    <string name="profile_coordinator">সিলেট সমন্বয়কারী</string>
     <string name="profile_hospital">হবিগঞ্জ হাসপাতাল</string>
     <string name="profile_relay">সুনামগঞ্জ রিলে</string>
     <string name="back">পেছনে</string>
@@ -172,6 +173,18 @@
     <string name="invalid_credential">পরিচয়পত্র প্রত্যাখ্যাত: স্বাক্ষর, কী বা মেয়াদ সঠিক নয়।</string>
     <string name="preparing_device_keys">সুরক্ষিত ডিভাইস কী প্রস্তুত হচ্ছে</string>
     <string name="private_keys_never_leave">RSA-2048 প্রাইভেট কী Android Keystore থেকে কখনও বের হয় না।</string>
+    <string name="authorization_credential_active">স্বাক্ষরিত মাঠ পরিচয়পত্র সক্রিয়</string>
+    <string name="authorization_credential_required">মাঠের কাজ চালু করতে এই ফোনের প্রশাসক-স্বাক্ষরিত পরিচয়পত্র ইনস্টল করুন।</string>
+    <string name="authorization_action_restricted">এই স্বাক্ষরিত ভূমিকায় কাজটি করার অনুমতি নেই।</string>
+    <string name="authorization_expired">এই ফোনের স্বাক্ষরিত পরিচয়পত্রের মেয়াদ শেষ।</string>
+    <string name="authorization_revoked">এই ফোনের স্বাক্ষরিত পরিচয়পত্র বাতিল করা হয়েছে।</string>
+    <string name="role_coordinator">সমন্বয়কারী • পূর্ণ মাঠ কর্তৃত্ব</string>
+    <string name="role_operator">চালক/অপারেটর • রিলে ও হেফাজত</string>
+    <string name="role_requester">ক্লিনিক • অনুরোধের কর্তৃত্ব</string>
+    <string name="role_recipient">হাসপাতাল • অনুরোধ ও গ্রহণের কর্তৃত্ব</string>
+    <string name="role_relay">রিলে • ফরওয়ার্ড করার কর্তৃত্ব</string>
+    <string name="role_auditor">নিরীক্ষক • শুধু দেখার কর্তৃত্ব</string>
+    <string name="role_unprovisioned">অনিবন্ধিত • মাঠের কোনো কর্তৃত্ব নেই</string>
     <string name="signed_delivery_qr_description">স্বাক্ষরিত সরবরাহ হস্তান্তর QR কোড</string>
     <string name="signed_offer_step">ধাপ ১: স্বাক্ষরিত অফলাইন প্রস্তাব</string>
     <string name="handoff_prepare_failed">স্বাক্ষরিত প্রস্তাব তৈরি হয়নি। বিশ্বস্ত ডিভাইস থেকে আবার চেষ্টা করুন।</string>

@@ -128,6 +128,8 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.digitaldelta.R
 import com.example.digitaldelta.domain.identity.DeviceProfiles
+import com.example.digitaldelta.domain.identity.Permission
+import com.example.digitaldelta.domain.identity.Role
 import com.example.digitaldelta.domain.mesh.MeshRuntimeState
 import com.example.digitaldelta.domain.sync.ConflictSide
 import com.example.digitaldelta.domain.sync.MissionConflictSnapshot
@@ -187,6 +189,10 @@ fun DigitalDeltaApp(
     requestQueueState: RequestQueueUiState = RequestQueueUiState.Idle,
     onQueueRequest: ((Int, Int, Int, String) -> Unit)? = null,
     identityState: IdentityUiState = IdentityUiState.Loading,
+    authorizationState: FieldAuthorizationUiState = FieldAuthorizationUiState(
+        role = Role.COORDINATOR,
+        permissions = Permission.entries.toSet(),
+    ),
     onPinAdministrator: ((String) -> Unit)? = null,
     onImportRecipientCredential: ((String) -> Unit)? = null,
     onSelectDeviceProfile: ((String) -> Unit)? = null,
@@ -244,6 +250,7 @@ fun DigitalDeltaApp(
                 requestQueueState = requestQueueState,
                 onQueueRequest = onQueueRequest,
                 identityState = identityState,
+                authorizationState = authorizationState,
                 onPinAdministrator = onPinAdministrator,
                 onImportRecipientCredential = onImportRecipientCredential,
                 onSelectDeviceProfile = onSelectDeviceProfile,
@@ -534,6 +541,7 @@ private fun DeltaShell(
     requestQueueState: RequestQueueUiState,
     onQueueRequest: ((Int, Int, Int, String) -> Unit)?,
     identityState: IdentityUiState,
+    authorizationState: FieldAuthorizationUiState,
     onPinAdministrator: ((String) -> Unit)?,
     onImportRecipientCredential: ((String) -> Unit)?,
     onSelectDeviceProfile: ((String) -> Unit)?,
@@ -573,6 +581,7 @@ private fun DeltaShell(
         topBar = {
             ConnectivityBar(
                 language = language,
+                authorizationState = authorizationState,
                 onLanguageChange = {
                     localUseBangla = !localUseBangla
                     onLanguageChange?.invoke(localUseBangla)
@@ -616,6 +625,7 @@ private fun DeltaShell(
                 IdentityScreen(
                     language = language,
                     state = identityState,
+                    authorizationState = authorizationState,
                     onBack = { identityOpen = false },
                     onPinAdministrator = onPinAdministrator,
                     onImportRecipientCredential = onImportRecipientCredential,
@@ -626,17 +636,20 @@ private fun DeltaShell(
             when (selected) {
                 DeltaDestination.OPERATIONS -> OperationsScreen(
                     language = language,
+                    authorizationState = authorizationState,
                     conflictState = conflictState,
                     onSimulateConflict = onSimulateConflict,
                     onResolveConflict = onResolveConflict,
                 )
                 DeltaDestination.REQUEST -> RequestScreen(
                     language = language,
+                    authorizationState = authorizationState,
                     requestQueueState = requestQueueState,
                     onQueueRequest = onQueueRequest,
                 )
                 DeltaDestination.ROUTE -> RouteAndMeshScreen(
                     language = language,
+                    authorizationState = authorizationState,
                     meshRuntimeState = meshRuntimeState,
                     onStartRelay = onStartRelay,
                     onStopRelay = onStopRelay,
@@ -651,6 +664,7 @@ private fun DeltaShell(
                 )
                 DeltaDestination.HANDOFF -> HandoffScreen(
                     language = language,
+                    authorizationState = authorizationState,
                     hybridFleetState = hybridFleetState,
                     onReportBoatDelay = onReportBoatDelay,
                     onAdvanceHybridFleet = onAdvanceHybridFleet,
@@ -668,6 +682,7 @@ private fun DeltaShell(
 @Composable
 private fun ConnectivityBar(
     language: AppLanguage,
+    authorizationState: FieldAuthorizationUiState,
     onLanguageChange: () -> Unit,
     onIdentity: () -> Unit,
 ) {
@@ -688,7 +703,11 @@ private fun ConnectivityBar(
                     color = Color.White,
                     style = MaterialTheme.typography.labelLarge,
                 )
-                Text(text(R.string.demo_identity, language), color = Color.White.copy(alpha = .78f), fontSize = 11.sp)
+                Text(
+                    authorizationRoleLabel(authorizationState.role, language),
+                    color = Color.White.copy(alpha = .78f),
+                    fontSize = 11.sp,
+                )
             }
             TextButton(onClick = onLanguageChange) {
                 Icon(Icons.Default.Language, contentDescription = null, tint = Color.White, modifier = Modifier.size(18.dp))
@@ -710,6 +729,7 @@ private fun ConnectivityBar(
 private fun IdentityScreen(
     language: AppLanguage,
     state: IdentityUiState,
+    authorizationState: FieldAuthorizationUiState,
     onBack: () -> Unit,
     onPinAdministrator: ((String) -> Unit)?,
     onImportRecipientCredential: ((String) -> Unit)?,
@@ -772,6 +792,7 @@ private fun IdentityScreen(
                     }
                 }
             }
+            item { AuthorizationCard(language, authorizationState) }
             item {
                 SectionLabel(text(R.string.device_profile, language))
                 Spacer(Modifier.height(8.dp))
@@ -792,6 +813,7 @@ private fun IdentityScreen(
                         Spacer(Modifier.width(8.dp))
                         Text(
                             when (profile.code) {
+                                DeviceProfiles.COORDINATOR -> text(R.string.profile_coordinator, language)
                                 DeviceProfiles.HOSPITAL -> text(R.string.profile_hospital, language)
                                 DeviceProfiles.RELAY -> text(R.string.profile_relay, language)
                                 else -> text(R.string.profile_clinic, language)
@@ -989,6 +1011,87 @@ private fun IdentityScreen(
 }
 
 @Composable
+private fun AuthorizationCard(
+    language: AppLanguage,
+    state: FieldAuthorizationUiState,
+) {
+    val authorized = state.role != null && state.permissions.isNotEmpty()
+    val color = if (authorized) VerifiedGreen else RiskAmber
+    Surface(
+        color = color.copy(alpha = .11f),
+        contentColor = color,
+        shape = RoundedCornerShape(14.dp),
+        modifier = Modifier.fillMaxWidth().testTag("authorization-card"),
+    ) {
+        Row(Modifier.padding(14.dp), verticalAlignment = Alignment.CenterVertically) {
+            Icon(if (authorized) Icons.Default.CheckCircle else Icons.Default.Warning, null)
+            Spacer(Modifier.width(10.dp))
+            Column {
+                Text(
+                    text(
+                        if (authorized) R.string.authorization_credential_active
+                        else R.string.authorization_credential_required,
+                        language,
+                    ),
+                    fontWeight = FontWeight.Bold,
+                )
+                Text(
+                    authorizationRoleLabel(state.role, language),
+                    style = MaterialTheme.typography.bodySmall,
+                )
+                state.denial?.let { denial ->
+                    Text(
+                        authorizationFailureLabel(denial.reason, language),
+                        style = MaterialTheme.typography.bodySmall,
+                    )
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun AuthorizationNotice(language: AppLanguage, permission: Permission) {
+    Surface(
+        color = RiskAmber.copy(alpha = .13f),
+        contentColor = Color(0xFF6C4300),
+        shape = RoundedCornerShape(12.dp),
+        modifier = Modifier.fillMaxWidth().testTag("role-restricted-${permission.name.lowercase()}"),
+    ) {
+        Row(Modifier.padding(12.dp), verticalAlignment = Alignment.CenterVertically) {
+            Icon(Icons.Default.Shield, null, modifier = Modifier.size(20.dp))
+            Spacer(Modifier.width(8.dp))
+            Text(text(R.string.authorization_action_restricted, language), style = MaterialTheme.typography.bodySmall)
+        }
+    }
+}
+
+@Composable
+private fun authorizationRoleLabel(role: Role?, language: AppLanguage): String = text(
+    when (role) {
+        Role.COORDINATOR -> R.string.role_coordinator
+        Role.OPERATOR -> R.string.role_operator
+        Role.REQUESTER -> R.string.role_requester
+        Role.RECIPIENT -> R.string.role_recipient
+        Role.RELAY -> R.string.role_relay
+        Role.AUDITOR -> R.string.role_auditor
+        null -> R.string.role_unprovisioned
+    },
+    language,
+)
+
+@Composable
+private fun authorizationFailureLabel(reason: AuthorizationFailure, language: AppLanguage): String = text(
+    when (reason) {
+        AuthorizationFailure.CREDENTIAL_REQUIRED -> R.string.authorization_credential_required
+        AuthorizationFailure.EXPIRED -> R.string.authorization_expired
+        AuthorizationFailure.REVOKED -> R.string.authorization_revoked
+        AuthorizationFailure.ROLE_FORBIDDEN -> R.string.authorization_action_restricted
+    },
+    language,
+)
+
+@Composable
 private fun IdentityLoadingCard(language: AppLanguage) {
     val transition = rememberInfiniteTransition(label = "identity-key-loading")
     val pulse by transition.animateFloat(
@@ -1029,6 +1132,7 @@ private fun IdentityLoadingCard(language: AppLanguage) {
 @Composable
 private fun OperationsScreen(
     language: AppLanguage,
+    authorizationState: FieldAuthorizationUiState,
     conflictState: MissionConflictSnapshot,
     onSimulateConflict: (() -> Unit)?,
     onResolveConflict: ((String, ConflictSide) -> Unit)?,
@@ -1064,6 +1168,7 @@ private fun OperationsScreen(
         item {
             ConflictDemoCard(
                 language = language,
+                canResolve = authorizationState.allows(Permission.RESOLVE_CONFLICT),
                 state = conflictState,
                 onSimulate = onSimulateConflict,
                 onResolve = onResolveConflict,
@@ -1081,6 +1186,7 @@ private fun OperationsScreen(
 @Composable
 private fun ConflictDemoCard(
     language: AppLanguage,
+    canResolve: Boolean,
     state: MissionConflictSnapshot,
     onSimulate: (() -> Unit)?,
     onResolve: ((String, ConflictSide) -> Unit)?,
@@ -1151,6 +1257,7 @@ private fun ConflictDemoCard(
                     }
 
                     is MissionConflictSnapshot.Open -> Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                        if (!canResolve) AuthorizationNotice(language, Permission.RESOLVE_CONFLICT)
                         Text(
                             text(R.string.conflict_explanation, language),
                             style = MaterialTheme.typography.bodySmall,
@@ -1162,6 +1269,7 @@ private fun ConflictDemoCard(
                             clock = current.leftClock,
                             action = "${text(R.string.use_destination, language)} ${locationName(current.leftValue, language)}",
                             onClick = { onResolve?.invoke(current.conflictId, ConflictSide.LEFT) },
+                            enabled = canResolve,
                         )
                         ConflictChoice(
                             label = text(R.string.phone_b_version, language),
@@ -1169,6 +1277,7 @@ private fun ConflictDemoCard(
                             clock = current.rightClock,
                             action = "${text(R.string.use_destination, language)} ${locationName(current.rightValue, language)}",
                             onClick = { onResolve?.invoke(current.conflictId, ConflictSide.RIGHT) },
+                            enabled = canResolve,
                         )
                     }
 
@@ -1206,6 +1315,7 @@ private fun ConflictChoice(
     clock: com.example.digitaldelta.domain.sync.VectorClock,
     action: String,
     onClick: () -> Unit,
+    enabled: Boolean = true,
 ) {
     Surface(
         color = MaterialTheme.colorScheme.surface,
@@ -1224,7 +1334,7 @@ private fun ConflictChoice(
                 )
             }
             Text(location, fontWeight = FontWeight.SemiBold)
-            OutlinedButton(onClick = onClick, modifier = Modifier.fillMaxWidth()) { Text(action) }
+            OutlinedButton(onClick = onClick, enabled = enabled, modifier = Modifier.fillMaxWidth()) { Text(action) }
         }
     }
 }
@@ -1284,6 +1394,7 @@ private fun MissionSheet(language: AppLanguage, expanded: Boolean, onExpand: () 
 @Composable
 private fun RequestScreen(
     language: AppLanguage,
+    authorizationState: FieldAuthorizationUiState,
     requestQueueState: RequestQueueUiState,
     onQueueRequest: ((Int, Int, Int, String) -> Unit)?,
 ) {
@@ -1376,6 +1487,10 @@ private fun RequestScreen(
             )
         }
         item {
+            if (!authorizationState.allows(Permission.CREATE_REQUEST)) {
+                AuthorizationNotice(language, Permission.CREATE_REQUEST)
+                Spacer(Modifier.height(10.dp))
+            }
             Button(
                 onClick = {
                     if (onQueueRequest == null) {
@@ -1384,7 +1499,8 @@ private fun RequestScreen(
                         onQueueRequest(medicine, ors, tarpaulin, priority)
                     }
                 },
-                enabled = requestQueueState != RequestQueueUiState.Submitting,
+                enabled = requestQueueState != RequestQueueUiState.Submitting &&
+                    authorizationState.allows(Permission.CREATE_REQUEST),
                 modifier = Modifier.fillMaxWidth().height(54.dp).testTag("send-request"),
             ) {
                 Icon(Icons.AutoMirrored.Filled.Send, null)
@@ -1447,6 +1563,7 @@ private fun RequestScreen(
 @Composable
 private fun RouteAndMeshScreen(
     language: AppLanguage,
+    authorizationState: FieldAuthorizationUiState,
     meshRuntimeState: MeshRuntimeState,
     onStartRelay: (() -> Unit)?,
     onStopRelay: (() -> Unit)?,
@@ -1500,6 +1617,7 @@ private fun RouteAndMeshScreen(
                     )
                     MeshRelayCard(
                         language = language,
+                        canRelay = authorizationState.allows(Permission.RELAY_ENVELOPE),
                         state = meshRuntimeState,
                         onStart = onStartRelay,
                         onStop = onStopRelay,
@@ -1553,6 +1671,7 @@ private fun RouteAndMeshScreen(
                     triageState?.let { state ->
                         TriageCard(
                             language = language,
+                            canConfirm = authorizationState.allows(Permission.CONFIRM_PREEMPTION),
                             state = state,
                             onConfirm = onConfirmPreemption,
                         )
@@ -1568,6 +1687,7 @@ private fun RouteAndMeshScreen(
 private fun TriageCard(
     language: AppLanguage,
     state: TriageWorkflowSnapshot,
+    canConfirm: Boolean,
     onConfirm: (() -> Unit)?,
 ) {
     var remainingSlaSeconds by remember(state.decision) {
@@ -1658,8 +1778,10 @@ private fun TriageCard(
                         style = MaterialTheme.typography.bodySmall,
                         color = AlertCoral,
                     )
+                    if (!canConfirm) AuthorizationNotice(language, Permission.CONFIRM_PREEMPTION)
                     Button(
                         onClick = { onConfirm?.invoke() },
+                        enabled = canConfirm,
                         modifier = Modifier.fillMaxWidth().testTag("confirm-preemption"),
                     ) {
                         Icon(Icons.Default.CheckCircle, null)
@@ -1865,6 +1987,7 @@ private fun RiskMetric(label: String, value: String, modifier: Modifier = Modifi
 private fun MeshRelayCard(
     language: AppLanguage,
     state: MeshRuntimeState,
+    canRelay: Boolean,
     onStart: (() -> Unit)?,
     onStop: (() -> Unit)?,
     onAcceptPeer: ((String) -> Unit)?,
@@ -1971,12 +2094,14 @@ private fun MeshRelayCard(
             }
             Button(
                 onClick = { if (nearby.running) onStop?.invoke() else onStart?.invoke() },
+                enabled = nearby.running || canRelay,
                 modifier = Modifier.fillMaxWidth().height(48.dp).testTag("mesh-relay-toggle"),
             ) {
                 Icon(if (nearby.running) Icons.Default.WifiOff else Icons.Default.Hub, null)
                 Spacer(Modifier.width(8.dp))
                 Text(text(if (nearby.running) R.string.stop_relay else R.string.start_relay, language))
             }
+            if (!nearby.running && !canRelay) AuthorizationNotice(language, Permission.RELAY_ENVELOPE)
         }
     }
 }
@@ -1985,6 +2110,7 @@ private fun MeshRelayCard(
 private fun HybridFleetCard(
     language: AppLanguage,
     state: HybridFleetState,
+    canOperate: Boolean,
     onDelay: (() -> Unit)?,
     onAdvance: (() -> Unit)?,
     onReset: (() -> Unit)?,
@@ -2221,7 +2347,7 @@ private fun HybridFleetCard(
             if (state is HybridFleetState.Ready) {
                 OutlinedButton(
                     onClick = { onDelay?.invoke() },
-                    enabled = onDelay != null,
+                    enabled = onDelay != null && canOperate,
                     modifier = Modifier.fillMaxWidth().height(48.dp).testTag("hybrid-fleet-delay"),
                 ) {
                     Icon(Icons.Default.AccessTime, null)
@@ -2234,13 +2360,14 @@ private fun HybridFleetCard(
                     if (state is HybridFleetState.Transferred || state is HybridFleetState.Blocked) onReset?.invoke()
                     else onAdvance?.invoke()
                 },
-                enabled = !loading,
+                enabled = !loading && canOperate,
                 modifier = Modifier.fillMaxWidth().height(52.dp).testTag("hybrid-fleet-action"),
             ) {
                 Icon(if (state is HybridFleetState.Transferred) Icons.Default.Replay else Icons.Default.Handshake, null)
                 Spacer(Modifier.width(8.dp))
                 Text(actionText)
             }
+            if (!canOperate) AuthorizationNotice(language, Permission.OFFER_CUSTODY)
         }
     }
 }
@@ -2308,6 +2435,7 @@ private fun HybridPhaseRow(icon: ImageVector, label: String, complete: Boolean, 
 @Composable
 private fun HandoffScreen(
     language: AppLanguage,
+    authorizationState: FieldAuthorizationUiState,
     hybridFleetState: HybridFleetState,
     onReportBoatDelay: (() -> Unit)?,
     onAdvanceHybridFleet: (() -> Unit)?,
@@ -2340,6 +2468,7 @@ private fun HandoffScreen(
         item {
             HybridFleetCard(
                 language = language,
+                canOperate = authorizationState.allows(Permission.OFFER_CUSTODY),
                 state = hybridFleetState,
                 onDelay = onReportBoatDelay,
                 onAdvance = onAdvanceHybridFleet,
@@ -2456,7 +2585,7 @@ private fun HandoffScreen(
                     if (offer != null && state !is ProofOfDeliveryUiState.Verifying) {
                         OutlinedButton(
                             onClick = { scannerOpen = true },
-                            enabled = onScan != null,
+                            enabled = onScan != null && authorizationState.allows(Permission.ACCEPT_CUSTODY),
                             modifier = Modifier.fillMaxWidth().height(50.dp).testTag("scan-handoff"),
                         ) {
                             Icon(Icons.Default.QrCodeScanner, null)
@@ -2465,6 +2594,7 @@ private fun HandoffScreen(
                         }
                         Button(
                             onClick = { onVerify?.invoke(false) },
+                            enabled = authorizationState.allows(Permission.ACCEPT_CUSTODY),
                             modifier = Modifier.fillMaxWidth().height(52.dp).testTag("verify-handoff"),
                         ) {
                             Icon(
@@ -2483,12 +2613,16 @@ private fun HandoffScreen(
                         }
                         OutlinedButton(
                             onClick = { onVerify?.invoke(true) },
+                            enabled = authorizationState.allows(Permission.ACCEPT_CUSTODY),
                             modifier = Modifier.fillMaxWidth().height(50.dp).testTag("tamper-handoff"),
                         ) {
                             Icon(Icons.Default.Warning, null)
                             Spacer(Modifier.width(8.dp))
                             Text(text(R.string.test_tampered_qr, language))
                         }
+                    }
+                    if (!authorizationState.allows(Permission.ACCEPT_CUSTODY)) {
+                        AuthorizationNotice(language, Permission.ACCEPT_CUSTODY)
                     }
                     if (state is ProofOfDeliveryUiState.Rejected || state is ProofOfDeliveryUiState.Failed) {
                         TextButton(

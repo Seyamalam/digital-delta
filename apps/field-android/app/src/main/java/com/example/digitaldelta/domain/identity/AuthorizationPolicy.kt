@@ -1,5 +1,8 @@
 package com.example.digitaldelta.domain.identity
 
+import com.example.digitaldelta.proto.v1.IdentityRole
+import javax.inject.Inject
+
 enum class Role {
     REQUESTER,
     RELAY,
@@ -38,7 +41,7 @@ data class AuthorizationDecision(
     val denialReason: DenialReason? = null,
 )
 
-class AuthorizationPolicy {
+class AuthorizationPolicy @Inject constructor() {
     private val permissionsByRole = mapOf(
         Role.REQUESTER to setOf(Permission.CREATE_REQUEST, Permission.INSPECT_AUDIT),
         Role.RELAY to setOf(Permission.RELAY_ENVELOPE, Permission.INSPECT_AUDIT),
@@ -62,6 +65,8 @@ class AuthorizationPolicy {
     fun isAllowed(role: Role, permission: Permission): Boolean =
         permission in permissionsByRole.getValue(role)
 
+    fun allowedPermissions(role: Role): Set<Permission> = permissionsByRole.getValue(role)
+
     fun authorize(
         credential: OfflineCredential,
         permission: Permission,
@@ -73,4 +78,16 @@ class AuthorizationPolicy {
             AuthorizationDecision(false, DenialReason.ROLE_FORBIDDEN)
         else -> AuthorizationDecision(true)
     }
+}
+
+fun IdentityRole.toAuthorizationRole(): Role = when (this) {
+    IdentityRole.IDENTITY_ROLE_ADMIN,
+    IdentityRole.IDENTITY_ROLE_COORDINATOR,
+    -> Role.COORDINATOR
+    IdentityRole.IDENTITY_ROLE_DRIVER -> Role.OPERATOR
+    IdentityRole.IDENTITY_ROLE_HOSPITAL -> Role.RECIPIENT
+    IdentityRole.IDENTITY_ROLE_CLINIC -> Role.REQUESTER
+    IdentityRole.IDENTITY_ROLE_UNSPECIFIED,
+    IdentityRole.UNRECOGNIZED,
+    -> Role.AUDITOR
 }

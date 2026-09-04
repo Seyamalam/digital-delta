@@ -70,6 +70,8 @@ For an incoming envelope:
 
 Nearby's connection comparison digits are displayed to both operators before a candidate is accepted. After acceptance, both phones independently issue a fresh 32-byte nonce challenge. The response binds the exact challenge, Nearby node name, administrator-signed provisioning credential, validity time, and device signing key under RSA-PSS. A successfully verified challenge is consumed once; replay, mutation, expiry, unknown issuer, key mismatch, and endpoint-name mismatch fail closed. Envelopes and acknowledgements are rejected before ingress unless that endpoint completed verification. Durable and rejected acknowledgements are additionally signed with the receiving phone's RSA-PSS Keystore key, and the sender refuses to advance its outbox on any mismatch.
 
+Local authorization uses the same trust boundary. Selecting an allow-listed profile does not grant its role. The phone activates permissions only after an administrator-signed credential matches the profile's node ID, identity ID, role, encryption-key ID, and signing-key ID. Credential expiry and revocation are checked again at each ViewModel action; Compose disables forbidden controls, while direct action calls independently fail closed.
+
 ## Proof-of-delivery verification
 
 The verifier checks:

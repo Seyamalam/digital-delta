@@ -2,6 +2,7 @@ package com.example.digitaldelta.ui.main
 
 import android.content.Context
 import androidx.test.core.app.ApplicationProvider
+import androidx.lifecycle.ViewModelProvider
 import androidx.compose.ui.test.hasScrollAction
 import androidx.compose.ui.test.hasTestTag
 import androidx.compose.ui.test.ExperimentalTestApi
@@ -10,9 +11,11 @@ import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performTouchInput
 import androidx.compose.ui.test.performTextInput
 import androidx.compose.ui.test.swipeUp
+import androidx.compose.ui.test.assertIsEnabled
 import com.example.digitaldelta.MainActivity
 import com.example.digitaldelta.di.DigitalDeltaGraphEntryPoint
 import com.example.digitaldelta.domain.identity.ProvisioningCredentialService
+import com.example.digitaldelta.domain.identity.DeviceProfiles
 import com.example.digitaldelta.domain.mesh.HybridPayloadCipher
 import com.example.digitaldelta.domain.mesh.MeshWireCodec
 import com.example.digitaldelta.domain.mesh.ProtectedPayload
@@ -25,6 +28,7 @@ import java.security.KeyPairGenerator
 import kotlinx.coroutines.runBlocking
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
+import org.junit.Assert.assertNotNull
 import org.junit.Rule
 import org.junit.Test
 
@@ -38,9 +42,25 @@ class ProductionRequestFlowTest {
         val recipient = rsaKeyPair()
         val entryPoint = productionEntryPoint()
         runBlocking {
+            entryPoint.deviceProfileRepository().select(DeviceProfiles.CLINIC)
             val issuer = rsaKeyPair()
             val now = System.currentTimeMillis()
-            val claims = IdentityProvisioningClaims.newBuilder()
+            val local = entryPoint.deviceIdentityKeyStore().createOrGet("N4")
+            val localClaims = IdentityProvisioningClaims.newBuilder()
+                .setCredentialId("credential-production-n4")
+                .setIdentityId("clinic-sylhet-01")
+                .setNodeId("N4")
+                .setDisplayName("Companyganj Outpost")
+                .setRole(IdentityRole.IDENTITY_ROLE_CLINIC)
+                .setEncryptionKeyId(local.encryptionKeyId)
+                .setRsa2048EncryptionPublicKeyDer(ByteString.copyFrom(local.encryptionPublicKeyDer))
+                .setSigningKeyId(local.signingKeyId)
+                .setRsa2048SigningPublicKeyDer(ByteString.copyFrom(local.signingPublicKeyDer))
+                .setIssuedAtUnixMs(now - 1_000)
+                .setExpiresAtUnixMs(now + 86_400_000)
+                .setIssuerIdentityId("test-admin")
+                .build()
+            val recipientClaims = IdentityProvisioningClaims.newBuilder()
                 .setCredentialId("credential-production-n6")
                 .setIdentityId("hospital-operator-1")
                 .setNodeId("N6")
@@ -54,22 +74,29 @@ class ProductionRequestFlowTest {
                 .setExpiresAtUnixMs(now + 86_400_000)
                 .setIssuerIdentityId("test-admin")
                 .build()
-            entryPoint.recipientProvisioningRepository().accept(
-                credentialBytes = ProvisioningCredentialService().issue(
-                    claims = claims,
-                    issuerKeyId = "test-admin-key",
-                    issuerPrivateKeyDer = issuer.private.encoded,
-                ),
-                trustedIssuerPublicKeyDer = issuer.public.encoded,
-                nowUnixMs = now,
-            )
+            listOf(localClaims, recipientClaims).forEach { claims ->
+                entryPoint.recipientProvisioningRepository().accept(
+                    credentialBytes = ProvisioningCredentialService().issue(
+                        claims = claims,
+                        issuerKeyId = "test-admin-key",
+                        issuerPrivateKeyDer = issuer.private.encoded,
+                    ),
+                    trustedIssuerPublicKeyDer = issuer.public.encoded,
+                    nowUnixMs = now,
+                )
+            }
+        }
+        assertNotNull(runBlocking { entryPoint.identityProvisioningCoordinator().snapshot().localCredential })
+        composeTestRule.runOnUiThread {
+            ViewModelProvider(composeTestRule.activity)[MainScreenViewModel::class.java]
+                .selectDeviceProfile(DeviceProfiles.CLINIC)
         }
 
         chooseBanglaIfRequired("nav-request")
         composeTestRule.waitUntilAtLeastOneExists(hasTestTag("nav-request"), timeoutMillis = 4_000)
         composeTestRule.onNode(hasTestTag("nav-request")).performClick()
         composeTestRule.onNode(hasScrollAction()).performTouchInput { swipeUp() }
-        composeTestRule.onNode(hasTestTag("send-request")).performClick()
+        composeTestRule.onNode(hasTestTag("send-request")).assertIsEnabled().performClick()
 
         composeTestRule.waitUntilAtLeastOneExists(hasTestTag("request-queued"), timeoutMillis = 4_000)
         composeTestRule.onNode(hasTestTag("request-queued")).assertExists()

@@ -13,6 +13,11 @@ import com.example.digitaldelta.domain.request.ReliefRequestSubmission
 import com.example.digitaldelta.domain.identity.AcceptedRecipient
 import com.example.digitaldelta.domain.identity.IdentityProvisioningCoordinator
 import com.example.digitaldelta.domain.identity.DeviceProfiles
+import com.example.digitaldelta.domain.identity.AuthorizationPolicy
+import com.example.digitaldelta.domain.identity.DenialReason
+import com.example.digitaldelta.domain.identity.Permission
+import com.example.digitaldelta.domain.identity.Role
+import com.example.digitaldelta.domain.identity.toAuthorizationRole
 import com.example.digitaldelta.domain.mesh.RecipientKeyUnavailableException
 import com.example.digitaldelta.domain.sync.ConflictCoordinator
 import com.example.digitaldelta.domain.sync.ConflictSide
@@ -60,6 +65,7 @@ class MainScreenViewModel @Inject constructor(
     private val routeRiskPredictor: RouteRiskPredictor = RouteRiskClassifier(threshold = 0.65),
     private val hybridFleetWorkflow: HybridFleetWorkflow = UnavailableHybridFleetWorkflow,
     private val offlinePinRepository: OfflinePinRepository = UnavailableOfflinePinRepository,
+    private val authorizationPolicy: AuthorizationPolicy = AuthorizationPolicy(),
 ) : ViewModel() {
     val language: StateFlow<LanguagePreference> = settingsRepository.language.stateIn(
         scope = viewModelScope,
@@ -78,6 +84,9 @@ class MainScreenViewModel @Inject constructor(
 
     private val mutableIdentityState = MutableStateFlow<IdentityUiState>(IdentityUiState.Loading)
     val identityState: StateFlow<IdentityUiState> = mutableIdentityState.asStateFlow()
+
+    private val mutableAuthorizationState = MutableStateFlow(FieldAuthorizationUiState())
+    val authorizationState: StateFlow<FieldAuthorizationUiState> = mutableAuthorizationState.asStateFlow()
 
     private val mutableUnlockState = MutableStateFlow<OfflineUnlockUiState>(OfflineUnlockUiState.Loading)
     val unlockState: StateFlow<OfflineUnlockUiState> = mutableUnlockState.asStateFlow()
@@ -144,14 +153,14 @@ class MainScreenViewModel @Inject constructor(
 
     fun queueRequest(medicine: Int, ors: Int, tarpaulin: Int, priorityCode: String) {
         if (mutableRequestQueueState.value == RequestQueueUiState.Submitting) return
-        val localIdentity = mutableIdentityState.value.readySnapshot()
+        val localIdentity = authorize(Permission.CREATE_REQUEST) ?: return
         viewModelScope.launch {
             mutableRequestQueueState.value = RequestQueueUiState.Submitting
             runCatching {
                 requestSubmission.submit(
                     ReliefRequestDraft(
-                        requesterNodeId = localIdentity?.localIdentityId ?: "clinic-sylhet-01",
-                        originNodeId = localIdentity?.localNodeId ?: "N4",
+                        requesterNodeId = localIdentity.localIdentityId,
+                        originNodeId = localIdentity.localNodeId,
                         destinationNodeId = "N6",
                         cargo = listOf(
                             CargoDraft("medicine", medicine, "pack"),
@@ -183,7 +192,11 @@ class MainScreenViewModel @Inject constructor(
         viewModelScope.launch {
             mutableIdentityState.value = IdentityUiState.Working(previous)
             runCatching { identityCoordinator.selectProfile(profileCode) }
-                .onSuccess { snapshot -> mutableIdentityState.value = snapshot.toUiState() }
+                .onSuccess { snapshot ->
+                    val ready = snapshot.toUiState()
+                    mutableIdentityState.value = ready
+                    refreshAuthorization(ready)
+                }
                 .onFailure { mutableIdentityState.value = IdentityUiState.Failed(previous, IdentityFailure.KEYSTORE) }
         }
     }
@@ -193,7 +206,11 @@ class MainScreenViewModel @Inject constructor(
         viewModelScope.launch {
             mutableIdentityState.value = IdentityUiState.Working(previous)
             runCatching { identityCoordinator.pinTrustAnchor(code) }
-                .onSuccess { snapshot -> mutableIdentityState.value = snapshot.toUiState(previous?.acceptedRecipient) }
+                .onSuccess { snapshot ->
+                    val ready = snapshot.toUiState(previous?.acceptedRecipient)
+                    mutableIdentityState.value = ready
+                    refreshAuthorization(ready)
+                }
                 .onFailure { mutableIdentityState.value = IdentityUiState.Failed(previous, IdentityFailure.INVALID_TRUST) }
         }
     }
@@ -205,7 +222,9 @@ class MainScreenViewModel @Inject constructor(
             runCatching { identityCoordinator.acceptRecipientCredential(code) }
                 .onSuccess { recipient ->
                     val snapshot = identityCoordinator.snapshot()
-                    mutableIdentityState.value = snapshot.toUiState(recipient)
+                    val ready = snapshot.toUiState(recipient)
+                    mutableIdentityState.value = ready
+                    refreshAuthorization(ready)
                 }
                 .onFailure { mutableIdentityState.value = IdentityUiState.Failed(previous, IdentityFailure.INVALID_CREDENTIAL) }
         }
@@ -219,12 +238,13 @@ class MainScreenViewModel @Inject constructor(
     }
 
     fun resolveConflict(conflictId: String, selectedSide: ConflictSide) {
+        val localIdentity = authorize(Permission.RESOLVE_CONFLICT) ?: return
         viewModelScope.launch {
             runCatching {
                 conflictCoordinator.resolve(
                     conflictId = conflictId,
                     selectedSide = selectedSide,
-                    resolverIdentityId = "coordinator-sylhet-01",
+                    resolverIdentityId = localIdentity.localIdentityId,
                 )
             }.onSuccess { mutableConflictState.value = it }
         }
@@ -288,20 +308,26 @@ class MainScreenViewModel @Inject constructor(
         }
     }
 
+    fun startRelay(onAuthorized: () -> Unit) {
+        if (authorize(Permission.RELAY_ENVELOPE) != null) onAuthorized()
+    }
+
     fun confirmPreemption() {
         val proposal = mutableTriageState.value as? TriageWorkflowSnapshot.Proposed ?: return
+        val localIdentity = authorize(Permission.CONFIRM_PREEMPTION) ?: return
         mutableTriageState.value = TriageWorkflowSnapshot.Confirming(
             decision = proposal.decision,
             proposal = proposal.proposal,
         )
         viewModelScope.launch {
-            runCatching { triageWorkflow.confirm(proposal, "coordinator-sylhet-01") }
+            runCatching { triageWorkflow.confirm(proposal, localIdentity.localIdentityId) }
                 .onSuccess { mutableTriageState.value = it }
                 .onFailure { mutableTriageState.value = proposal }
         }
     }
 
     fun verifyHandoff(tamperForDemo: Boolean = false) {
+        if (authorize(Permission.ACCEPT_CUSTODY) == null) return
         val offer = mutableProofOfDeliveryState.value.offerOrNull() ?: return
         if (mutableProofOfDeliveryState.value is ProofOfDeliveryUiState.Verifying) return
         val code = if (tamperForDemo) proofOfDeliveryWorkflow.tamperForDemo(offer.qrCode) else offer.qrCode
@@ -309,6 +335,7 @@ class MainScreenViewModel @Inject constructor(
     }
 
     fun verifyScannedHandoff(code: String) {
+        if (authorize(Permission.ACCEPT_CUSTODY) == null) return
         val offer = mutableProofOfDeliveryState.value.offerOrNull() ?: return
         if (mutableProofOfDeliveryState.value is ProofOfDeliveryUiState.Verifying) return
         verifyOfferCode(offer, code)
@@ -337,12 +364,14 @@ class MainScreenViewModel @Inject constructor(
     }
 
     fun prepareNextHandoff() {
+        if (authorize(Permission.OFFER_CUSTODY) == null) return
         if (mutableProofOfDeliveryState.value is ProofOfDeliveryUiState.Verifying) return
         mutableProofOfDeliveryState.value = ProofOfDeliveryUiState.Loading
         viewModelScope.launch { prepareHandoffInternal() }
     }
 
     fun advanceHybridFleet() {
+        if (authorize(Permission.OFFER_CUSTODY) == null) return
         val current = mutableHybridFleetState.value
         if (current is HybridFleetState.PreparingDroneOffer || current is HybridFleetState.VerifyingTransfer) return
         val intermediate = when (current) {
@@ -360,6 +389,7 @@ class MainScreenViewModel @Inject constructor(
     }
 
     fun reportBoatDelay() {
+        if (authorize(Permission.OFFER_CUSTODY) == null) return
         val current = mutableHybridFleetState.value
         if (current !is HybridFleetState.Ready && current !is HybridFleetState.Replanned) return
         viewModelScope.launch {
@@ -388,8 +418,53 @@ class MainScreenViewModel @Inject constructor(
     }
 
     private suspend fun loadIdentity() {
-        mutableIdentityState.value = runCatching { identityCoordinator.snapshot().toUiState() }
+        val loaded = runCatching { identityCoordinator.snapshot().toUiState() }
             .getOrElse { IdentityUiState.Failed(null, IdentityFailure.KEYSTORE) }
+        mutableIdentityState.value = loaded
+        refreshAuthorization(loaded.readySnapshot())
+    }
+
+    private fun authorize(permission: Permission): IdentityUiState.Ready? {
+        val ready = mutableIdentityState.value.readySnapshot()
+        val credential = ready?.localCredential
+        if (ready == null || credential == null) {
+            mutableAuthorizationState.value = mutableAuthorizationState.value.copy(
+                denial = AuthorizationDenial(permission, AuthorizationFailure.CREDENTIAL_REQUIRED),
+            )
+            return null
+        }
+        val decision = authorizationPolicy.authorize(credential, permission, System.currentTimeMillis())
+        if (!decision.allowed) {
+            mutableAuthorizationState.value = mutableAuthorizationState.value.copy(
+                denial = AuthorizationDenial(
+                    permission,
+                    decision.denialReason.toAuthorizationFailure(),
+                ),
+            )
+            return null
+        }
+        mutableAuthorizationState.value = mutableAuthorizationState.value.copy(denial = null)
+        return ready
+    }
+
+    private fun refreshAuthorization(ready: IdentityUiState.Ready?) {
+        val credential = ready?.localCredential
+        val role = credential?.role
+        val decision = credential?.let {
+            authorizationPolicy.authorize(it, Permission.INSPECT_AUDIT, System.currentTimeMillis())
+        }
+        val permissions = if (credential != null && decision?.allowed == true) {
+            authorizationPolicy.allowedPermissions(credential.role)
+        } else {
+            emptySet()
+        }
+        mutableAuthorizationState.value = FieldAuthorizationUiState(
+            role = role,
+            permissions = permissions,
+            denial = decision?.denialReason?.let { reason ->
+                AuthorizationDenial(Permission.INSPECT_AUDIT, reason.toAuthorizationFailure())
+            },
+        )
     }
 
     private suspend fun loadUnlockState() {
@@ -485,6 +560,7 @@ private fun com.example.digitaldelta.domain.identity.IdentityProvisioningSnapsho
     enrollmentCode = enrollmentCode,
     trustedIssuerFingerprint = trustedIssuerFingerprint,
     acceptedRecipient = acceptedRecipient,
+    localCredential = localCredential,
 )
 
 private fun IdentityUiState.readySnapshot(): IdentityUiState.Ready? = when (this) {
@@ -527,7 +603,31 @@ sealed interface IdentityUiState {
         val enrollmentCode: String,
         val trustedIssuerFingerprint: String?,
         val acceptedRecipient: AcceptedRecipient?,
+        val localCredential: com.example.digitaldelta.domain.identity.OfflineCredential?,
     ) : IdentityUiState
 
     data class Failed(val previous: Ready?, val reason: IdentityFailure) : IdentityUiState
+}
+
+enum class AuthorizationFailure { CREDENTIAL_REQUIRED, EXPIRED, REVOKED, ROLE_FORBIDDEN }
+
+data class AuthorizationDenial(
+    val permission: Permission,
+    val reason: AuthorizationFailure,
+)
+
+data class FieldAuthorizationUiState(
+    val role: Role? = null,
+    val permissions: Set<Permission> = emptySet(),
+    val denial: AuthorizationDenial? = null,
+) {
+    fun allows(permission: Permission): Boolean = permission in permissions
+}
+
+private fun DenialReason?.toAuthorizationFailure(): AuthorizationFailure = when (this) {
+    DenialReason.EXPIRED -> AuthorizationFailure.EXPIRED
+    DenialReason.REVOKED -> AuthorizationFailure.REVOKED
+    DenialReason.ROLE_FORBIDDEN,
+    null,
+    -> AuthorizationFailure.ROLE_FORBIDDEN
 }
