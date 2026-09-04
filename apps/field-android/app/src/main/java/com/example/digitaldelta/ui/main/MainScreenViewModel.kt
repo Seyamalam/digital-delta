@@ -30,6 +30,7 @@ import com.example.digitaldelta.domain.routing.RouteScenarioSnapshot
 import com.example.digitaldelta.domain.triage.TriageWorkflow
 import com.example.digitaldelta.domain.triage.TriageWorkflowSnapshot
 import com.example.digitaldelta.domain.triage.DefaultTriageWorkflow
+import com.example.digitaldelta.domain.triage.StaleRouteEstimateException
 import com.example.digitaldelta.domain.pod.CustodyReceiptRecord
 import com.example.digitaldelta.domain.pod.DeliveryOfferReady
 import com.example.digitaldelta.domain.pod.DeliveryOfferRejection
@@ -341,7 +342,13 @@ class MainScreenViewModel @Inject constructor(
         viewModelScope.launch {
             runCatching { triageWorkflow.confirm(proposal, localIdentity.localIdentityId) }
                 .onSuccess { mutableTriageState.value = it }
-                .onFailure { mutableTriageState.value = proposal }
+                .onFailure { error ->
+                    mutableTriageState.value = if (error is StaleRouteEstimateException) {
+                        TriageWorkflowSnapshot.RouteRefreshRequired(error.staleDecision)
+                    } else {
+                        proposal
+                    }
+                }
         }
     }
 

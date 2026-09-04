@@ -29,6 +29,9 @@ import com.example.digitaldelta.domain.routing.VehicleType
 import com.example.digitaldelta.domain.triage.TriageWorkflowSnapshot
 import com.example.digitaldelta.domain.triage.TriageWorkflow
 import com.example.digitaldelta.domain.triage.DefaultTriageWorkflow
+import com.example.digitaldelta.domain.triage.PreemptionPersistence
+import com.example.digitaldelta.domain.triage.TriageAction
+import com.example.digitaldelta.domain.triage.TriageEngine
 import com.example.digitaldelta.domain.pod.CustodyChain
 import com.example.digitaldelta.domain.pod.CustodyReceiptRecord
 import com.example.digitaldelta.domain.pod.DeliveryOfferReady
@@ -396,6 +399,39 @@ class MainScreenViewModelTest {
 
         assertEquals(1, triage.confirmCalls)
         assertEquals(true, viewModel.triageState.value is TriageWorkflowSnapshot.Confirmed)
+    }
+
+    @Test
+    fun `preemption confirmation surfaces refresh state when route estimate ages out`() = runTest(dispatcher) {
+        var now = 10_000L
+        val triage = DefaultTriageWorkflow(
+            persistence = PreemptionPersistence { proposal, _ ->
+                TriageWorkflowSnapshot.Confirmed(
+                    decision = proposal.decision,
+                    proposal = proposal.proposal,
+                    eventId = "must-not-write",
+                    confirmedAtUnixMs = now,
+                )
+            },
+            nowUnixMs = { now },
+        )
+        val viewModel = MainScreenViewModel(
+            FakeSettingsRepository(),
+            FakeRequestSubmission(),
+            FakeIdentityCoordinator(DeviceProfiles.COORDINATOR),
+            FakeConflictCoordinator(),
+            FakeRouteScenario(),
+            triage,
+        )
+        advanceUntilIdle()
+        viewModel.toggleRouteFailure()
+        now += TriageEngine.MAX_ROUTE_ETA_AGE_MS + 1
+
+        viewModel.confirmPreemption()
+        advanceUntilIdle()
+
+        val refresh = viewModel.triageState.value as TriageWorkflowSnapshot.RouteRefreshRequired
+        assertEquals(TriageAction.REFRESH_ROUTE_ESTIMATE, refresh.decision.action)
     }
 
     @Test

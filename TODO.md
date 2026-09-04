@@ -146,7 +146,7 @@ This checklist tracks implementation. Milestone exit criteria live in [MILESTONE
 - [ ] Require confirmation for a real assignment change. Human confirmation and a durable decision event are implemented; generalized assignment projection mutation remains.
 - [x] Record the reason, policy version, confirmer, affected cargo, waypoint, and estimated gain in Protobuf.
 - [x] Render the decision explanation in Bangla and English.
-- [ ] Test equal priorities, missing waypoint, stale ETA, and simultaneous P0 requests. Equal-priority and missing-waypoint cases pass; stale ETA and simultaneous P0 arbitration remain.
+- [x] Test equal priorities, missing waypoint, stale ETA, and simultaneous P0 requests. A five-minute freshness limit blocks both initial proposals and confirmations from stale route data; concurrent urgent cargo is ordered by priority tier, remaining SLA, and stable cargo ID while every non-selected P0/P1 stays queued.
 
 ## M7 predictive route decay
 

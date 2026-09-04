@@ -78,4 +78,50 @@ class TriageEngineTest {
             )
         }
     }
+
+    @Test
+    fun `stale route estimate requests refresh and cannot authorize preemption`() {
+        val result = engine.evaluate(
+            priority = CargoPriority.P0,
+            elapsedMinutes = 35,
+            estimate = RouteEtaEstimate(
+                etaMinutes = 200,
+                observedAtUnixMs = 1_000,
+            ),
+            nowUnixMs = 1_000 + TriageEngine.MAX_ROUTE_ETA_AGE_MS + 1,
+        )
+
+        assertTrue(result.routeEstimateStale)
+        assertEquals(TriageAction.REFRESH_ROUTE_ESTIMATE, result.action)
+        assertFalse(result.willBreachSla)
+    }
+
+    @Test
+    fun `simultaneous P0 requests use remaining SLA then stable id and preserve the queue`() {
+        val result = engine.arbitrate(
+            candidates = listOf(
+                UrgentCargoCandidate("cargo-p0-b", CargoPriority.P0, elapsedMinutes = 80),
+                UrgentCargoCandidate("cargo-p0-c", CargoPriority.P0, elapsedMinutes = 80),
+                UrgentCargoCandidate("cargo-p0-a", CargoPriority.P0, elapsedMinutes = 20),
+            ),
+        )
+
+        assertEquals("cargo-p0-b", result.selected.cargoId)
+        assertEquals(listOf("cargo-p0-c", "cargo-p0-a"), result.queued.map { it.cargoId })
+        assertTrue(result.queued.all { it.priority == CargoPriority.P0 })
+    }
+
+    @Test
+    fun `P0 remains ahead of P1 without changing either priority`() {
+        val result = engine.arbitrate(
+            candidates = listOf(
+                UrgentCargoCandidate("new-p0", CargoPriority.P0, elapsedMinutes = 10),
+                UrgentCargoCandidate("old-p1", CargoPriority.P1, elapsedMinutes = 355),
+            ),
+        )
+
+        assertEquals("new-p0", result.selected.cargoId)
+        assertEquals(CargoPriority.P0, result.selected.priority)
+        assertEquals(CargoPriority.P1, result.queued.single().priority)
+    }
 }

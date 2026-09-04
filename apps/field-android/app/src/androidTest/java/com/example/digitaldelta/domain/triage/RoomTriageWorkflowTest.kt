@@ -46,7 +46,7 @@ class RoomTriageWorkflowTest {
         assertEquals("cargo-tarpaulin-p2", event.preemptionConfirmed.depositedCargoId)
         assertEquals("N3", event.preemptionConfirmed.waypointNodeId)
         assertEquals("coordinator-sylhet-01", event.preemptionConfirmed.confirmerIdentityId)
-        assertEquals("triage-v1", event.preemptionConfirmed.policyVersion)
+        assertEquals("triage-v2", event.preemptionConfirmed.policyVersion)
         assertEquals("SLA_BREACH_30_PERCENT", event.preemptionConfirmed.reasonCode)
         assertEquals(25, event.preemptionConfirmed.estimatedMinutesGained)
         assertEquals(true, event.simulated)

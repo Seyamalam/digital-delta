@@ -461,6 +461,7 @@ class MainScreenTest {
         composeTestRule.onNodeWithText("P0 SLA ভঙ্গের পূর্বাভাস").assertIsDisplayed()
         composeTestRule.onNode(hasTestTag("sla-countdown")).assertIsDisplayed()
         composeTestRule.onNodeWithText("P2 তারপলিন রেখে দিন: সুনামগঞ্জ সদর ক্যাম্প").assertIsDisplayed()
+        composeTestRule.onNodeWithText("সমসাময়িক জরুরি সারি অক্ষত • 1 P0").assertIsDisplayed()
         composeTestRule.onNode(hasTestTag("confirm-preemption")).performClick()
         composeTestRule.onNodeWithText("অগ্রাধিকার পরিবর্তন নিশ্চিত").assertIsDisplayed()
 

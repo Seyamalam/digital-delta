@@ -1794,9 +1794,11 @@ private fun TriageCard(
     }
     val urgent = state is TriageWorkflowSnapshot.Proposed || state is TriageWorkflowSnapshot.Confirming
     val confirmed = state is TriageWorkflowSnapshot.Confirmed
+    val stale = state is TriageWorkflowSnapshot.RouteRefreshRequired
     val color = when {
         urgent -> AlertCoral
         confirmed -> VerifiedGreen
+        stale -> RiskAmber
         else -> DeltaTeal
     }
     Surface(
@@ -1807,7 +1809,11 @@ private fun TriageCard(
         Column(Modifier.padding(14.dp), verticalArrangement = Arrangement.spacedBy(9.dp)) {
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Icon(
-                    if (urgent) Icons.Default.Warning else Icons.Default.CheckCircle,
+                    when {
+                        urgent -> Icons.Default.Warning
+                        stale -> Icons.Default.Replay
+                        else -> Icons.Default.CheckCircle
+                    },
                     contentDescription = null,
                     tint = color,
                 )
@@ -1818,6 +1824,7 @@ private fun TriageCard(
                             when {
                                 urgent -> R.string.sla_breach_predicted
                                 confirmed -> R.string.preemption_confirmed
+                                stale -> R.string.route_estimate_stale
                                 else -> R.string.sla_protected
                             },
                             language,
@@ -1857,6 +1864,11 @@ private fun TriageCard(
                     style = MaterialTheme.typography.bodySmall,
                     color = RiskAmber,
                 )
+                is TriageWorkflowSnapshot.RouteRefreshRequired -> Text(
+                    text(R.string.route_estimate_stale_reason, language),
+                    style = MaterialTheme.typography.bodySmall,
+                    color = RiskAmber,
+                )
                 is TriageWorkflowSnapshot.Proposed -> {
                     Text(
                         "${text(R.string.deposit_p2_at, language)} ${locationName(state.proposal.waypointId, language)}",
@@ -1866,6 +1878,15 @@ private fun TriageCard(
                         "${text(R.string.estimated_time_gained, language)} • ${state.proposal.estimatedMinutesGained} ${text(R.string.minutes_short, language)}",
                         style = MaterialTheme.typography.bodySmall,
                     )
+                    if (state.proposal.queuedUrgentCargoIds.isNotEmpty()) {
+                        Text(
+                            "${text(R.string.concurrent_urgent_queue, language)} • " +
+                                "${state.proposal.queuedUrgentCargoIds.size} P0",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = AlertCoral,
+                            fontWeight = FontWeight.SemiBold,
+                        )
+                    }
                     Text(
                         text(R.string.coordinator_confirmation_required, language),
                         style = MaterialTheme.typography.bodySmall,

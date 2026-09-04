@@ -11,7 +11,7 @@ This runbook covers the implemented M6 slice. It is a deterministic logistics po
 | P2 | Standard | 1,440 minutes |
 | P3 | Low | 4,320 minutes |
 
-`triage-v1` evaluates an urgent cargo item using elapsed mission time plus the current route ETA. It also calculates a stress case with route ETA increased by 30 percent. Arrival exactly at the SLA is protected; only an arrival later than the SLA is a predicted breach.
+`triage-v2` evaluates urgent cargo using elapsed mission time plus a timestamped local route ETA. It also calculates a stress case with route ETA increased by 30 percent. Arrival exactly at the SLA is protected; only an arrival later than the SLA is a predicted breach. An ETA older than five minutes cannot produce or confirm a preemption; the interface asks for a fresh local route calculation instead.
 
 The current fair scenario has 35 elapsed minutes:
 
@@ -22,6 +22,8 @@ The current fair scenario has 35 elapsed minutes:
 
 For the breach case, the engine permits only P0/P1 cargo to preempt P2/P3 cargo; equal-priority and inverted transitions are rejected. It proposes depositing `cargo-tarpaulin-p2` at the safest eligible waypoint so `cargo-medicine-p0` can continue. Unsafe candidates are excluded, then the remaining candidates are ordered by handling time and node ID. The deterministic result is `N3`, Sunamganj Sadar Camp, with an estimated 25 minutes gained.
 
+When more than one urgent request is active, arbitration never demotes or deposits another P0/P1 item. It orders candidates by priority tier, then least remaining SLA, then stable cargo ID. The selected cargo proceeds and every other urgent cargo remains visible in the retained queue. The seeded, visibly simulated demonstration selects `cargo-medicine-p0` and retains `cargo-blood-p0`.
+
 The proposal never mutates an assignment automatically. A coordinator must press the bilingual confirmation control. While the decision is being written, the interface enters a single-flight recording state so repeated taps cannot enqueue duplicate confirmations. A persistence failure restores the proposal for retry.
 
 Confirmation appends a binary Protobuf `DomainEvent` to the Room operation log. Its `PreemptionConfirmed` payload records:
@@ -29,7 +31,7 @@ Confirmation appends a binary Protobuf `DomainEvent` to the Room operation log. 
 - urgent and deposited cargo IDs;
 - safe waypoint node ID;
 - coordinator identity ID;
-- `triage-v1` policy version;
+- `triage-v2` policy version;
 - reason code `SLA_BREACH_30_PERCENT`;
 - estimated minutes gained.
 
@@ -46,8 +48,8 @@ The event and visible scenario remain marked simulated. Updating a generalized a
 
 ## Automated evidence
 
-- `TriageEngineTest`: priority SLA logic, slowdown calculation, allowed transitions, missing-waypoint failure, and safe waypoint selection.
-- `TriageWorkflowTest`: exact initial-route and boat-fallback decisions.
+- `TriageEngineTest`: priority SLA logic, slowdown calculation, allowed transitions, missing-waypoint failure, freshness rejection, urgent arbitration, and safe waypoint selection.
+- `TriageWorkflowTest`: exact initial-route and boat-fallback decisions plus refusal to persist a proposal after its ETA ages out.
 - `MainScreenViewModelTest`: M4-to-M6 propagation and duplicate-tap suppression.
 - `RoomTriageWorkflowTest`: parses the persisted Protobuf event and verifies its audit fields.
 - `MainScreenTest`: triggers the route failure, confirms the proposal, and checks bilingual state preservation.
@@ -61,7 +63,4 @@ scripts/verify-local.sh --connected
 ## Remaining M6 hardening
 
 - generalized assignment-projection mutation and signed audit events;
-- stale-route input detection and multiple simultaneous P0 arbitration;
-- explicit cargo-priority transition validation;
-- live countdown presentation;
 - target-phone performance and full rehearsal evidence.

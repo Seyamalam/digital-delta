@@ -130,6 +130,10 @@ The project is fair-ready when:
 - measured results replace untested performance claims;
 - the repository includes setup instructions, architecture diagrams, Protobuf schemas, model card, pitch material, and a backup demo video.
 
+### Latest M6 hardening
+
+`triage-v2` rejects route estimates older than five minutes before proposal and again at confirmation, so stale data cannot write a preemption event. Concurrent P0/P1 cargo is ordered deterministically by priority tier, remaining SLA, and stable cargo ID; non-selected urgent cargo remains visibly queued in the bilingual, clearly labelled simulation.
+
 ## Current status
 
 Implementation is active. The native Android field shell now builds and runs with Bangla-first and English interfaces, four interactive demo surfaces, an animated offline initialization sequence, real QR generation, and device-tested state preservation. Language-neutral engines and passing JVM tests exist for authorization, vector clocks, mesh policy, multimodal routing, proof-of-delivery verification, triage, route-risk prediction, and hybrid-fleet rendezvous.

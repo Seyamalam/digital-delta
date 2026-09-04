@@ -85,6 +85,9 @@
     <string name="sla_time_remaining">SLA সময় বাকি</string>
     <string name="sla_protected_reason" formatted="false">৩০% ধীর হলেও ২ ঘণ্টার P0 SLA-এর মধ্যে পৌঁছাবে।</string>
     <string name="sla_warning_reason">কম অগ্রাধিকারের সরবরাহ SLA মিস করতে পারে; স্বয়ংক্রিয়ভাবে অগ্রাধিকার বদলানো হবে না।</string>
+    <string name="route_estimate_stale">রুটের হিসাবের মেয়াদ শেষ</string>
+    <string name="route_estimate_stale_reason">স্থানীয় তথ্য দিয়ে নতুন করে রুট হিসাব না করা পর্যন্ত অগ্রাধিকার বদলানো বন্ধ থাকবে।</string>
+    <string name="concurrent_urgent_queue">সমসাময়িক জরুরি সারি অক্ষত</string>
     <string name="deposit_p2_at">P2 তারপলিন রেখে দিন:</string>
     <string name="estimated_time_gained">আনুমানিক সময় সাশ্রয়</string>
     <string name="coordinator_confirmation_required">দায়িত্ব বদলাতে সমন্বয়কারীর নিশ্চিতকরণ প্রয়োজন।</string>
