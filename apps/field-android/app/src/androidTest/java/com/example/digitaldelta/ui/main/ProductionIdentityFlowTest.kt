@@ -7,6 +7,7 @@ import androidx.compose.ui.test.hasScrollAction
 import androidx.compose.ui.test.junit4.createAndroidComposeRule
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performScrollToNode
+import androidx.compose.ui.test.performTextInput
 import com.example.digitaldelta.MainActivity
 import org.junit.Rule
 import org.junit.Test
@@ -39,10 +40,24 @@ class ProductionIdentityFlowTest {
     private fun chooseBanglaIfRequired(destinationTag: String) {
         composeTestRule.waitUntil(timeoutMillis = 8_000) {
             composeTestRule.onAllNodes(hasTestTag("language-bangla")).fetchSemanticsNodes().isNotEmpty() ||
+                composeTestRule.onAllNodes(hasTestTag("pin-entry")).fetchSemanticsNodes().isNotEmpty() ||
                 composeTestRule.onAllNodes(hasTestTag(destinationTag)).fetchSemanticsNodes().isNotEmpty()
         }
         if (composeTestRule.onAllNodes(hasTestTag("language-bangla")).fetchSemanticsNodes().isNotEmpty()) {
             composeTestRule.onNode(hasTestTag("language-bangla")).performClick()
+        }
+        composeTestRule.waitUntil(timeoutMillis = 8_000) {
+            composeTestRule.onAllNodes(hasTestTag("pin-entry")).fetchSemanticsNodes().isNotEmpty() ||
+                composeTestRule.onAllNodes(hasTestTag(destinationTag)).fetchSemanticsNodes().isNotEmpty()
+        }
+        if (composeTestRule.onAllNodes(hasTestTag("pin-entry")).fetchSemanticsNodes().isNotEmpty()) {
+            composeTestRule.onNode(hasTestTag("pin-entry")).performTextInput("284619")
+            if (composeTestRule.onAllNodes(hasTestTag("pin-confirm")).fetchSemanticsNodes().isNotEmpty()) {
+                composeTestRule.onNode(hasTestTag("pin-confirm")).performTextInput("284619")
+                composeTestRule.onNode(hasTestTag("configure-pin")).performClick()
+            } else {
+                composeTestRule.onNode(hasTestTag("unlock-pin")).performClick()
+            }
         }
     }
 }

@@ -60,7 +60,7 @@ This checklist tracks implementation. Milestone exit criteria live in [MILESTONE
 - [x] Generate device-bound RSA-2048 encryption and signing identities, the accepted C5 alternative to Ed25519.
 - [x] Keep private identity keys non-exportable in Android Keystore. Hardware-backed availability still requires target-phone evidence.
 - [ ] Implement offline administrator provisioning QR. Signed enrollment, administrator trust pinning, credential issue/verify, expiry checks, durable storage, bilingual display/paste, and CameraX scanning with bundled ML Kit models are complete; a real two-phone camera pass remains.
-- [ ] Add local PIN or device-authentication unlock.
+- [x] Add a salted local six-digit PIN unlock with a persisted five-attempt offline lockout.
 - [ ] Implement roles and permission policy.
 - [ ] Hide forbidden actions and enforce the same policy below the user interface.
 - [ ] Add signed audit events.

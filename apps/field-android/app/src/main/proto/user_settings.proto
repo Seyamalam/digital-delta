@@ -17,4 +17,8 @@ message UserSettings {
   bytes trusted_issuer_public_key_der = 2;
   string trusted_issuer_fingerprint = 3;
   string local_device_profile_code = 4;
+  bytes offline_pin_salt = 5;
+  bytes offline_pin_hash = 6;
+  uint32 failed_pin_attempts = 7;
+  int64 pin_locked_until_unix_ms = 8;
 }

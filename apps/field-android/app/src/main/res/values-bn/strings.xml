@@ -5,6 +5,17 @@
     <string name="choose_language_offline_note">দুটি ভাষাই ফোনে সংরক্ষিত এবং অফলাইনে কাজ করে</string>
     <string name="language_bangla">বাংলা</string>
     <string name="language_english">English</string>
+    <string name="create_offline_pin">অফলাইন PIN তৈরি করুন</string>
+    <string name="unlock_offline_app">ফিল্ড অ্যাপ আনলক করুন</string>
+    <string name="offline_pin_explanation">এই ডিভাইসে সল্টেড ভেরিফায়ার হিসেবে রাখা ৬ সংখ্যার PIN দিয়ে ফিল্ড রেকর্ড সুরক্ষিত করুন।</string>
+    <string name="six_digit_pin">৬ সংখ্যার PIN</string>
+    <string name="confirm_pin">PIN নিশ্চিত করুন</string>
+    <string name="pin_invalid_or_mismatch">ছয়টি সংখ্যা দিন এবং দুটি PIN একই কিনা দেখুন।</string>
+    <string name="pin_rejected">ভুল PIN। বাকি চেষ্টা</string>
+    <string name="pin_locked">অনেকবার ভুল হয়েছে। আবার চেষ্টা করুন</string>
+    <string name="save_pin">PIN সংরক্ষণ করে এগিয়ে যান</string>
+    <string name="unlock">আনলক করুন</string>
+    <string name="pin_works_offline">এই ডিভাইস আনলক করতে ইন্টারনেট লাগে না।</string>
     <string name="loading_title">অফলাইন পথ প্রস্তুত হচ্ছে</string>
     <string name="loading_subtitle">পরিচয় সুরক্ষা • মিশন পুনর্গঠন • মেশ পরীক্ষা</string>
     <string name="offline">অফলাইন</string>

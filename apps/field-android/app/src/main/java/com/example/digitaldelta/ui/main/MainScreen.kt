@@ -120,6 +120,8 @@ import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.text.input.ImeAction
+import androidx.compose.ui.text.input.KeyboardType
+import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
@@ -179,6 +181,9 @@ fun DigitalDeltaApp(
     useBangla: Boolean = true,
     languageSelected: Boolean = true,
     onLanguageChange: ((Boolean) -> Unit)? = null,
+    unlockState: OfflineUnlockUiState = OfflineUnlockUiState.Unlocked,
+    onConfigurePin: ((String) -> Unit)? = null,
+    onUnlock: ((String) -> Unit)? = null,
     requestQueueState: RequestQueueUiState = RequestQueueUiState.Idle,
     onQueueRequest: ((Int, Int, Int, String) -> Unit)? = null,
     identityState: IdentityUiState = IdentityUiState.Loading,
@@ -225,6 +230,13 @@ fun DigitalDeltaApp(
             DeltaBootScreen()
         } else if (!languageSelected) {
             LanguageChoiceScreen(onLanguageChange)
+        } else if (unlockState !is OfflineUnlockUiState.Unlocked) {
+            OfflineUnlockScreen(
+                language = if (useBangla) AppLanguage.BANGLA else AppLanguage.ENGLISH,
+                state = unlockState,
+                onConfigurePin = onConfigurePin,
+                onUnlock = onUnlock,
+            )
         } else {
             DeltaShell(
                 useBangla = useBangla,
@@ -258,6 +270,122 @@ fun DigitalDeltaApp(
                 onAdvanceHybridFleet = onAdvanceHybridFleet,
                 onResetHybridFleet = onResetHybridFleet,
             )
+        }
+    }
+}
+
+@Composable
+private fun OfflineUnlockScreen(
+    language: AppLanguage,
+    state: OfflineUnlockUiState,
+    onConfigurePin: ((String) -> Unit)?,
+    onUnlock: ((String) -> Unit)?,
+) {
+    var pin by rememberSaveable { mutableStateOf("") }
+    var confirmation by rememberSaveable { mutableStateOf("") }
+    var localRemainingSeconds by remember(state) {
+        mutableIntStateOf(
+            if (state is OfflineUnlockUiState.LockedOut) {
+                ((state.untilUnixMs - System.currentTimeMillis()).coerceAtLeast(0) / 1_000).toInt()
+            } else {
+                0
+            },
+        )
+    }
+    LaunchedEffect(state) {
+        while (localRemainingSeconds > 0) {
+            delay(1_000)
+            val until = (state as? OfflineUnlockUiState.LockedOut)?.untilUnixMs ?: 0L
+            localRemainingSeconds = ((until - System.currentTimeMillis()).coerceAtLeast(0) / 1_000).toInt()
+        }
+    }
+    val setup = state is OfflineUnlockUiState.SetupRequired
+    val busy = state is OfflineUnlockUiState.Loading || state is OfflineUnlockUiState.Working
+    val lockedOut = state is OfflineUnlockUiState.LockedOut && localRemainingSeconds > 0
+    val validPin = pin.length == 6 && pin.all(Char::isDigit)
+
+    Surface(color = MaterialTheme.colorScheme.background) {
+        Column(
+            modifier = Modifier.fillMaxSize().statusBarsPadding().navigationBarsPadding().padding(28.dp),
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.Center,
+        ) {
+            Surface(
+                color = DeltaTeal.copy(alpha = .12f),
+                contentColor = DeltaTeal,
+                shape = CircleShape,
+                modifier = Modifier.size(76.dp),
+            ) { Box(contentAlignment = Alignment.Center) { Icon(Icons.Default.Shield, null, Modifier.size(38.dp)) } }
+            Spacer(Modifier.height(22.dp))
+            Text(
+                text(if (setup) R.string.create_offline_pin else R.string.unlock_offline_app, language),
+                style = MaterialTheme.typography.headlineSmall,
+                textAlign = TextAlign.Center,
+            )
+            Spacer(Modifier.height(8.dp))
+            Text(
+                text(R.string.offline_pin_explanation, language),
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                textAlign = TextAlign.Center,
+            )
+            Spacer(Modifier.height(22.dp))
+            if (busy) {
+                LinearProgressIndicator(Modifier.fillMaxWidth())
+            } else if (lockedOut) {
+                Text(
+                    "${text(R.string.pin_locked, language)} • ${localRemainingSeconds}s",
+                    color = AlertCoral,
+                    fontWeight = FontWeight.Bold,
+                    modifier = Modifier.testTag("pin-lockout"),
+                )
+            } else {
+                OutlinedTextField(
+                    value = pin,
+                    onValueChange = { candidate -> if (candidate.length <= 6 && candidate.all(Char::isDigit)) pin = candidate },
+                    label = { Text(text(R.string.six_digit_pin, language)) },
+                    singleLine = true,
+                    visualTransformation = PasswordVisualTransformation(),
+                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.NumberPassword, imeAction = ImeAction.Next),
+                    modifier = Modifier.fillMaxWidth().testTag("pin-entry"),
+                )
+                if (setup) {
+                    Spacer(Modifier.height(10.dp))
+                    OutlinedTextField(
+                        value = confirmation,
+                        onValueChange = { candidate -> if (candidate.length <= 6 && candidate.all(Char::isDigit)) confirmation = candidate },
+                        label = { Text(text(R.string.confirm_pin, language)) },
+                        singleLine = true,
+                        visualTransformation = PasswordVisualTransformation(),
+                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.NumberPassword, imeAction = ImeAction.Done),
+                        modifier = Modifier.fillMaxWidth().testTag("pin-confirm"),
+                    )
+                }
+                if ((state as? OfflineUnlockUiState.SetupRequired)?.invalidPin == true ||
+                    (setup && confirmation.isNotEmpty() && confirmation != pin)
+                ) {
+                    Spacer(Modifier.height(8.dp))
+                    Text(text(R.string.pin_invalid_or_mismatch, language), color = AlertCoral)
+                }
+                if ((state as? OfflineUnlockUiState.Locked)?.rejected == true) {
+                    Spacer(Modifier.height(8.dp))
+                    Text(
+                        "${text(R.string.pin_rejected, language)} • ${state.attemptsRemaining}",
+                        color = AlertCoral,
+                    )
+                }
+                Spacer(Modifier.height(16.dp))
+                Button(
+                    onClick = { if (setup) onConfigurePin?.invoke(pin) else onUnlock?.invoke(pin) },
+                    enabled = validPin && (!setup || pin == confirmation),
+                    modifier = Modifier.fillMaxWidth().height(52.dp)
+                        .testTag(if (setup) "configure-pin" else "unlock-pin"),
+                ) {
+                    Text(text(if (setup) R.string.save_pin else R.string.unlock, language))
+                }
+            }
+            Spacer(Modifier.height(18.dp))
+            InfoRow(Icons.Default.WifiOff, text(R.string.pin_works_offline, language))
         }
     }
 }

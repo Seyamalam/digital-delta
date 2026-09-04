@@ -26,6 +26,7 @@ fun MainNavigation(meshRuntimeStateStore: MeshRuntimeStateStore) {
   val context = LocalContext.current
   val language by viewModel.language.collectAsStateWithLifecycle()
   val languageSelected by viewModel.languageSelected.collectAsStateWithLifecycle()
+  val unlockState by viewModel.unlockState.collectAsStateWithLifecycle()
   val requestQueueState by viewModel.requestQueueState.collectAsStateWithLifecycle()
   val identityState by viewModel.identityState.collectAsStateWithLifecycle()
   val conflictState by viewModel.conflictState.collectAsStateWithLifecycle()
@@ -74,6 +75,9 @@ fun MainNavigation(meshRuntimeStateStore: MeshRuntimeStateStore) {
     useBangla = language == LanguagePreference.BANGLA,
     languageSelected = languageSelected,
     onLanguageChange = viewModel::setBangla,
+    unlockState = unlockState,
+    onConfigurePin = viewModel::configurePin,
+    onUnlock = viewModel::unlock,
     requestQueueState = requestQueueState,
     onQueueRequest = viewModel::queueRequest,
     identityState = identityState,

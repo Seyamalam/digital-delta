@@ -4,6 +4,9 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.digitaldelta.data.settings.LanguagePreference
 import com.example.digitaldelta.data.settings.UserSettingsRepository
+import com.example.digitaldelta.data.settings.OfflinePinRepository
+import com.example.digitaldelta.data.settings.OfflinePinSnapshot
+import com.example.digitaldelta.data.settings.PinVerification
 import com.example.digitaldelta.domain.request.CargoDraft
 import com.example.digitaldelta.domain.request.ReliefRequestDraft
 import com.example.digitaldelta.domain.request.ReliefRequestSubmission
@@ -56,6 +59,7 @@ class MainScreenViewModel @Inject constructor(
     private val proofOfDeliveryWorkflow: ProofOfDeliveryWorkflow = UnavailableProofOfDeliveryWorkflow,
     private val routeRiskPredictor: RouteRiskPredictor = RouteRiskClassifier(threshold = 0.65),
     private val hybridFleetWorkflow: HybridFleetWorkflow = UnavailableHybridFleetWorkflow,
+    private val offlinePinRepository: OfflinePinRepository = UnavailableOfflinePinRepository,
 ) : ViewModel() {
     val language: StateFlow<LanguagePreference> = settingsRepository.language.stateIn(
         scope = viewModelScope,
@@ -74,6 +78,9 @@ class MainScreenViewModel @Inject constructor(
 
     private val mutableIdentityState = MutableStateFlow<IdentityUiState>(IdentityUiState.Loading)
     val identityState: StateFlow<IdentityUiState> = mutableIdentityState.asStateFlow()
+
+    private val mutableUnlockState = MutableStateFlow<OfflineUnlockUiState>(OfflineUnlockUiState.Loading)
+    val unlockState: StateFlow<OfflineUnlockUiState> = mutableUnlockState.asStateFlow()
 
     private val mutableConflictState = MutableStateFlow<MissionConflictSnapshot>(MissionConflictSnapshot.Idle)
     val conflictState: StateFlow<MissionConflictSnapshot> = mutableConflictState.asStateFlow()
@@ -96,6 +103,7 @@ class MainScreenViewModel @Inject constructor(
     val hybridFleetState: StateFlow<HybridFleetState> = mutableHybridFleetState.asStateFlow()
 
     init {
+        viewModelScope.launch { loadUnlockState() }
         viewModelScope.launch { loadIdentity() }
         viewModelScope.launch { mutableConflictState.value = conflictCoordinator.snapshot() }
         viewModelScope.launch { prepareHandoffInternal() }
@@ -106,6 +114,31 @@ class MainScreenViewModel @Inject constructor(
             settingsRepository.setLanguage(
                 if (useBangla) LanguagePreference.BANGLA else LanguagePreference.ENGLISH,
             )
+        }
+    }
+
+    fun configurePin(pin: String) {
+        if (mutableUnlockState.value is OfflineUnlockUiState.Working) return
+        mutableUnlockState.value = OfflineUnlockUiState.Working
+        viewModelScope.launch {
+            runCatching { offlinePinRepository.configure(pin) }
+                .onSuccess { mutableUnlockState.value = OfflineUnlockUiState.Unlocked }
+                .onFailure { mutableUnlockState.value = OfflineUnlockUiState.SetupRequired(invalidPin = true) }
+        }
+    }
+
+    fun unlock(pin: String) {
+        if (mutableUnlockState.value is OfflineUnlockUiState.Working) return
+        mutableUnlockState.value = OfflineUnlockUiState.Working
+        viewModelScope.launch {
+            mutableUnlockState.value = when (val result = offlinePinRepository.verify(pin, System.currentTimeMillis())) {
+                PinVerification.Accepted -> OfflineUnlockUiState.Unlocked
+                is PinVerification.Rejected -> OfflineUnlockUiState.Locked(
+                    attemptsRemaining = result.attemptsRemaining,
+                    rejected = true,
+                )
+                is PinVerification.LockedOut -> OfflineUnlockUiState.LockedOut(result.untilUnixMs)
+            }
         }
     }
 
@@ -359,6 +392,18 @@ class MainScreenViewModel @Inject constructor(
             .getOrElse { IdentityUiState.Failed(null, IdentityFailure.KEYSTORE) }
     }
 
+    private suspend fun loadUnlockState() {
+        mutableUnlockState.value = runCatching {
+            val now = System.currentTimeMillis()
+            val snapshot = offlinePinRepository.snapshot(now)
+            when {
+                !snapshot.configured -> OfflineUnlockUiState.SetupRequired()
+                snapshot.lockedUntilUnixMs > now -> OfflineUnlockUiState.LockedOut(snapshot.lockedUntilUnixMs)
+                else -> OfflineUnlockUiState.Locked(attemptsRemaining = 5 - snapshot.failedAttempts)
+            }
+        }.getOrElse { OfflineUnlockUiState.SetupRequired(invalidPin = true) }
+    }
+
     private fun String.toPriority(): PriorityClass = when (this) {
         "P0" -> PriorityClass.PRIORITY_CLASS_P0
         "P1" -> PriorityClass.PRIORITY_CLASS_P1
@@ -422,6 +467,12 @@ private object UnavailableHybridFleetWorkflow : HybridFleetWorkflow {
     override fun reset(): HybridFleetState = HybridFleetState.Unavailable
 }
 
+private object UnavailableOfflinePinRepository : OfflinePinRepository {
+    override suspend fun snapshot(nowUnixMs: Long) = OfflinePinSnapshot(true, 0, 0)
+    override suspend fun configure(pin: String) = Unit
+    override suspend fun verify(pin: String, nowUnixMs: Long): PinVerification = PinVerification.Accepted
+}
+
 private fun com.example.digitaldelta.domain.identity.IdentityProvisioningSnapshot.toUiState(
     acceptedRecipient: AcceptedRecipient? = this.acceptedRecipient,
 ): IdentityUiState.Ready = IdentityUiState.Ready(
@@ -448,6 +499,15 @@ sealed interface RequestQueueUiState {
     data object Submitting : RequestQueueUiState
     data class Queued(val requestId: String, val messageId: String) : RequestQueueUiState
     data class Failed(val reason: RequestFailure) : RequestQueueUiState
+}
+
+sealed interface OfflineUnlockUiState {
+    data object Loading : OfflineUnlockUiState
+    data class SetupRequired(val invalidPin: Boolean = false) : OfflineUnlockUiState
+    data object Working : OfflineUnlockUiState
+    data class Locked(val attemptsRemaining: Int = 5, val rejected: Boolean = false) : OfflineUnlockUiState
+    data class LockedOut(val untilUnixMs: Long) : OfflineUnlockUiState
+    data object Unlocked : OfflineUnlockUiState
 }
 
 enum class RequestFailure { RECIPIENT_NOT_PROVISIONED, STORAGE_OR_CRYPTO }

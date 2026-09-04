@@ -5,6 +5,17 @@
     <string name="choose_language_offline_note">দুটি ভাষাই ফোনে সংরক্ষিত এবং অফলাইনে কাজ করে</string>
     <string name="language_bangla">বাংলা</string>
     <string name="language_english">English</string>
+    <string name="create_offline_pin">Create offline PIN</string>
+    <string name="unlock_offline_app">Unlock field app</string>
+    <string name="offline_pin_explanation">Protect field records with a 6-digit PIN stored as a salted verifier on this device.</string>
+    <string name="six_digit_pin">6-digit PIN</string>
+    <string name="confirm_pin">Confirm PIN</string>
+    <string name="pin_invalid_or_mismatch">Use six digits and make sure both PINs match.</string>
+    <string name="pin_rejected">Wrong PIN. Attempts remaining</string>
+    <string name="pin_locked">Too many attempts. Try again in</string>
+    <string name="save_pin">Save PIN and continue</string>
+    <string name="unlock">Unlock</string>
+    <string name="pin_works_offline">No internet is required to unlock this device.</string>
     <string name="loading_title">Building the offline route</string>
     <string name="loading_subtitle">Securing identity • rebuilding missions • checking mesh</string>
     <string name="offline">Offline</string>
