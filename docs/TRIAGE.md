@@ -26,6 +26,8 @@ When more than one urgent request is active, arbitration never demotes or deposi
 
 The proposal never mutates an assignment automatically. A coordinator must press the bilingual confirmation control. While the decision is being written, the interface enters a single-flight recording state so repeated taps cannot enqueue duplicate confirmations. A persistence failure restores the proposal for retry.
 
+After confirmation, Room commits the `PreemptionConfirmed` event and the deposited cargo assignment in one transaction. The assignment records mission, cargo, priority, waypoint, state, confirmer, source event, update time, vector clock, and a deterministic mission-assignment convergence hash. If either write fails, neither becomes visible. This changes the local operational projection; it does not claim that the physical deposit has already happened.
+
 Confirmation appends a binary Protobuf `DomainEvent` to the Room operation log. Its `PreemptionConfirmed` payload records:
 
 - urgent and deposited cargo IDs;
@@ -35,7 +37,7 @@ Confirmation appends a binary Protobuf `DomainEvent` to the Room operation log. 
 - reason code `SLA_BREACH_30_PERCENT`;
 - estimated minutes gained.
 
-The event and visible scenario remain marked simulated. Updating a generalized assignment projection and signing this audit event are later integration steps, so the current interface says the coordinator decision was recorded rather than claiming a completed physical handoff.
+The event and visible scenario remain marked simulated. The interface reports the atomic local assignment update while continuing to distinguish it from a completed physical handoff. Signing this specific operational event remains a later hardening step; authorization to perform it is already recorded in the separate signed audit chain.
 
 ## Live proof
 
@@ -51,7 +53,7 @@ The event and visible scenario remain marked simulated. Updating a generalized a
 - `TriageEngineTest`: priority SLA logic, slowdown calculation, allowed transitions, missing-waypoint failure, freshness rejection, urgent arbitration, and safe waypoint selection.
 - `TriageWorkflowTest`: exact initial-route and boat-fallback decisions plus refusal to persist a proposal after its ETA ages out.
 - `MainScreenViewModelTest`: M4-to-M6 propagation and duplicate-tap suppression.
-- `RoomTriageWorkflowTest`: parses the persisted Protobuf event and verifies its audit fields.
+- `RoomTriageWorkflowTest`: parses the persisted Protobuf event, verifies its audit fields and vector-clocked assignment, and proves a duplicate event rolls the projection mutation back.
 - `MainScreenTest`: triggers the route failure, confirms the proposal, and checks bilingual state preservation.
 
 Run all local evidence with:
@@ -62,5 +64,5 @@ scripts/verify-local.sh --connected
 
 ## Remaining M6 hardening
 
-- generalized assignment-projection mutation and signed audit events;
+- signed operational-event envelopes for preemption decisions;
 - target-phone performance and full rehearsal evidence.

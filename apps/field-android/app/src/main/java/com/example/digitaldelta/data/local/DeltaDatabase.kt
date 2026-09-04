@@ -122,6 +122,24 @@ data class MissionProjectionEntity(
 )
 
 @Entity(
+    tableName = "cargo_assignments",
+    primaryKeys = ["missionId", "cargoId"],
+    indices = [Index(value = ["missionId"]), Index(value = ["assignedNodeId", "state"])],
+)
+data class CargoAssignmentEntity(
+    val missionId: String,
+    val cargoId: String,
+    val priorityCode: String,
+    val assignedNodeId: String,
+    val state: String,
+    val vectorClockBytes: ByteArray,
+    val sourceEventId: String,
+    val assignedByIdentityId: String,
+    val updatedAtUnixMs: Long,
+    val convergenceHash: String,
+)
+
+@Entity(
     tableName = "conflicts",
     indices = [Index(value = ["missionId", "state", "createdAtUnixMs"])],
 )
@@ -322,6 +340,21 @@ interface MissionProjectionDao {
 }
 
 @Dao
+interface CargoAssignmentDao {
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    suspend fun upsert(assignment: CargoAssignmentEntity)
+
+    @Query("SELECT * FROM cargo_assignments WHERE missionId = :missionId AND cargoId = :cargoId LIMIT 1")
+    suspend fun find(missionId: String, cargoId: String): CargoAssignmentEntity?
+
+    @Query("SELECT * FROM cargo_assignments WHERE missionId = :missionId ORDER BY cargoId ASC")
+    suspend fun forMission(missionId: String): List<CargoAssignmentEntity>
+
+    @Query("UPDATE cargo_assignments SET convergenceHash = :hash WHERE missionId = :missionId")
+    suspend fun updateConvergenceHash(missionId: String, hash: String)
+}
+
+@Dao
 interface ConflictDao {
     @Insert(onConflict = OnConflictStrategy.ABORT)
     suspend fun insert(conflict: ConflictEntity)
@@ -364,10 +397,11 @@ interface ConflictDao {
         MeshInboxEntity::class,
         SeenMessageEntity::class,
         MissionProjectionEntity::class,
+        CargoAssignmentEntity::class,
         ConflictEntity::class,
         InboxApplicationEntity::class,
     ],
-    version = 5,
+    version = 6,
     exportSchema = true,
 )
 abstract class DeltaDatabase : RoomDatabase() {
@@ -378,6 +412,7 @@ abstract class DeltaDatabase : RoomDatabase() {
     abstract fun meshInboxDao(): MeshInboxDao
     abstract fun seenMessageDao(): SeenMessageDao
     abstract fun missionProjectionDao(): MissionProjectionDao
+    abstract fun cargoAssignmentDao(): CargoAssignmentDao
     abstract fun conflictDao(): ConflictDao
     abstract fun inboxApplicationDao(): InboxApplicationDao
 }
@@ -523,6 +558,36 @@ object DeltaMigrations {
             db.execSQL(
                 "CREATE INDEX IF NOT EXISTS index_inbox_applications_state_updatedAtUnixMs " +
                     "ON inbox_applications (state, updatedAtUnixMs)",
+            )
+        }
+    }
+
+    val VERSION_5_TO_6 = object : Migration(5, 6) {
+        override fun migrate(db: SupportSQLiteDatabase) {
+            db.execSQL(
+                """
+                CREATE TABLE IF NOT EXISTS cargo_assignments (
+                    missionId TEXT NOT NULL,
+                    cargoId TEXT NOT NULL,
+                    priorityCode TEXT NOT NULL,
+                    assignedNodeId TEXT NOT NULL,
+                    state TEXT NOT NULL,
+                    vectorClockBytes BLOB NOT NULL,
+                    sourceEventId TEXT NOT NULL,
+                    assignedByIdentityId TEXT NOT NULL,
+                    updatedAtUnixMs INTEGER NOT NULL,
+                    convergenceHash TEXT NOT NULL,
+                    PRIMARY KEY(missionId, cargoId)
+                )
+                """.trimIndent(),
+            )
+            db.execSQL(
+                "CREATE INDEX IF NOT EXISTS index_cargo_assignments_missionId " +
+                    "ON cargo_assignments (missionId)",
+            )
+            db.execSQL(
+                "CREATE INDEX IF NOT EXISTS index_cargo_assignments_assignedNodeId_state " +
+                    "ON cargo_assignments (assignedNodeId, state)",
             )
         }
     }

@@ -1921,6 +1921,12 @@ private fun TriageCard(
                         fontWeight = FontWeight.SemiBold,
                     )
                     Text(
+                        text(R.string.assignment_projection_updated, language),
+                        style = MaterialTheme.typography.bodySmall,
+                        color = VerifiedGreen,
+                        fontWeight = FontWeight.SemiBold,
+                    )
+                    Text(
                         "${text(R.string.local_event, language)} • ${state.eventId.takeLast(10)}",
                         style = MaterialTheme.typography.labelSmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,

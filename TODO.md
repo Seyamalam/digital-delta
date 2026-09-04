@@ -143,7 +143,7 @@ This checklist tracks implementation. Milestone exit criteria live in [MILESTONE
 - [x] Flag predicted SLA breaches.
 - [x] Define and test allowed transitions: only P0/P1 may preempt P2/P3; equal-priority and inverted transitions are rejected.
 - [x] Find a safe waypoint for lower-priority cargo.
-- [ ] Require confirmation for a real assignment change. Human confirmation and a durable decision event are implemented; generalized assignment projection mutation remains.
+- [x] Require confirmation for a real assignment change. The confirmed Protobuf event and vector-clocked cargo-assignment projection commit atomically; a duplicate-event fault proves projection rollback and the v5-to-v6 migration preserves existing operations.
 - [x] Record the reason, policy version, confirmer, affected cargo, waypoint, and estimated gain in Protobuf.
 - [x] Render the decision explanation in Bangla and English.
 - [x] Test equal priorities, missing waypoint, stale ETA, and simultaneous P0 requests. A five-minute freshness limit blocks both initial proposals and confirmations from stale route data; concurrent urgent cargo is ordered by priority tier, remaining SLA, and stable cargo ID while every non-selected P0/P1 stays queued.

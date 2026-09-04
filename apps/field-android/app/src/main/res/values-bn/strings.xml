@@ -88,6 +88,7 @@
     <string name="route_estimate_stale">রুটের হিসাবের মেয়াদ শেষ</string>
     <string name="route_estimate_stale_reason">স্থানীয় তথ্য দিয়ে নতুন করে রুট হিসাব না করা পর্যন্ত অগ্রাধিকার বদলানো বন্ধ থাকবে।</string>
     <string name="concurrent_urgent_queue">সমসাময়িক জরুরি সারি অক্ষত</string>
+    <string name="assignment_projection_updated">স্থানীয় কার্গো বরাদ্দ একই লেনদেনে হালনাগাদ</string>
     <string name="deposit_p2_at">P2 তারপলিন রেখে দিন:</string>
     <string name="estimated_time_gained">আনুমানিক সময় সাশ্রয়</string>
     <string name="coordinator_confirmation_required">দায়িত্ব বদলাতে সমন্বয়কারীর নিশ্চিতকরণ প্রয়োজন।</string>

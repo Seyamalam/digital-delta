@@ -464,9 +464,11 @@ class MainScreenTest {
         composeTestRule.onNodeWithText("সমসাময়িক জরুরি সারি অক্ষত • 1 P0").assertIsDisplayed()
         composeTestRule.onNode(hasTestTag("confirm-preemption")).performClick()
         composeTestRule.onNodeWithText("অগ্রাধিকার পরিবর্তন নিশ্চিত").assertIsDisplayed()
+        composeTestRule.onNodeWithText("স্থানীয় কার্গো বরাদ্দ একই লেনদেনে হালনাগাদ").assertIsDisplayed()
 
         composeTestRule.onNodeWithText("English").performClick()
         composeTestRule.onNodeWithText("Preemption confirmed").assertIsDisplayed()
+        composeTestRule.onNodeWithText("Local cargo assignment updated atomically").assertIsDisplayed()
         composeTestRule.onNodeWithText("P2 • Sunamganj Sadar Camp • P0 continues by boat").assertIsDisplayed()
     }
 

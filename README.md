@@ -132,7 +132,7 @@ The project is fair-ready when:
 
 ### Latest M6 hardening
 
-`triage-v2` rejects route estimates older than five minutes before proposal and again at confirmation, so stale data cannot write a preemption event. Concurrent P0/P1 cargo is ordered deterministically by priority tier, remaining SLA, and stable cargo ID; non-selected urgent cargo remains visibly queued in the bilingual, clearly labelled simulation.
+`triage-v2` rejects route estimates older than five minutes before proposal and again at confirmation, so stale data cannot write a preemption event. Concurrent P0/P1 cargo is ordered deterministically by priority tier, remaining SLA, and stable cargo ID; non-selected urgent cargo remains visibly queued in the bilingual, clearly labelled simulation. Confirmation atomically commits the Protobuf event and a vector-clocked cargo assignment with a deterministic convergence hash; a duplicate-event fault test proves rollback, and the Room v5-to-v6 migration preserves existing operations.
 
 ## Current status
 

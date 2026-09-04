@@ -9,6 +9,7 @@ import com.example.digitaldelta.proto.v1.DomainEvent
 import kotlinx.coroutines.test.runTest
 import org.junit.After
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -50,5 +51,45 @@ class RoomTriageWorkflowTest {
         assertEquals("SLA_BREACH_30_PERCENT", event.preemptionConfirmed.reasonCode)
         assertEquals(25, event.preemptionConfirmed.estimatedMinutesGained)
         assertEquals(true, event.simulated)
+
+        val deposited = database.cargoAssignmentDao().find(
+            missionId = "mission-sylhet-01",
+            cargoId = "cargo-tarpaulin-p2",
+        )
+        requireNotNull(deposited)
+        assertEquals("N3", deposited.assignedNodeId)
+        assertEquals("DEPOSITED_FOR_REASSIGNMENT", deposited.state)
+        assertEquals("P2", deposited.priorityCode)
+        assertEquals("coordinator-sylhet-01", deposited.assignedByIdentityId)
+        assertEquals("preemption-event-1", deposited.sourceEventId)
+        assertEquals(64, deposited.convergenceHash.length)
+    }
+
+    @Test
+    fun duplicateEventRollsBackAssignmentProjectionMutation() = runTest {
+        val workflow = RoomTriageWorkflow(
+            database = database,
+            nowUnixMs = { 1_800_000_000_000 },
+            eventId = { "preemption-event-atomic" },
+        )
+        val original = workflow.evaluate(200) as TriageWorkflowSnapshot.Proposed
+        workflow.confirm(original, "coordinator-sylhet-01")
+
+        val conflicting = original.copy(
+            proposal = original.proposal.copy(waypointId = "N4"),
+        )
+        val failure = runCatching {
+            workflow.confirm(conflicting, "coordinator-sylhet-01")
+        }.exceptionOrNull()
+
+        assertTrue(failure != null)
+        assertEquals(
+            "N3",
+            database.cargoAssignmentDao().find(
+                missionId = "mission-sylhet-01",
+                cargoId = "cargo-tarpaulin-p2",
+            )?.assignedNodeId,
+        )
+        assertEquals(1, database.operationLogDao().forMission("mission-sylhet-01").size)
     }
 }

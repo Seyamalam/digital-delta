@@ -88,6 +88,7 @@
     <string name="route_estimate_stale">Route estimate expired</string>
     <string name="route_estimate_stale_reason">Preemption is locked until the route is recalculated from fresh local data.</string>
     <string name="concurrent_urgent_queue">Concurrent urgent queue retained</string>
+    <string name="assignment_projection_updated">Local cargo assignment updated atomically</string>
     <string name="deposit_p2_at">Deposit P2 tarpaulin at</string>
     <string name="estimated_time_gained">Estimated time gained</string>
     <string name="coordinator_confirmation_required">Assignment change requires coordinator confirmation.</string>

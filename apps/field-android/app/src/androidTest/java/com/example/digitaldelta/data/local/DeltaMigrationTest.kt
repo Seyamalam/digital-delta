@@ -124,6 +124,28 @@ class DeltaMigrationTest {
         }
     }
 
+    @Test
+    fun migrationFiveToSixPreservesOperationsAndAddsCargoAssignments() {
+        helper.createDatabase(TEST_DATABASE_V6, 5).apply {
+            execSQL(
+                "INSERT INTO operation_log " +
+                    "(eventId, missionId, eventType, payloadBytes, createdAtUnixMs) VALUES " +
+                    "('event-1', 'mission-1', 'PREEMPTION_CONFIRMED', X'0102', 100)",
+            )
+            close()
+        }
+
+        helper.runMigrationsAndValidate(
+            TEST_DATABASE_V6,
+            6,
+            true,
+            DeltaMigrations.VERSION_5_TO_6,
+        ).use { migrated ->
+            assertEquals(1, migrated.count("SELECT COUNT(*) FROM operation_log"))
+            assertEquals(0, migrated.count("SELECT COUNT(*) FROM cargo_assignments"))
+        }
+    }
+
     private fun SupportSQLiteDatabase.count(query: String): Int =
         query(query).use { cursor ->
             check(cursor.moveToFirst())
@@ -135,5 +157,6 @@ class DeltaMigrationTest {
         private const val TEST_DATABASE_V3 = "delta-migration-v3-test"
         private const val TEST_DATABASE_V4 = "delta-migration-v4-test"
         private const val TEST_DATABASE_V5 = "delta-migration-v5-test"
+        private const val TEST_DATABASE_V6 = "delta-migration-v6-test"
     }
 }

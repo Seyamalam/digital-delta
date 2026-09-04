@@ -77,6 +77,7 @@ object AppModule {
                 DeltaMigrations.VERSION_2_TO_3,
                 DeltaMigrations.VERSION_3_TO_4,
                 DeltaMigrations.VERSION_4_TO_5,
+                DeltaMigrations.VERSION_5_TO_6,
             )
             .build()
 

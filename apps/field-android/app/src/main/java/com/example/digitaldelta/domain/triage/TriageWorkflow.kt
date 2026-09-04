@@ -1,5 +1,6 @@
 package com.example.digitaldelta.domain.triage
 
+import androidx.room.withTransaction
 import com.example.digitaldelta.data.local.DeltaDatabase
 import com.example.digitaldelta.data.local.OperationEntity
 import com.example.digitaldelta.proto.v1.DomainEvent
@@ -154,6 +155,8 @@ private class RoomPreemptionPersistence(
     private val nowUnixMs: () -> Long,
     private val eventId: () -> String,
 ) : PreemptionPersistence {
+    private val assignmentProjector = RoomCargoAssignmentProjector(database)
+
     override suspend fun record(
         proposal: TriageWorkflowSnapshot.Proposed,
         confirmerIdentityId: String,
@@ -179,15 +182,29 @@ private class RoomPreemptionPersistence(
             .setScenarioSeed(SCENARIO_SEED)
             .setPreemptionConfirmed(confirmed)
             .build()
-        database.operationLogDao().append(
-            OperationEntity(
-                eventId = id,
-                missionId = MISSION_ID,
-                eventType = "PREEMPTION_CONFIRMED",
-                payloadBytes = event.toByteArray(),
-                createdAtUnixMs = now,
-            ),
-        )
+        database.withTransaction {
+            database.operationLogDao().append(
+                OperationEntity(
+                    eventId = id,
+                    missionId = MISSION_ID,
+                    eventType = "PREEMPTION_CONFIRMED",
+                    payloadBytes = event.toByteArray(),
+                    createdAtUnixMs = now,
+                ),
+            )
+            assignmentProjector.apply(
+                CargoAssignmentMutation(
+                    missionId = MISSION_ID,
+                    cargoId = proposal.proposal.lowerPriorityCargoId,
+                    priority = proposal.proposal.lowerPriority,
+                    assignedNodeId = proposal.proposal.waypointId,
+                    state = RoomCargoAssignmentProjector.STATE_DEPOSITED_FOR_REASSIGNMENT,
+                    sourceEventId = id,
+                    assignedByIdentityId = confirmerIdentityId,
+                    occurredAtUnixMs = now,
+                ),
+            )
+        }
         return TriageWorkflowSnapshot.Confirmed(
             decision = proposal.decision,
             proposal = proposal.proposal,
