@@ -11,6 +11,20 @@ java_runtime="${JAVA_HOME:-/opt/homebrew/opt/openjdk@17/libexec/openjdk.jdk/Cont
 echo "[proto] lint shared wire contract"
 (cd "${repo_dir}/packages/proto" && buf lint)
 
+echo "[localization] verify Bangla and English resource parity and bundled font"
+if ! diff -u \
+  <(rg -o '<string name="[^"]+"' "${android_dir}/app/src/main/res/values/strings.xml" | sort) \
+  <(rg -o '<string name="[^"]+"' "${android_dir}/app/src/main/res/values-bn/strings.xml" | sort); then
+  echo "Bangla and English string resources must contain exactly the same keys." >&2
+  exit 1
+fi
+(
+  cd "${android_dir}/app/src/main/res"
+  printf '%s  %s\n' \
+    '6300c5370cd688b0641343de4c786de6d412bb6c578d129dae75e93a0322dcab' \
+    'font/noto_sans_bengali_regular.ttf' | shasum -a 256 -c -
+)
+
 if [[ -f "${map_dir}/sylhet.pmtiles" ]]; then
   echo "[map] verify reviewed offline Sylhet archive"
   (cd "${map_dir}" && shasum -a 256 -c SHA256SUMS)

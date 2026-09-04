@@ -90,6 +90,7 @@ research/                 Source-backed problem and fair research
 - [Technology stack](docs/STACK.md)
 - [Technical architecture](docs/ARCHITECTURE.md)
 - [Bangla and English requirements](docs/LOCALIZATION.md)
+- [Bundled font and license](docs/THIRD_PARTY_FONTS.md)
 - [Security model](docs/SECURITY.md)
 - [Testing strategy](docs/TESTING.md)
 - [Requirements traceability](docs/TRACEABILITY.md)

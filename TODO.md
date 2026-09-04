@@ -45,9 +45,9 @@ This checklist tracks implementation. Milestone exit criteria live in [MILESTONE
 - [x] Add `values/strings.xml`, `values-bn/strings.xml`, and generated locale configuration.
 - [ ] Add a first-run language chooser with `বাংলা` first and `English` second.
 - [x] Persist the selected language in Proto DataStore.
-- [ ] Add Noto Sans Bengali or another tested Bengali font with an offline license file.
-- [ ] Create the glossary in `packages/localization/glossary.csv`.
-- [ ] Add translation-key completeness tests.
+- [x] Bundle Noto Sans Bengali with its offline SIL Open Font License and verify the font hash locally.
+- [x] Create the glossary in `packages/localization/glossary.csv`.
+- [x] Add a local-gate test requiring identical Bangla and English Android string keys.
 - [ ] Add tests that reject raw user-facing strings in critical field screens.
 - [ ] Test Bengali combining marks, wrapping, truncation, and large text.
 - [x] Keep P0 to P3, coordinates, cryptographic fingerprints, and delivery IDs language-neutral.

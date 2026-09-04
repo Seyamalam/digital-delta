@@ -1,0 +1,41 @@
+key,english,bangla,usage_note
+offline,Offline,অফলাইন,Connectivity state
+commercial_internet_unavailable,Commercial internet unavailable,বাণিজ্যিক ইন্টারনেট নেই,Keep distinct from all-radio-off
+syncing,Syncing,সিঙ্ক হচ্ছে,Data transfer in progress
+conflict_detected,Conflict detected,দ্বন্দ্ব শনাক্ত হয়েছে,Requires human review
+verified,Verified,যাচাইকৃত,Cryptographic verification succeeded
+simulated,Simulated,সিমুলেটেড,Required for environmental and vehicle inputs
+relief_request,Relief request,ত্রাণ অনুরোধ,Supply request record
+critical_medical,Critical medical,জরুরি চিকিৎসা,P0 cargo
+high_priority,High priority,উচ্চ অগ্রাধিকার,P1 cargo
+standard_priority,Standard priority,সাধারণ অগ্রাধিকার,P2 cargo
+low_priority,Low priority,নিম্ন অগ্রাধিকার,P3 cargo
+delivery_eta,Delivery ETA,সরবরাহ ETA,Keep ETA and minutes language-neutral where space is limited
+sla_breach_risk,SLA breach risk,সময়সীমা ভঙ্গের ঝুঁকি,Prediction rather than confirmed breach
+route,Route,পথ,Computed graph path
+road,Road,সড়ক,Transport edge type
+waterway,Waterway,নৌপথ,Normalized from supplied river edge type
+airway,Simulated airway,সিমুলেটেড আকাশপথ,Always include simulated label
+route_risk,Predicted route risk,পথের পূর্বাভাসিত ঝুঁকি,Do not describe as confirmed flooding
+confirmed_failure,Confirmed failure,নিশ্চিতভাবে বন্ধ,Observed or injected authoritative edge state
+reroute,Reroute,বিকল্প পথে পাঠান,New constrained route
+safe_waypoint,Safe waypoint,নিরাপদ মধ্যবর্তী স্থান,Approved cargo deposit location
+preemption,Priority preemption,অগ্রাধিকার পরিবর্তন,Human-confirmed assignment change
+field_node,Field node,ফিল্ড নোড,Phone participating in nearby exchange
+relay,Relay,রিলে,Store-and-forward node
+peer,Nearby peer,কাছের নোড,Discovered device awaiting or completing verification
+authenticating,Authenticating,পরিচয় যাচাই হচ্ছে,Peer is not yet trusted
+encrypted_payload,Encrypted payload,এনক্রিপ্ট করা বার্তা,Content unavailable to relay
+queued,Queued,কিউতে আছে,Durably waiting for relay
+durably_stored,Durably stored,স্থায়ীভাবে সংরক্ষিত,Acknowledgement condition
+duplicate_rejected,Duplicate rejected,ডুপ্লিকেট প্রত্যাখ্যাত,No second domain effect
+handoff,Handoff,হস্তান্তর,Physical custody transition
+proof_of_delivery,Proof of delivery,সরবরাহ প্রমাণ,Signed custody record
+custody_chain,Custody chain,হেফাজতের শৃঙ্খল,Linked receipt history
+tampered,Tampered,পরিবর্তিত,Signature or payload mismatch
+replay_rejected,Replay rejected,পুনর্ব্যবহার প্রত্যাখ্যাত,Nonce was already claimed
+drone_required,Drone required,ড্রোন আবশ্যক,Reachability result with simulated vehicle
+rendezvous,Rendezvous,মিলনস্থল,Computed transfer coordinate
+battery_reserve,Battery reserve,ব্যাটারি সংরক্ষণ,Simulated vehicle or measured phone battery as labelled
+broadcast_throttled,Broadcast reduced,সম্প্রচার কমানো হয়েছে,60 percent reduction below 30 percent phone battery
+field_work_continues,Field work continues,ফিল্ড কাজ চালু আছে,Dashboard observer can be absent
