@@ -152,6 +152,8 @@ Field nodes publish `DomainEvent` messages to the Go `ObserverService` over loca
 
 The React dashboard is a disposable projection and starts from the deterministic seed if the observer is unavailable. When events are available it rebuilds hazard, route, rendezvous, vehicle, and ledger state in sequence order. Closing either the SSE connection or the entire laptop cannot block Room operations, routing, triage, queueing, or custody workflows on a field phone. Observer publication remains on the controlled local network until signed peer authentication is completed.
 
+The projector map does not fetch public raster tiles at runtime. MapLibre GL reads the reviewed `public/maps/sylhet.pmtiles` archive over the laptop's local HTTP server; its SHA-256 is checked by the local verification gate. The vector archive supplies real OpenStreetMap-derived geography and attribution. Route, risk, node, rendezvous, and simulated-airway facts remain in a separate mission GeoJSON source so rehearsed data cannot be mistaken for map observations.
+
 ## Local storage
 
 Suggested tables:

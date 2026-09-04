@@ -117,7 +117,7 @@ This checklist tracks implementation. Milestone exit criteria live in [MILESTONE
 - [x] Record computation latency and selected fallback policy in the live route state; persistent reports remain.
 - [x] Render the real computed edge sequence using bundled offline scenario data and a Compose canvas.
 - [ ] Embed MapLibre Native Android in Compose through an adapter.
-- [ ] Package and verify the offline Sylhet map region and attribution.
+- [ ] Package and verify the offline Sylhet map region in Android. The projector already uses a checksum-pinned local PMTiles region with visible OpenStreetMap attribution.
 - [x] Explain why the preferred truck path was selected or rejected and why boat precedes simulated air fallback.
 
 ## M5 proof of delivery

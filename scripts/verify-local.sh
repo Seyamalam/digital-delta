@@ -5,10 +5,16 @@ script_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 repo_dir="$(cd "${script_dir}/.." && pwd)"
 android_dir="${repo_dir}/apps/field-android"
 model_dir="${repo_dir}/models/route-decay"
+map_dir="${repo_dir}/apps/command/public/maps"
 java_runtime="${JAVA_HOME:-/opt/homebrew/opt/openjdk@17/libexec/openjdk.jdk/Contents/Home}"
 
 echo "[proto] lint shared wire contract"
 (cd "${repo_dir}/packages/proto" && buf lint)
+
+if [[ -f "${map_dir}/sylhet.pmtiles" ]]; then
+  echo "[map] verify reviewed offline Sylhet archive"
+  (cd "${map_dir}" && shasum -a 256 -c SHA256SUMS)
+fi
 
 if rg -n '(^|[^A-Za-z])json([^A-Za-z]|$)' \
   "${repo_dir}/apps/field-android/app/src/main/java/com/example/digitaldelta/domain/mesh" \

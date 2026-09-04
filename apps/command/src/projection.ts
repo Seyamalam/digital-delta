@@ -5,6 +5,7 @@ export type ProjectedRoute = {
   mode?: string;
   edgeIds: string[];
   etaMinutes?: number;
+  simulated: boolean;
 };
 
 export type ProjectedRendezvous = {
@@ -51,6 +52,7 @@ export function projectObservations(observations: PresentationObservation[]): Ob
         mode: asString(value.mode),
         edgeIds: asStrings(value.edgeIds),
         etaMinutes: asNumber(value.etaMinutes),
+        simulated: observation.simulated,
       };
     }
     if (observation.kind === "rendezvousPlanned") {

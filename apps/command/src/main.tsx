@@ -1,6 +1,7 @@
 import "@fontsource-variable/space-grotesk";
 import "@fontsource-variable/noto-sans-bengali";
 import "@fontsource-variable/jetbrains-mono";
+import "maplibre-gl/dist/maplibre-gl.css";
 import React from "react";
 import ReactDOM from "react-dom/client";
 import { App } from "./App";

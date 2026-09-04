@@ -1,6 +1,8 @@
-import { useEffect, useMemo, useReducer, useState } from "react";
+import { lazy, Suspense, useEffect, useMemo, useReducer, useState } from "react";
 import { connectObserver, type ObserverConnectOptions, type ObserverStatus, type PresentationObservation } from "./observer";
 import { projectObservations } from "./projection";
+
+const OfflineDeltaMap = lazy(() => import("./OfflineDeltaMap").then((module) => ({ default: module.OfflineDeltaMap })));
 
 type Language = "bn" | "en";
 type ControlMode = "core" | "faults";
@@ -303,7 +305,9 @@ export function App({ observerConnect: injectedObserverConnect, observerUrl = im
       <div className="dashboard-grid">
         <section className="map-panel panel">
           <PanelHeading eyebrow="M4 + M7 + M8" title={t.route} meta="24.8949°N / 91.8687°E" />
-          <DeltaMap state={displayState} language={language} />
+          <Suspense fallback={<OfflineMapModuleFallback language={language} />}>
+            <OfflineDeltaMap useWaterRoute={displayState.failedRoad} showRisk={displayState.predictedRisk} simulated={liveRoute?.simulated ?? true} language={language} />
+          </Suspense>
           <div className="route-caption">
             <div><span>{t.route}</span><strong>{routeLabel}</strong></div>
             <div className="route-proof"><span>{rendezvousLabel} RENDEZVOUS</span><strong>{rendezvousCoordinates}</strong></div>
@@ -378,34 +382,17 @@ function PanelHeading({ eyebrow, title, meta }: { eyebrow: string; title: string
   return <div className="panel-heading"><div><span>{eyebrow}</span><h2>{title}</h2></div><code>{meta}</code></div>;
 }
 
-function DeltaMark() { return <svg className="delta-mark" viewBox="0 0 58 58" aria-hidden="true"><path d="M29 5 52 50H6L29 5Z" /><path d="M29 17v27M18 29l11 8 11-8" /></svg>; }
-
-function DeltaMap({ state, language }: { state: ScenarioState; language: Language }) {
+function OfflineMapModuleFallback({ language }: { language: Language }) {
   const labels = language === "bn"
-    ? { road: "সড়ক", water: "নৌপথ", air: "সিমুলেটেড আকাশপথ", sylhet: "সিলেট হাব", airport: "বিমানবন্দর", companyganj: "কোম্পানীগঞ্জ", rendezvous: "মিলনস্থল", clinic: "হাওর ক্লিনিক" }
-    : { road: "Road", water: "Waterway", air: "Simulated airway", sylhet: "Sylhet hub", airport: "Airport", companyganj: "Companyganj", rendezvous: "Rendezvous", clinic: "Haor clinic" };
-  return <div className="delta-map"><svg viewBox="0 0 900 410" role="img" aria-label={language === "bn" ? "সিলেটের সিমুলেটেড পথ মানচিত্র" : "Simulated Sylhet route map"}>
-    <defs><filter id="glow"><feGaussianBlur stdDeviation="5" result="blur" /><feMerge><feMergeNode in="blur" /><feMergeNode in="SourceGraphic" /></feMerge></filter></defs>
-    <path className="land" d="M36 48C170 8 320 32 414 72c92 39 188 5 294 35 126 36 171 140 120 218-50 77-169 55-281 54-152-2-255 29-376-8C42 331-30 218 36 48Z" />
-    <path className="water ghost" d="M69 36c115 77 125 170 261 202 114 27 245-2 498 126" />
-    <path className="water ghost" d="M208 34c53 98 78 130 174 174 97 45 179 42 254 168" />
-    <path className={`road ${state.failedRoad ? "failed" : "active"}`} d="M146 275 322 125 536 175" />
-    <path className={`boat ${state.failedRoad ? "active" : ""}`} d="M146 275C270 339 405 328 512 246" />
-    <path className={`air ${state.failedRoad ? "active" : ""}`} d="M512 246Q653 104 795 119" />
-    {state.predictedRisk && <circle className="risk-ring" cx="435" cy="150" r="54" />}
-    <MapNode x={146} y={275} id="N1" label={labels.sylhet} />
-    <MapNode x={322} y={125} id="N2" label={labels.airport} />
-    <MapNode x={536} y={175} id="N4" label={labels.companyganj} />
-    <MapNode x={512} y={246} id="R3" label={labels.rendezvous} active={state.failedRoad} />
-    <MapNode x={795} y={119} id="N7" label={labels.clinic} active={state.failedRoad} />
-    {state.failedRoad && <g className="vehicle boat-icon" transform="translate(360 309)"><circle r="20" /><text y="6">◒</text></g>}
-    {state.failedRoad && <g className="vehicle drone-icon" transform="translate(650 160)"><circle r="20" /><text y="6">✦</text></g>}
-  </svg><div className="map-legend"><span><i className="road-key" />{labels.road}</span><span><i className="water-key" />{labels.water}</span><span><i className="air-key" />{labels.air}</span></div></div>;
+    ? { map: "সিলেটের অফলাইন ভৌগোলিক মানচিত্র", road: "সড়ক", water: "নৌপথ", air: "সিমুলেটেড আকাশপথ", loading: "মানচিত্র মডিউল প্রস্তুত হচ্ছে", local: "স্থানীয় PMTiles" }
+    : { map: "Offline geographic map of Sylhet", road: "Road", water: "Waterway", air: "Simulated airway", loading: "Preparing map module", local: "LOCAL PMTILES" };
+  return <div className="delta-map geographic-map" aria-label={labels.map}>
+    <div className="map-loading" aria-live="polite"><div className="delta-loader"><i /><i /><i /></div><strong>{labels.loading}</strong><span>{labels.local}</span></div>
+    <div className="map-legend"><span><i className="road-key" />{labels.road}</span><span><i className="water-key" />{labels.water}</span><span><i className="air-key" />{labels.air}</span><code>{labels.local}</code></div>
+  </div>;
 }
 
-function MapNode({ x, y, id, label, active = false }: { x: number; y: number; id: string; label: string; active?: boolean }) {
-  return <g className={`map-node ${active ? "active" : ""}`} transform={`translate(${x} ${y})`}><circle r="10" /><circle className="halo" r="20" /><text x="16" y="-4">{id}</text><text className="node-label" x="16" y="14">{label}</text></g>;
-}
+function DeltaMark() { return <svg className="delta-mark" viewBox="0 0 58 58" aria-hidden="true"><path d="M29 5 52 50H6L29 5Z" /><path d="M29 17v27M18 29l11 8 11-8" /></svg>; }
 
 function Node({ id, role, battery, status, offline = false }: { id: string; role: string; battery: number; status: string; offline?: boolean }) {
   return <div className={`node-row ${offline ? "is-offline" : ""}`}><span className="node-id">{id}</span><div><strong>{role}</strong><small>{status}</small></div><div className="battery"><span style={{ width: `${battery}%` }} /><em>{battery}%</em></div></div>;
