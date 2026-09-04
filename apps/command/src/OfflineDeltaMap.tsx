@@ -87,7 +87,7 @@ export function OfflineDeltaMap({ useWaterRoute, showRisk, simulated, language }
   return <div className="delta-map geographic-map" aria-label={language === "bn" ? "সিলেটের অফলাইন ভৌগোলিক মানচিত্র" : "Offline geographic map of Sylhet"}>
     <div ref={host} className="maplibre-host" />
     {status !== "ready" && <div className={`map-loading ${status}`} aria-live="polite">
-      <div className="delta-loader"><i /><i /><i /></div>
+      <div className="map-loader-line" />
       <strong>{status === "unavailable" ? labels.unavailable : labels.loading}</strong>
       <span>{labels.local}</span>
     </div>}

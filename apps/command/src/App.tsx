@@ -3,25 +3,24 @@
 import { lazy, Suspense, useEffect, useMemo, useReducer, useState } from "react";
 import {
   Activity,
+  ArrowRight,
   CircleAlert,
   CloudOff,
   Database,
   Languages,
-  MapPinned,
   Pause,
   Play,
   RadioTower,
   RotateCcw,
-  Route,
   ShieldCheck,
   Siren,
-  Waves,
 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { connectObserver, type ObserverConnectOptions, type ObserverStatus, type PresentationObservation } from "./observer";
 import { projectObservations } from "./projection";
 import { archiveObservation, probeArchive, type ArchiveStatus } from "./archive";
@@ -374,152 +373,187 @@ export function App({ observerConnect: injectedObserverConnect, observerUrl = pr
     : "25.0200, 91.7000";
 
   const etaMinutes = liveEta ?? ((displayState.failedRoad ? 45 : 65) + (displayState.vehicleDelayed ? 18 : 0));
+  const compactCopy = language === "bn"
+    ? {
+        commandPost: "সিলেট কমান্ড পোস্ট",
+        lastUpdate: "সর্বশেষ স্থানীয় অবস্থা",
+        decision: "এখনকার সিদ্ধান্ত",
+        decisionBody: displayState.failedRoad ? "সড়ক এড়িয়ে নৌযান থেকে R3-এ হস্তান্তর করুন" : "বর্তমান সড়কপথ ধরে মিশন চালু রাখুন",
+        safe: "ফিল্ড অ্যাপ স্বাধীনভাবে চলছে",
+        missionChain: "মিশন শৃঙ্খল",
+        dispatch: "সিলেট হাব",
+        relay: "নৌযান-০২",
+        handoff: "R3 হস্তান্তর",
+        destination: "হাওর ক্লিনিক",
+        stock: "মজুত",
+        allocation: "বরাদ্দ",
+        level: "অবস্থা",
+        system: "সিস্টেম অবস্থা",
+        exerciseNotice: "শুধু মহড়ার জন্য। পরিবেশ ও যানবাহনের তথ্য সিমুলেটেড।",
+      }
+    : {
+        commandPost: "Sylhet command post",
+        lastUpdate: "Latest local state",
+        decision: "Decision now",
+        decisionBody: displayState.failedRoad ? "Bypass the road and transfer from boat at R3" : "Keep the mission on the current road route",
+        safe: "Field apps continue independently",
+        missionChain: "Mission chain",
+        dispatch: "Sylhet hub",
+        relay: "Boat-02",
+        handoff: "R3 handoff",
+        destination: "Haor clinic",
+        stock: "Stock",
+        allocation: "Allocation",
+        level: "Status",
+        system: "System state",
+        exerciseNotice: "Exercise only. Environmental and vehicle inputs are simulated.",
+      };
 
   return (
     <main className="command-shell" data-language={language}>
-      <aside className="command-spine" aria-label={t.headquarters}>
-        <div className="spine-brand"><DeltaMark /><span>DD</span></div>
-        <nav className="spine-nav" aria-label={t.overview}>
-          <button className="is-current" aria-label={t.overview}><Activity /></button>
-          <button aria-label={t.liveMap}><MapPinned /></button>
-          <button aria-label={t.route}><Route /></button>
-          <button aria-label={t.proof}><ShieldCheck /></button>
-        </nav>
-        <div className={`delta-spine ${state.nodeOffline ? "is-broken" : ""}`} aria-label={t.mesh}>
-          <span>A</span><i /><span>B</span><i /><span>C</span>
-          <b className="mesh-packet" />
-        </div>
-        <div className="spine-foot"><CloudOff /><span>LOCAL<br />FIRST</span></div>
-      </aside>
-
-      <section className="operations-canvas">
-        <header className="command-header">
-          <div className="command-title">
-            <p><span className="live-dot" />{t.headquarters} / SYLHET-01</p>
+      <a className="skip-link" href="#operations-map">{language === "bn" ? "মানচিত্রে যান" : "Skip to operations map"}</a>
+      <header className="command-header">
+        <div className="brand-lockup">
+          <DeltaMark />
+          <div>
+            <span>{compactCopy.commandPost} / SYLHET-01</span>
             <h1>{t.command}</h1>
-            <span>{t.subtitle}</span>
           </div>
-          <div className="header-status">
-            <Badge className="status-badge offline-status"><CloudOff />{t.offline}</Badge>
-            <Badge className={`status-badge observer-status ${observerTone}`}><RadioTower />{observerLabel}</Badge>
-            <Badge className={`status-badge archive-status ${archiveStatus}`}><Database />{archiveLabel}</Badge>
-            <Button className="language" variant="outline" onClick={() => setLanguage(language === "bn" ? "en" : "bn")}>
-              <Languages />{language === "bn" ? "English" : "বাংলা"}
-            </Button>
-          </div>
-        </header>
+        </div>
+        <div className="header-status" aria-label={compactCopy.system}>
+          <Badge variant="outline" className="status-badge offline-status"><CloudOff />{t.offline}</Badge>
+          <Badge variant="outline" className={`status-badge observer-status ${observerTone}`}><RadioTower />{observerLabel}</Badge>
+          <Badge variant="outline" className={`status-badge archive-status ${archiveStatus}`}><Database />{archiveLabel}</Badge>
+          <Button className="language" variant="outline" onClick={() => setLanguage(language === "bn" ? "en" : "bn")}>
+            <Languages data-icon="inline-start" />{language === "bn" ? "English" : "বাংলা"}
+          </Button>
+        </div>
+      </header>
 
-        <section className="mission-ribbon" aria-label={t.mission}>
-          <div className="mission-priority"><Siren /><strong>P0</strong></div>
-          <div className="mission-name"><span>{t.activeMission} · {t.simulated}</span><strong>{t.mission}</strong></div>
-          <Metric label={t.eta} value={`${etaMinutes}`} suffix="MIN" tone={etaMinutes > 120 ? "danger" : "signal"} />
-          <Metric label={t.network} value={state.nodeOffline ? "2/3" : "3/3"} suffix="NODES" tone={state.nodeOffline ? "danger" : "good"} />
-          <Metric label={t.mesh} value={state.nodeOffline ? "04" : "00"} suffix="QUEUED" tone={state.nodeOffline ? "signal" : "good"} />
-          <div className={`mission-decision ${displayState.failedRoad ? "is-alert" : ""}`}>
-            <span>{t.droneRequired}</span>
-            <strong>{displayState.failedRoad ? t.warning : t.fieldSafe}</strong>
-          </div>
-        </section>
+      <section className="mission-brief" aria-label={t.mission}>
+        <div className="priority-block"><Siren /><span>P0</span></div>
+        <div className="mission-name"><span>{t.activeMission} / {t.simulated}</span><strong>{t.mission}</strong></div>
+        <Metric label={t.eta} value={`${etaMinutes}`} suffix="MIN" tone={etaMinutes > 120 ? "danger" : "signal"} />
+        <Metric label={t.network} value={state.nodeOffline ? "2/3" : "3/3"} suffix="NODES" tone={state.nodeOffline ? "danger" : "good"} />
+        <Metric label={t.mesh} value={state.nodeOffline ? "04" : "00"} suffix="QUEUED" tone={state.nodeOffline ? "signal" : "good"} />
+        <div className={`decision-summary ${displayState.failedRoad ? "is-alert" : ""}`}>
+          <span>{compactCopy.decision}</span>
+          <strong>{compactCopy.decisionBody}</strong>
+          <Button className="advance mission-advance" onClick={() => dispatch({ type: "STEP" })}><Play data-icon="inline-start" />{t.step}<span>0{state.step + 1} / 06</span></Button>
+        </div>
+      </section>
 
-        <div className="operations-grid">
-          <Card className="map-panel ops-card">
-            <CardHeader className="ops-card-header">
-              <div><span className="module-label">M4 · M7 · M8</span><CardTitle>{t.liveMap}</CardTitle></div>
-              <div className="map-meta"><span className="live-dot" />{t.localTruth}<code>24.8949°N / 91.8687°E</code></div>
-            </CardHeader>
-            <CardContent className="map-card-content">
-              <Suspense fallback={<OfflineMapModuleFallback language={language} />}>
-                <OfflineDeltaMap useWaterRoute={useFallbackRoute} showRisk={displayState.predictedRisk} simulated={liveRoute?.simulated ?? true} language={language} />
-              </Suspense>
-            </CardContent>
-            <div className="route-caption">
-              <div><span>{t.route}</span><strong>{routeLabel}</strong></div>
-              <div className="route-proof"><span>{rendezvousLabel} RENDEZVOUS</span><strong>{rendezvousCoordinates}</strong></div>
+      <section className="command-workspace">
+        <article className="map-stage" id="operations-map">
+          <header className="section-heading map-heading">
+            <div><span>M4 / M7 / M8</span><h2>{t.liveMap}</h2></div>
+            <div className="map-meta"><span>{t.localTruth}</span><code>24.8949°N / 91.8687°E</code></div>
+          </header>
+          <div className="map-card-content">
+            <Suspense fallback={<OfflineMapModuleFallback language={language} />}>
+              <OfflineDeltaMap useWaterRoute={useFallbackRoute} showRisk={displayState.predictedRisk} simulated={liveRoute?.simulated ?? true} language={language} />
+            </Suspense>
+          </div>
+          <footer className="mission-chain">
+            <div className="route-readout"><span>{t.route}</span><strong>{routeLabel}</strong></div>
+            <ol aria-label={compactCopy.missionChain}>
+              <MissionStop index="01" label={compactCopy.dispatch} />
+              <MissionStop index="02" label={displayState.failedRoad ? compactCopy.relay : "Truck-01"} />
+              <MissionStop index="03" label={displayState.failedRoad ? compactCopy.handoff : (language === "bn" ? "ওসমানী নোড" : "Osmani node")} alert={displayState.failedRoad} />
+              <MissionStop index="04" label={compactCopy.destination} />
+            </ol>
+            <div className="rendezvous-readout"><span>{rendezvousLabel} RENDEZVOUS</span><strong>{rendezvousCoordinates}</strong></div>
+          </footer>
+        </article>
+
+        <aside className="decision-rail" aria-label={t.situation}>
+          <section className="decision-now">
+            <div className="section-heading"><div><span>OPS / NOW</span><h2>{compactCopy.decision}</h2></div><Badge variant={displayState.failedRoad ? "destructive" : "outline"}>{displayState.failedRoad ? t.droneRequired : (language === "bn" ? "সড়ক সচল" : "ROAD ACTIVE")}</Badge></div>
+            <p>{compactCopy.decisionBody}</p>
+            <div className="decision-facts"><span>{t.eta}<strong>{etaMinutes} min</strong></span><span>SLA<strong>120 min</strong></span><span>{t.openIncidents}<strong>{displayState.failedRoad ? "ACTION" : "WATCH"}</strong></span></div>
+          </section>
+
+          <section className="rail-section incident-section">
+            <div className="section-heading compact"><div><span>M2 / M7</span><h2>{t.incidentBoard}</h2></div></div>
+            <div className="incident-list">
+              <Incident tone="critical" code="P0" title={displayState.failedRoad ? t.warning : t.mission} detail={displayState.failedRoad ? "R3 HANDOFF / ACTION" : "ACTIVE CORRIDOR / WATCH"} />
+              <Incident tone="warning" code="M7" title={language === "bn" ? "E3 পথ ঝুঁকি" : "E3 route risk"} detail={`${state.rainfallMmPerHour} mm/h / ${state.soilSaturationPercent}%`} />
+              <Incident tone={state.conflict ? "critical" : "stable"} code="M2" title={language === "bn" ? "CRDT দ্বন্দ্ব পর্যবেক্ষণ" : "CRDT conflict watch"} detail={state.conflict ? (language === "bn" ? "মানব সিদ্ধান্ত প্রয়োজন" : "Human review required") : (language === "bn" ? "কনভার্জড" : "Converged")} />
             </div>
-          </Card>
+          </section>
 
-          <div className="situation-stack">
-            <Card className="ops-card incident-card">
-              <CardHeader className="ops-card-header compact"><div><span className="module-label">OPS · NOW</span><CardTitle>{t.incidentBoard}</CardTitle></div><Badge className="count-badge">{t.openIncidents}</Badge></CardHeader>
-              <CardContent className="incident-list">
-                <Incident tone="critical" code="P0" title={displayState.failedRoad ? t.warning : t.mission} detail={`ROUTE · ${routeLabel}`} />
-                <Incident tone="warning" code="M7" title={language === "bn" ? "E3 পথ ঝুঁকি" : "E3 route risk"} detail={`${state.rainfallMmPerHour} mm/h · ${state.soilSaturationPercent}%`} />
-                <Incident tone={state.conflict ? "critical" : "stable"} code="M2" title={language === "bn" ? "CRDT দ্বন্দ্ব পর্যবেক্ষণ" : "CRDT conflict watch"} detail={state.conflict ? (language === "bn" ? "মানব সিদ্ধান্ত প্রয়োজন" : "Human review required") : (language === "bn" ? "কনভার্জড" : "Converged")} />
-              </CardContent>
-            </Card>
+          <section className="rail-section network-section">
+            <div className="section-heading compact"><div><span>M3 / STORE + FORWARD</span><h2>{t.network}</h2></div><code>{state.nodeOffline ? "2 / 3" : "3 / 3"}</code></div>
+            <div className="node-list">
+              <Node id="A" role={t.clinic} battery={82} status={t.p0Ready} />
+              <Node id="B" role={t.boatRelay} battery={58} status={state.nodeOffline ? t.offlineQueued : t.queued} offline={state.nodeOffline} />
+              <Node id="C" role={t.droneOperator} battery={state.droneBattery} status={state.droneBattery < 30 ? t.throttled : t.ready} />
+            </div>
+          </section>
 
-            <Card className="ops-card mesh-card">
-              <CardHeader className="ops-card-header compact"><div><span className="module-label">M3</span><CardTitle>{t.network}</CardTitle></div><code>{state.nodeOffline ? "2 / 3" : "3 / 3"}</code></CardHeader>
-              <CardContent className="node-list">
-                <Node id="A" role={t.clinic} battery={82} status={t.p0Ready} />
-                <Node id="B" role={t.boatRelay} battery={58} status={state.nodeOffline ? t.offlineQueued : t.queued} offline={state.nodeOffline} />
-                <Node id="C" role={t.droneOperator} battery={state.droneBattery} status={state.droneBattery < 30 ? t.throttled : t.ready} />
-              </CardContent>
-            </Card>
+          <section className={`custody-strip ${state.custodyVerified ? "is-verified" : ""}`}>
+            <ShieldCheck />
+            <div><span>M5 / {t.proof}</span><strong>{state.custodyVerified ? t.verified : t.awaiting}</strong><small>Boat-02 → simulated-drone-07</small></div>
+            <code>{state.custodyVerified ? "925E4120" : "PENDING"}</code>
+          </section>
+        </aside>
+      </section>
 
-            <Card className={`ops-card custody-panel ${state.custodyVerified ? "is-verified" : ""}`}>
-              <CardContent className="custody-content">
-                <div className="custody-seal">{state.custodyVerified ? <ShieldCheck /> : <Waves />}</div>
-                <div><span>M5 · {t.proof}</span><strong>{state.custodyVerified ? t.verified : t.awaiting}</strong><p>Boat-02 → simulated-drone-07</p></div>
-                <code>{state.custodyVerified ? "925E4120" : "PENDING"}</code>
-              </CardContent>
-            </Card>
-          </div>
-
-          <Card className="ops-card inventory-panel">
-            <CardHeader className="ops-card-header compact"><div><span className="module-label">M6 · P0 FIRST</span><CardTitle>{t.inventory}</CardTitle></div><CircleAlert /></CardHeader>
-            <CardContent className="inventory-content">
+      <section className="command-dock">
+        <section className="dock-section inventory-panel">
+          <div className="section-heading compact"><div><span>M6 / P0 FIRST</span><h2>{t.inventory}</h2></div><CircleAlert /></div>
+          <Table>
+            <TableHeader><TableRow><TableHead>{compactCopy.stock}</TableHead><TableHead>{compactCopy.allocation}</TableHead><TableHead>{compactCopy.level}</TableHead></TableRow></TableHeader>
+            <TableBody>
               <Inventory label={t.bloodCooler} amount="1 / 1" level={100} critical />
               <Inventory label={t.medicine} amount="4 / 6" level={66} critical />
               <Inventory label="ORS" amount="120 / 200" level={60} />
-              <Inventory label={t.tarpaulin} amount="P2 • N3" level={35} />
-            </CardContent>
-          </Card>
+              <Inventory label={t.tarpaulin} amount="P2 / N3" level={35} />
+            </TableBody>
+          </Table>
+        </section>
 
-          <Card className="ops-card event-panel" aria-live="polite">
-            <CardHeader className="ops-card-header compact"><div><span className="module-label">PROTOBUF · ORDERED</span><CardTitle>{t.events}</CardTitle></div><code>{projection.latestSequence > 0 ? `SEQ ${projection.latestSequence}` : "SEED 20260412"}</code></CardHeader>
-            <CardContent className="event-content">
-              <ScrollArea className="event-scroll"><ol>{events.map((event) => <li key={event.id}><time>{event.time}</time><i className={event.tone} /><div><strong>{event.title}</strong><span>{event.detail}</span></div><code>{event.id}</code></li>)}</ol></ScrollArea>
-            </CardContent>
-          </Card>
+        <section className="dock-section event-panel" aria-live="polite">
+          <div className="section-heading compact"><div><span>PROTOBUF / ORDERED</span><h2>{t.events}</h2></div><code>{projection.latestSequence > 0 ? `SEQ ${projection.latestSequence}` : "SEED 20260412"}</code></div>
+          <ScrollArea className="event-scroll"><ol>{events.map((event) => <li key={event.id}><time>{event.time}</time><i className={event.tone} /><div><strong>{event.title}</strong><span>{event.detail}</span></div><code>{event.id}</code></li>)}</ol></ScrollArea>
+        </section>
 
-          <Card className="ops-card control-panel">
-            <CardHeader className="ops-card-header compact"><div><span className="module-label">LOCAL · {t.simulated}</span><CardTitle>{t.commandActions}</CardTitle></div><Badge className="drill-badge">DRILL 0{state.step + 1}/06</Badge></CardHeader>
-            <CardContent className="control-content">
-              <div className="control-tabs" role="tablist" aria-label={t.controls}>
-                <button role="tab" aria-selected={controlMode === "core"} onClick={() => setControlMode("core")}>{t.core}</button>
-                <button role="tab" aria-selected={controlMode === "faults"} onClick={() => setControlMode("faults")}>{t.faults}</button>
+        <section className="dock-section control-panel">
+          <div className="section-heading compact"><div><span>LOCAL / {t.simulated}</span><h2>{t.commandActions}</h2></div><Badge variant="outline" className="drill-badge">DRILL 0{state.step + 1}/06</Badge></div>
+          <Tabs value={controlMode} onValueChange={(value) => setControlMode(value as ControlMode)} className="control-tabs">
+            <TabsList variant="line" aria-label={t.controls}><TabsTrigger value="core" onClick={() => setControlMode("core")}>{t.core}</TabsTrigger><TabsTrigger value="faults" onClick={() => setControlMode("faults")}>{t.faults}</TabsTrigger></TabsList>
+            <TabsContent value="core" className="tab-content">
+              <div className="environment-controls">
+                <EnvironmentControl label={t.rainfall} valueLabel={`${state.rainfallMmPerHour} mm/h`} value={state.rainfallMmPerHour} max={140} onChange={(value) => dispatch({ type: "RAINFALL", value })} />
+                <EnvironmentControl label={t.saturation} valueLabel={`${state.soilSaturationPercent}%`} value={state.soilSaturationPercent} max={100} onChange={(value) => dispatch({ type: "SATURATION", value })} />
               </div>
-              {controlMode === "core" ? <div className="tab-content">
-                  <div className="environment-controls">
-                    <EnvironmentControl label={t.rainfall} valueLabel={`${state.rainfallMmPerHour} mm/h`} value={state.rainfallMmPerHour} max={140} onChange={(value) => dispatch({ type: "RAINFALL", value })} />
-                    <EnvironmentControl label={t.saturation} valueLabel={`${state.soilSaturationPercent}%`} value={state.soilSaturationPercent} max={100} onChange={(value) => dispatch({ type: "SATURATION", value })} />
-                  </div>
-                  <div className="control-grid">
-                    <Control active={state.failedRoad} onClick={() => dispatch({ type: "FLOOD" })} label={t.road} code="M4" />
-                    <Control active={state.conflict} onClick={() => dispatch({ type: "CONFLICT" })} label={t.conflict} code="M2" />
-                    <Control active={state.droneBattery < 30} onClick={() => dispatch({ type: "BATTERY" })} label={t.battery} code="M3" />
-                    <Control active={state.custodyVerified} onClick={() => dispatch({ type: "VERIFY" })} label={t.verify} code="M5" />
-                  </div>
-                </div> : <div className="tab-content">
-                  <div className="control-grid fault-grid">
-                    <Control active={state.syncing} onClick={() => dispatch({ type: "SYNC" })} label={t.showSync} code="SYNC" />
-                    <Control active={state.nodeOffline} onClick={() => dispatch({ type: "NODE" })} label={t.nodeOffline} code="M3" />
-                    <Control active={state.vehicleDelayed} onClick={() => dispatch({ type: "DELAY" })} label={t.delayBoat} code="M8" />
-                    <Control active={state.duplicateRejected} onClick={() => dispatch({ type: "DUPLICATE" })} label={t.rejectDuplicate} code="M3" />
-                    <Control active={state.tamperRejected} onClick={() => dispatch({ type: "TAMPER" })} label={t.rejectTamper} code="M5" />
-                    <Control active={!state.observerConnected} onClick={() => dispatch({ type: "TOGGLE_OBSERVER" })} label={state.observerConnected ? t.disconnect : t.reconnect} code="SYS" />
-                  </div>
-                </div>}
-              <div className="primary-controls">
-                <Button className="advance" onClick={() => dispatch({ type: "STEP" })}><Play />{t.step}<span>0{state.step + 1} / 06</span></Button>
-                <Button className={`replay ${isReplaying ? "active" : ""}`} variant="outline" aria-pressed={isReplaying} onClick={() => setIsReplaying(!isReplaying)}>{isReplaying ? <Pause /> : <Activity />}{isReplaying ? t.pauseReplay : t.autoReplay}</Button>
-                <Button className="reset" variant="ghost" onClick={reset}><RotateCcw />{t.reset}</Button>
+              <div className="control-grid">
+                <Control active={state.failedRoad} onClick={() => dispatch({ type: "FLOOD" })} label={t.road} code="M4" />
+                <Control active={state.conflict} onClick={() => dispatch({ type: "CONFLICT" })} label={t.conflict} code="M2" />
+                <Control active={state.droneBattery < 30} onClick={() => dispatch({ type: "BATTERY" })} label={t.battery} code="M3" />
+                <Control active={state.custodyVerified} onClick={() => dispatch({ type: "VERIFY" })} label={t.verify} code="M5" />
               </div>
-            </CardContent>
-          </Card>
-        </div>
+            </TabsContent>
+            <TabsContent value="faults" className="tab-content">
+              <div className="control-grid fault-grid">
+                <Control active={state.syncing} onClick={() => dispatch({ type: "SYNC" })} label={t.showSync} code="SYNC" />
+                <Control active={state.nodeOffline} onClick={() => dispatch({ type: "NODE" })} label={t.nodeOffline} code="M3" />
+                <Control active={state.vehicleDelayed} onClick={() => dispatch({ type: "DELAY" })} label={t.delayBoat} code="M8" />
+                <Control active={state.duplicateRejected} onClick={() => dispatch({ type: "DUPLICATE" })} label={t.rejectDuplicate} code="M3" />
+                <Control active={state.tamperRejected} onClick={() => dispatch({ type: "TAMPER" })} label={t.rejectTamper} code="M5" />
+                <Control active={!state.observerConnected} onClick={() => dispatch({ type: "TOGGLE_OBSERVER" })} label={state.observerConnected ? t.disconnect : t.reconnect} code="SYS" />
+              </div>
+            </TabsContent>
+          </Tabs>
+          <div className="primary-controls">
+            <Button className="replay" variant="outline" aria-pressed={isReplaying} onClick={() => setIsReplaying(!isReplaying)}>{isReplaying ? <Pause data-icon="inline-start" /> : <Activity data-icon="inline-start" />}{isReplaying ? t.pauseReplay : t.autoReplay}</Button>
+            <Button className="reset" variant="ghost" onClick={reset}><RotateCcw data-icon="inline-start" />{t.reset}</Button>
+          </div>
+          <p className="exercise-notice">{compactCopy.exerciseNotice}</p>
+        </section>
       </section>
+
+      <footer className="system-footer"><span>{compactCopy.safe}</span><span>{compactCopy.lastUpdate}: 08:02 BST</span><code>LOCAL PROTOBUF / PMTILES / AES-256-GCM</code></footer>
       {!state.observerConnected && <div className="disconnect-banner" role="status"><strong>{t.observerLost}</strong><span>{t.fieldSafe}</span></div>}
     </main>
   );
@@ -530,7 +564,11 @@ function Metric({ label, value, suffix, tone }: { label: string; value: string; 
 }
 
 function Incident({ tone, code, title, detail }: { tone: "critical" | "warning" | "stable"; code: string; title: string; detail: string }) {
-  return <div className={`incident-row ${tone}`}><span>{code}</span><div><strong>{title}</strong><small>{detail}</small></div><i /></div>;
+  return <div className={`incident-row ${tone}`}><span>{code}</span><div><strong>{title}</strong><small>{detail}</small></div><i aria-hidden="true" /></div>;
+}
+
+function MissionStop({ index, label, alert = false }: { index: string; label: string; alert?: boolean }) {
+  return <li className={alert ? "is-alert" : ""}><span>{index}</span><strong>{label}</strong><ArrowRight aria-hidden="true" /></li>;
 }
 
 function OfflineMapModuleFallback({ language }: { language: Language }) {
@@ -538,7 +576,7 @@ function OfflineMapModuleFallback({ language }: { language: Language }) {
     ? { map: "সিলেটের অফলাইন ভৌগোলিক মানচিত্র", road: "সড়ক", water: "নৌপথ", air: "সিমুলেটেড আকাশপথ", loading: "মানচিত্র মডিউল প্রস্তুত হচ্ছে", local: "স্থানীয় PMTiles" }
     : { map: "Offline geographic map of Sylhet", road: "Road", water: "Waterway", air: "Simulated airway", loading: "Preparing map module", local: "LOCAL PMTILES" };
   return <div className="delta-map geographic-map" aria-label={labels.map}>
-    <div className="map-loading" aria-live="polite"><div className="delta-loader"><i /><i /><i /></div><strong>{labels.loading}</strong><span>{labels.local}</span></div>
+    <div className="map-loading" aria-live="polite"><div className="map-loader-line" /><strong>{labels.loading}</strong><span>{labels.local}</span></div>
     <div className="map-legend"><span><i className="road-key" />{labels.road}</span><span><i className="water-key" />{labels.water}</span><span><i className="air-key" />{labels.air}</span><code>{labels.local}</code></div>
   </div>;
 }
@@ -550,11 +588,11 @@ function Node({ id, role, battery, status, offline = false }: { id: string; role
 }
 
 function Inventory({ label, amount, level, critical = false }: { label: string; amount: string; level: number; critical?: boolean }) {
-  return <div className={`inventory-row ${critical ? "critical" : ""}`}><div><strong>{label}</strong><span>{amount}</span></div><Progress value={level} /></div>;
+  return <TableRow className={`inventory-row ${critical ? "critical" : ""}`}><TableCell><strong>{label}</strong></TableCell><TableCell><span>{amount}</span></TableCell><TableCell><Progress value={level} aria-label={`${label} ${level}%`} /></TableCell></TableRow>;
 }
 
 function Control({ active, onClick, label, code }: { active: boolean; onClick: () => void; label: string; code: string }) {
-  return <Button variant="outline" className={`control ${active ? "active" : ""}`} aria-pressed={active} onClick={onClick}><code>{code}</code><span>{label}</span><i /></Button>;
+  return <Button variant="outline" className={`control ${active ? "active" : ""}`} aria-pressed={active} onClick={onClick}><code>{code}</code><span>{label}</span><i aria-hidden="true" /></Button>;
 }
 
 function EnvironmentControl({ label, valueLabel, value, max, onChange }: { label: string; valueLabel: string; value: number; max: number; onChange: (value: number) => void }) {

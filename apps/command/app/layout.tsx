@@ -1,6 +1,6 @@
-import "@fontsource-variable/space-grotesk";
+import "@fontsource-variable/geist";
+import "@fontsource-variable/geist-mono";
 import "@fontsource-variable/noto-sans-bengali";
-import "@fontsource-variable/jetbrains-mono";
 import "maplibre-gl/dist/maplibre-gl.css";
 import "./globals.css";
 import { TooltipProvider } from "@/components/ui/tooltip";
