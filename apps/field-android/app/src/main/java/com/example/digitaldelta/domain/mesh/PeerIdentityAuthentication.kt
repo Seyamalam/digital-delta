@@ -22,6 +22,7 @@ import java.util.concurrent.ConcurrentHashMap
 import kotlinx.coroutines.flow.first
 
 interface PeerIdentityAuthenticator {
+    suspend fun isActive(nodeId: String): Boolean = true
     fun createChallenge(): PeerIdentityChallenge
     suspend fun createProof(challenge: PeerIdentityChallenge): PeerIdentityProof
     suspend fun verifyProof(
@@ -39,6 +40,11 @@ class AndroidPeerIdentityAuthenticator(
     private val nowUnixMs: () -> Long = System::currentTimeMillis,
     private val secureRandom: SecureRandom = SecureRandom(),
 ) : PeerIdentityAuthenticator {
+    override suspend fun isActive(nodeId: String): Boolean {
+        val record = recipientKeys.findByNodeId(nodeId) ?: return false
+        val now = nowUnixMs()
+        return record.revokedAtUnixMs == null && record.issuedAtUnixMs <= now && record.expiresAtUnixMs > now
+    }
     override fun createChallenge(): PeerIdentityChallenge =
         PeerIdentityAuthentication.newChallenge(
             challengerNodeId = localNodeId,
@@ -86,12 +92,15 @@ class AndroidPeerIdentityAuthenticator(
             nowUnixMs = now,
         )
         if (!verified) return false
+        val known = recipientKeys.findByNodeId(expectedPeerNodeId)
+        if (known?.revokedAtUnixMs != null) return false
+        if (known != null && known.signingKeyId != proof.credential.claims.signingKeyId) return false
         RecipientProvisioningRepository(recipientKeys).accept(
             credentialBytes = proof.credential.toByteArray(),
             trustedIssuerPublicKeyDer = trustedIssuer.publicKeyDer,
             nowUnixMs = now,
         )
-        return true
+        return recipientKeys.findByNodeId(expectedPeerNodeId)?.revokedAtUnixMs == null
     }
 }
 

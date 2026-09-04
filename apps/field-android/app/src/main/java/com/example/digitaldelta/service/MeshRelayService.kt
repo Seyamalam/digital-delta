@@ -193,6 +193,7 @@ class MeshRelayService : Service() {
                 localNodeId = profile.nodeId,
                 acknowledgementSigner = acknowledgementSigner,
                 localApplicationScheduler = { MeshMaintenance.scheduleNow(applicationContext) },
+                envelopeVerifier = com.example.digitaldelta.domain.mesh.AndroidEnvelopeSecurity(graph.deviceIdentityKeyStore(), graph.database().recipientKeyDao(), graph.trustAnchorRepository()),
             ),
             identityAuthenticator = AndroidPeerIdentityAuthenticator(
                 localNodeId = profile.nodeId,

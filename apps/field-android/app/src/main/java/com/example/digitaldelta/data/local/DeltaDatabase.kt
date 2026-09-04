@@ -19,6 +19,17 @@ enum class QueueState {
     DEAD_LETTER,
 }
 
+@Entity(tableName = "mesh_forward_receipts", primaryKeys = ["messageId", "peerId"])
+data class MeshForwardReceipt(val messageId: String, val peerId: String, val recordedAtUnixMs: Long)
+
+@Dao
+interface MeshForwardDao {
+    @Insert(onConflict = OnConflictStrategy.IGNORE)
+    suspend fun record(receipt: MeshForwardReceipt): Long
+    @Query("SELECT EXISTS(SELECT 1 FROM mesh_forward_receipts WHERE messageId = :messageId AND peerId = :peerId)")
+    suspend fun hasReceipt(messageId: String, peerId: String): Boolean
+}
+
 @Entity(
     tableName = "mesh_outbox",
     indices = [Index(value = ["state", "nextAttemptAtUnixMs", "priority"])],
@@ -178,6 +189,14 @@ interface OutboxDao {
         """,
     )
     suspend fun pending(nowUnixMs: Long, limit: Int): List<MeshEnvelopeEntity>
+
+    @Query("""
+        SELECT * FROM mesh_outbox
+        WHERE state = 'PENDING' AND expiresAtUnixMs > :nowUnixMs AND nextAttemptAtUnixMs <= :nowUnixMs
+          AND NOT EXISTS (SELECT 1 FROM mesh_forward_receipts WHERE mesh_forward_receipts.messageId = mesh_outbox.messageId AND peerId = :peerId)
+        ORDER BY priority ASC, nextAttemptAtUnixMs ASC, messageId ASC LIMIT :limit OFFSET :offset
+    """)
+    suspend fun pendingForPeer(peerId: String, nowUnixMs: Long, limit: Int, offset: Int): List<MeshEnvelopeEntity>
 
     @Query(
         "SELECT EXISTS(SELECT 1 FROM mesh_outbox " +
@@ -406,11 +425,13 @@ interface ConflictDao {
         CargoAssignmentEntity::class,
         ConflictEntity::class,
         InboxApplicationEntity::class,
+        MeshForwardReceipt::class,
     ],
-    version = 6,
+    version = 7,
     exportSchema = true,
 )
 abstract class DeltaDatabase : RoomDatabase() {
+    abstract fun meshForwardDao(): MeshForwardDao
     abstract fun outboxDao(): OutboxDao
     abstract fun nonceDao(): NonceDao
     abstract fun operationLogDao(): OperationLogDao
@@ -424,6 +445,13 @@ abstract class DeltaDatabase : RoomDatabase() {
 }
 
 object DeltaMigrations {
+    val VERSION_6_TO_7 = object : Migration(6, 7) {
+        override fun migrate(db: SupportSQLiteDatabase) {
+            db.execSQL("CREATE TABLE IF NOT EXISTS mesh_forward_receipts (messageId TEXT NOT NULL, peerId TEXT NOT NULL, recordedAtUnixMs INTEGER NOT NULL, PRIMARY KEY(messageId, peerId))")
+            // Previously unsupported domain messages can now be applied by the v7 reader.
+            db.execSQL("DELETE FROM inbox_applications WHERE state = 'DEFERRED'")
+        }
+    }
     val VERSION_1_TO_2 = object : Migration(1, 2) {
         override fun migrate(db: SupportSQLiteDatabase) {
             db.execSQL(

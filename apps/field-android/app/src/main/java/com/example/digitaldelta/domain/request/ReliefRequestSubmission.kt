@@ -28,6 +28,7 @@ data class ReliefRequestDraft(
     val priority: PriorityClass,
     val simulated: Boolean,
     val scenarioSeed: String,
+    val requesterIdentityId: String = requesterNodeId,
 )
 
 data class QueueReceipt(val requestId: String, val messageId: String)
@@ -54,6 +55,7 @@ class DefaultReliefRequestSubmission(
     private val payloadProtector: MeshPayloadProtector,
     private val nowUnixMs: () -> Long = System::currentTimeMillis,
     private val nextId: () -> String = { UUID.randomUUID().toString() },
+    private val envelopeSigner: com.example.digitaldelta.domain.mesh.EnvelopeSigner = com.example.digitaldelta.domain.mesh.EnvelopeSigner { it },
 ) : ReliefRequestSubmission {
     override suspend fun submit(draft: ReliefRequestDraft): QueueReceipt {
         require(draft.cargo.isNotEmpty()) { "at least one cargo item is required" }
@@ -84,7 +86,7 @@ class DefaultReliefRequestSubmission(
         val event = DomainEvent.newBuilder()
             .setEventId(eventId)
             .setSchemaVersion(1)
-            .setActorIdentityId(draft.requesterNodeId)
+            .setActorIdentityId(draft.requesterIdentityId)
             .setOccurredAtUnixMs(now)
             .setSimulated(draft.simulated)
             .setScenarioSeed(draft.scenarioSeed)
@@ -95,7 +97,7 @@ class DefaultReliefRequestSubmission(
         val associatedData = "$messageId|${draft.requesterNodeId}|${draft.destinationNodeId}|$now".encodeToByteArray()
         val protectedPayload = payloadProtector.protect(draft.destinationNodeId, eventBytes, associatedData)
         val expiresAt = now + ttlMillis(draft.priority)
-        val envelope = MeshWireCodec.createEnvelope(
+        val envelope = envelopeSigner.sign(MeshWireCodec.createEnvelope(
             messageId = messageId,
             senderNodeId = draft.requesterNodeId,
             recipientNodeId = draft.destinationNodeId,
@@ -107,7 +109,7 @@ class DefaultReliefRequestSubmission(
             simulated = draft.simulated,
             scenarioSeed = draft.scenarioSeed,
             protectedPayload = protectedPayload,
-        )
+        ))
 
         persistence.persist(
             operation = OperationEntity(

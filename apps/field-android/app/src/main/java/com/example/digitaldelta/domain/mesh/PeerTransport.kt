@@ -33,13 +33,25 @@ class MeshOutboxDispatcher(
             database.outboxDao().recoverInFlight(now)
             database.outboxDao().deadLetterExpired(now)
         }
-        val pending = database.outboxDao().pending(now, limit)
+        // Peer receipts must be filtered before LIMIT or already-forwarded rows
+        // permanently starve the rest of the queue. Skip origin-only pages too.
+        val pending = mutableListOf<MeshEnvelopeEntity>()
+        var offset = 0
+        while (pending.size < limit) {
+            val page = database.outboxDao().pendingForPeer(peerId, now, limit, offset)
+            if (page.isEmpty()) break
+            pending.addAll(page.filter { MeshWireCodec.decode(it.wireBytes).senderNodeId != peerId }.take(limit - pending.size))
+            offset += page.size
+            if (page.size < limit) break
+        }
         var attempted = 0
         var acknowledged = 0
         var retried = 0
         var deadLettered = expired
 
         for (item in pending) {
+            val envelope = MeshWireCodec.decode(item.wireBytes)
+            if (peerId == envelope.senderNodeId || database.meshForwardDao().hasReceipt(item.messageId, peerId)) continue
             if (database.outboxDao().markInFlight(item.messageId) == 0) continue
             attempted += 1
             val acknowledgement = runCatching { transport.send(peerId, item.wireBytes.copyOf()) }
@@ -60,7 +72,15 @@ class MeshOutboxDispatcher(
                     acknowledgement.status == AcknowledgementStatus.ACKNOWLEDGEMENT_STATUS_APPLIED ||
                     (acknowledgement.status == AcknowledgementStatus.ACKNOWLEDGEMENT_STATUS_REJECTED &&
                         acknowledgement.reasonCode == "DUPLICATE") -> {
-                    database.outboxDao().markAcknowledged(item.messageId, acknowledgement.recordedAtUnixMs)
+                    database.withTransaction {
+                        database.meshForwardDao().record(com.example.digitaldelta.data.local.MeshForwardReceipt(item.messageId, peerId, acknowledgement.recordedAtUnixMs))
+                        if (peerId == envelope.recipientNodeId) {
+                            database.outboxDao().markAcknowledged(item.messageId, acknowledgement.recordedAtUnixMs)
+                        } else {
+                            // An intermediate peer's receipt is not final destination acceptance.
+                            database.outboxDao().scheduleRetry(item.messageId, now)
+                        }
+                    }
                     acknowledged += 1
                 }
 

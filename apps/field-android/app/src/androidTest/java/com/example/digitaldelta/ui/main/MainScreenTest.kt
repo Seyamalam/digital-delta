@@ -478,7 +478,7 @@ class MainScreenTest {
             role = Role.REQUESTER,
             permissions = setOf(Permission.CREATE_REQUEST, Permission.INSPECT_AUDIT),
         )
-        composeTestRule.onNode(hasTestTag("simulate-conflict")).performClick()
+        composeTestRule.onNode(hasTestTag("simulate-conflict")).performScrollTo().assertIsDisplayed().performClick()
 
         composeTestRule.onNode(hasTestTag("role-restricted-resolve_conflict")).assertIsDisplayed()
         composeTestRule.onNodeWithText("এই স্বাক্ষরিত ভূমিকায় কাজটি করার অনুমতি নেই।").assertIsDisplayed()

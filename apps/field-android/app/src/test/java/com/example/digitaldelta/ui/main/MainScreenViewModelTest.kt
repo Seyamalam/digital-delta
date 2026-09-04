@@ -58,6 +58,7 @@ import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.test.StandardTestDispatcher
 import kotlinx.coroutines.test.advanceUntilIdle
+import kotlinx.coroutines.test.runCurrent
 import kotlinx.coroutines.test.resetMain
 import kotlinx.coroutines.test.runTest
 import kotlinx.coroutines.test.setMain
@@ -318,6 +319,7 @@ class MainScreenViewModelTest {
         )
         advanceUntilIdle()
         relay.startRelay { relayStarted = true }
+        advanceUntilIdle()
 
         assertEquals(false, clinicStarted)
         assertEquals(true, relayStarted)
@@ -392,6 +394,7 @@ class MainScreenViewModelTest {
 
         viewModel.toggleRouteFailure()
         viewModel.confirmPreemption()
+        runCurrent()
         assertEquals(true, viewModel.triageState.value is TriageWorkflowSnapshot.Confirming)
 
         viewModel.confirmPreemption()
@@ -450,6 +453,7 @@ class MainScreenViewModelTest {
         assertEquals(true, viewModel.proofOfDeliveryState.value is ProofOfDeliveryUiState.Ready)
 
         viewModel.verifyHandoff()
+        runCurrent()
         assertEquals(true, viewModel.proofOfDeliveryState.value is ProofOfDeliveryUiState.Verifying)
         viewModel.verifyHandoff()
         advanceUntilIdle()
@@ -507,12 +511,14 @@ class MainScreenViewModelTest {
         assertEquals(true, viewModel.hybridFleetState.value is HybridFleetState.BoatArrived)
 
         viewModel.advanceHybridFleet()
+        runCurrent()
         assertEquals(true, viewModel.hybridFleetState.value is HybridFleetState.PreparingDroneOffer)
         viewModel.advanceHybridFleet()
         advanceUntilIdle()
         assertEquals(true, viewModel.hybridFleetState.value is HybridFleetState.DroneArrived)
 
         viewModel.advanceHybridFleet()
+        runCurrent()
         assertEquals(true, viewModel.hybridFleetState.value is HybridFleetState.VerifyingTransfer)
         advanceUntilIdle()
         assertEquals(true, viewModel.hybridFleetState.value is HybridFleetState.Transferred)
@@ -577,6 +583,7 @@ private class CountingTriageWorkflow : TriageWorkflow {
         confirmerIdentityId: String,
     ): TriageWorkflowSnapshot.Confirmed {
         confirmCalls += 1
+        kotlinx.coroutines.delay(1) // Keep persistence pending so duplicate taps exercise the guard.
         return TriageWorkflowSnapshot.Confirmed(
             decision = proposal.decision,
             proposal = proposal.proposal,
@@ -614,6 +621,7 @@ private class FakeProofOfDeliveryWorkflow : ProofOfDeliveryWorkflow {
 
     override suspend fun verify(code: String): DeliveryReceiptResult {
         verifyCalls += 1
+        kotlinx.coroutines.delay(1) // Model an asynchronous durable receipt write.
         lastVerifiedCode = code
         return if (verifyCalls == 1) {
             DeliveryReceiptResult.Verified(receipt, listOf(receipt))

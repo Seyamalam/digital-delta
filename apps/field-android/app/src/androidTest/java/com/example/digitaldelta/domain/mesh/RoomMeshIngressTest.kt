@@ -34,12 +34,24 @@ class RoomMeshIngressTest {
     }
 
     @Test
+    fun defaultIngressRejectsUnsignedOriginWithoutWritingAnything() = runTest {
+        val now = 1_800_000_000_000
+        val ingress = RoomMeshIngress(database, localNodeId = "B", acknowledgementSigner = PASSTHROUGH_SIGNER, nowUnixMs = { now })
+        val result = ingress.receive(MeshWireCodec.encode(envelope("unsigned", now, expiresAt = now + 60_000, hopCount = 0, hopLimit = 3)))
+        assertEquals(AcknowledgementStatus.ACKNOWLEDGEMENT_STATUS_REJECTED, result.status)
+        assertEquals(0, database.meshInboxDao().count())
+        assertTrue(database.outboxDao().pending(now, 10).isEmpty())
+    }
+
+    @Test
     fun durableRelaySurvivesRestartAndRejectsDuplicate() = runTest {
         val now = 1_800_000_000_000
         val original = envelope("relay-survives", now, expiresAt = now + 60_000, hopCount = 0, hopLimit = 3)
         val ingress = RoomMeshIngress(
             database,
             localNodeId = "B",
+            // This fixture isolates persistence/inner revocation checks from envelope authentication.
+            envelopeVerifier = com.example.digitaldelta.domain.mesh.EnvelopeVerifier { _, _ -> true },
             acknowledgementSigner = PASSTHROUGH_SIGNER,
             nowUnixMs = { now },
         )
@@ -58,6 +70,8 @@ class RoomMeshIngressTest {
         val duplicate = RoomMeshIngress(
             database,
             localNodeId = "B",
+            // This fixture isolates persistence/inner revocation checks from envelope authentication.
+            envelopeVerifier = com.example.digitaldelta.domain.mesh.EnvelopeVerifier { _, _ -> true },
             acknowledgementSigner = PASSTHROUGH_SIGNER,
             nowUnixMs = { now + 1 },
         )
@@ -73,6 +87,8 @@ class RoomMeshIngressTest {
         val ingress = RoomMeshIngress(
             database,
             localNodeId = "B",
+            // This fixture isolates persistence/inner revocation checks from envelope authentication.
+            envelopeVerifier = com.example.digitaldelta.domain.mesh.EnvelopeVerifier { _, _ -> true },
             acknowledgementSigner = PASSTHROUGH_SIGNER,
             nowUnixMs = { now },
         )
@@ -97,6 +113,8 @@ class RoomMeshIngressTest {
         val ingress = RoomMeshIngress(
             database,
             localNodeId = "C",
+            // This fixture isolates persistence/inner revocation checks from envelope authentication.
+            envelopeVerifier = com.example.digitaldelta.domain.mesh.EnvelopeVerifier { _, _ -> true },
             acknowledgementSigner = PASSTHROUGH_SIGNER,
             nowUnixMs = { now },
             localApplicationScheduler = { scheduled++ },

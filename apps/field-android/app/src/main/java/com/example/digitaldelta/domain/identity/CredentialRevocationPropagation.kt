@@ -34,6 +34,7 @@ class RoomCredentialRevocationPropagator(
     private val database: DeltaDatabase,
     private val cipher: HybridPayloadCipher = HybridPayloadCipher(),
     private val nowUnixMs: () -> Long = System::currentTimeMillis,
+    private val envelopeSigner: com.example.digitaldelta.domain.mesh.EnvelopeSigner = com.example.digitaldelta.domain.mesh.EnvelopeSigner { it },
 ) : CredentialRevocationPropagator {
     override suspend fun propagate(
         revocationBytes: ByteArray,
@@ -66,7 +67,7 @@ class RoomCredentialRevocationPropagator(
                 plaintext = eventBytes,
                 associatedData = associatedData,
             )
-            val envelope = MeshWireCodec.createEnvelope(
+            val envelope = envelopeSigner.sign(MeshWireCodec.createEnvelope(
                 messageId = messageId,
                 senderNodeId = senderNodeId,
                 recipientNodeId = recipient.nodeId,
@@ -78,7 +79,7 @@ class RoomCredentialRevocationPropagator(
                 simulated = false,
                 scenarioSeed = "",
                 protectedPayload = protected,
-            )
+            ))
             MeshEnvelopeEntity(
                 messageId = messageId,
                 wireBytes = MeshWireCodec.encode(envelope),

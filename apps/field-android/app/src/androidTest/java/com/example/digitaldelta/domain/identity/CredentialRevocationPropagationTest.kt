@@ -110,6 +110,8 @@ class CredentialRevocationPropagationTest {
         RoomMeshIngress(
             destination,
             localNodeId = "N6",
+            // This fixture isolates persistence/inner revocation checks from envelope authentication.
+            envelopeVerifier = com.example.digitaldelta.domain.mesh.EnvelopeVerifier { _, _ -> true },
             acknowledgementSigner = MeshAcknowledgementSigner { it },
             nowUnixMs = { 600 },
         ).receive(outgoing.wireBytes)
@@ -138,6 +140,8 @@ class CredentialRevocationPropagationTest {
         RoomMeshIngress(
             destination,
             localNodeId = "N6",
+            // This fixture isolates persistence/inner revocation checks from envelope authentication.
+            envelopeVerifier = com.example.digitaldelta.domain.mesh.EnvelopeVerifier { _, _ -> true },
             acknowledgementSigner = MeshAcknowledgementSigner { it },
             nowUnixMs = { 800 },
         ).receive(MeshWireCodec.encode(tampered))

@@ -157,36 +157,40 @@ class MainScreenViewModel @Inject constructor(
     }
 
     fun queueRequest(medicine: Int, ors: Int, tarpaulin: Int, priorityCode: String) {
-        if (mutableRequestQueueState.value == RequestQueueUiState.Submitting) return
-        val localIdentity = authorize(Permission.CREATE_REQUEST) ?: return
         viewModelScope.launch {
-            mutableRequestQueueState.value = RequestQueueUiState.Submitting
-            runCatching {
-                requestSubmission.submit(
-                    ReliefRequestDraft(
-                        requesterNodeId = localIdentity.localIdentityId,
-                        originNodeId = localIdentity.localNodeId,
-                        destinationNodeId = "N6",
-                        cargo = listOf(
-                            CargoDraft("medicine", medicine, "pack"),
-                            CargoDraft("ors", ors, "sachet"),
-                            CargoDraft("tarpaulin", tarpaulin, "sheet"),
-                        ).filter { it.quantity > 0 },
-                        priority = priorityCode.toPriority(),
-                        simulated = false,
-                        scenarioSeed = "",
-                    ),
-                )
-            }.onSuccess { receipt ->
-                mutableRequestQueueState.value = RequestQueueUiState.Queued(receipt.requestId, receipt.messageId)
-            }.onFailure { error ->
-                mutableRequestQueueState.value = RequestQueueUiState.Failed(
-                    if (error is RecipientKeyUnavailableException) {
-                        RequestFailure.RECIPIENT_NOT_PROVISIONED
-                    } else {
-                        RequestFailure.STORAGE_OR_CRYPTO
-                    },
-                )
+            if (mutableRequestQueueState.value == RequestQueueUiState.Submitting) return@launch
+            val localIdentity = authorize(Permission.CREATE_REQUEST) ?: return@launch
+            if (mutableRequestQueueState.value == RequestQueueUiState.Submitting) return@launch
+            viewModelScope.launch {
+                mutableRequestQueueState.value = RequestQueueUiState.Submitting
+                runCatching {
+                    requestSubmission.submit(
+                        ReliefRequestDraft(
+                            requesterNodeId = localIdentity.localNodeId,
+                            requesterIdentityId = localIdentity.localIdentityId,
+                            originNodeId = localIdentity.localNodeId,
+                            destinationNodeId = "N6",
+                            cargo = listOf(
+                                CargoDraft("medicine", medicine, "pack"),
+                                CargoDraft("ors", ors, "sachet"),
+                                CargoDraft("tarpaulin", tarpaulin, "sheet"),
+                            ).filter { it.quantity > 0 },
+                            priority = priorityCode.toPriority(),
+                            simulated = false,
+                            scenarioSeed = "",
+                        ),
+                    )
+                }.onSuccess { receipt ->
+                    mutableRequestQueueState.value = RequestQueueUiState.Queued(receipt.requestId, receipt.messageId)
+                }.onFailure { error ->
+                    mutableRequestQueueState.value = RequestQueueUiState.Failed(
+                        if (error is RecipientKeyUnavailableException) {
+                            RequestFailure.RECIPIENT_NOT_PROVISIONED
+                        } else {
+                            RequestFailure.STORAGE_OR_CRYPTO
+                        },
+                    )
+                }
             }
         }
     }
@@ -258,15 +262,17 @@ class MainScreenViewModel @Inject constructor(
     }
 
     fun resolveConflict(conflictId: String, selectedSide: ConflictSide) {
-        val localIdentity = authorize(Permission.RESOLVE_CONFLICT) ?: return
         viewModelScope.launch {
-            runCatching {
-                conflictCoordinator.resolve(
-                    conflictId = conflictId,
-                    selectedSide = selectedSide,
-                    resolverIdentityId = localIdentity.localIdentityId,
-                )
-            }.onSuccess { mutableConflictState.value = it }
+            val localIdentity = authorize(Permission.RESOLVE_CONFLICT) ?: return@launch
+            viewModelScope.launch {
+                runCatching {
+                    conflictCoordinator.resolve(
+                        conflictId = conflictId,
+                        selectedSide = selectedSide,
+                        resolverIdentityId = localIdentity.localIdentityId,
+                    )
+                }.onSuccess { mutableConflictState.value = it }
+            }
         }
     }
 
@@ -329,42 +335,51 @@ class MainScreenViewModel @Inject constructor(
     }
 
     fun startRelay(onAuthorized: () -> Unit) {
-        if (authorize(Permission.RELAY_ENVELOPE) != null) onAuthorized()
+        viewModelScope.launch {
+            if (authorize(Permission.RELAY_ENVELOPE) != null) onAuthorized()
+        }
     }
 
     fun confirmPreemption() {
-        val proposal = mutableTriageState.value as? TriageWorkflowSnapshot.Proposed ?: return
-        val localIdentity = authorize(Permission.CONFIRM_PREEMPTION) ?: return
-        mutableTriageState.value = TriageWorkflowSnapshot.Confirming(
-            decision = proposal.decision,
-            proposal = proposal.proposal,
-        )
         viewModelScope.launch {
-            runCatching { triageWorkflow.confirm(proposal, localIdentity.localIdentityId) }
-                .onSuccess { mutableTriageState.value = it }
-                .onFailure { error ->
-                    mutableTriageState.value = if (error is StaleRouteEstimateException) {
-                        TriageWorkflowSnapshot.RouteRefreshRequired(error.staleDecision)
-                    } else {
-                        proposal
+            val proposal = mutableTriageState.value as? TriageWorkflowSnapshot.Proposed ?: return@launch
+            val localIdentity = authorize(Permission.CONFIRM_PREEMPTION) ?: return@launch
+            if (mutableTriageState.value != proposal) return@launch
+            mutableTriageState.value = TriageWorkflowSnapshot.Confirming(
+                decision = proposal.decision,
+                proposal = proposal.proposal,
+            )
+            viewModelScope.launch {
+                runCatching { triageWorkflow.confirm(proposal, localIdentity.localIdentityId) }
+                    .onSuccess { mutableTriageState.value = it }
+                    .onFailure { error ->
+                        mutableTriageState.value = if (error is StaleRouteEstimateException) {
+                            TriageWorkflowSnapshot.RouteRefreshRequired(error.staleDecision)
+                        } else {
+                            proposal
+                        }
                     }
-                }
+            }
         }
     }
 
     fun verifyHandoff(tamperForDemo: Boolean = false) {
-        if (authorize(Permission.ACCEPT_CUSTODY) == null) return
-        val offer = mutableProofOfDeliveryState.value.offerOrNull() ?: return
-        if (mutableProofOfDeliveryState.value is ProofOfDeliveryUiState.Verifying) return
-        val code = if (tamperForDemo) proofOfDeliveryWorkflow.tamperForDemo(offer.qrCode) else offer.qrCode
-        verifyOfferCode(offer, code)
+        viewModelScope.launch {
+            if (authorize(Permission.ACCEPT_CUSTODY) == null) return@launch
+            val offer = mutableProofOfDeliveryState.value.offerOrNull() ?: return@launch
+            if (mutableProofOfDeliveryState.value is ProofOfDeliveryUiState.Verifying) return@launch
+            val code = if (tamperForDemo) proofOfDeliveryWorkflow.tamperForDemo(offer.qrCode) else offer.qrCode
+            verifyOfferCode(offer, code)
+        }
     }
 
     fun verifyScannedHandoff(code: String) {
-        if (authorize(Permission.ACCEPT_CUSTODY) == null) return
-        val offer = mutableProofOfDeliveryState.value.offerOrNull() ?: return
-        if (mutableProofOfDeliveryState.value is ProofOfDeliveryUiState.Verifying) return
-        verifyOfferCode(offer, code)
+        viewModelScope.launch {
+            if (authorize(Permission.ACCEPT_CUSTODY) == null) return@launch
+            val offer = mutableProofOfDeliveryState.value.offerOrNull() ?: return@launch
+            if (mutableProofOfDeliveryState.value is ProofOfDeliveryUiState.Verifying) return@launch
+            verifyOfferCode(offer, code)
+        }
     }
 
     private fun verifyOfferCode(offer: DeliveryOfferReady, code: String) {
@@ -390,44 +405,50 @@ class MainScreenViewModel @Inject constructor(
     }
 
     fun prepareNextHandoff() {
-        if (authorize(Permission.OFFER_CUSTODY) == null) return
-        if (mutableProofOfDeliveryState.value is ProofOfDeliveryUiState.Verifying) return
-        mutableProofOfDeliveryState.value = ProofOfDeliveryUiState.Loading
-        viewModelScope.launch { prepareHandoffInternal() }
+        viewModelScope.launch {
+            if (authorize(Permission.OFFER_CUSTODY) == null) return@launch
+            if (mutableProofOfDeliveryState.value is ProofOfDeliveryUiState.Verifying) return@launch
+            mutableProofOfDeliveryState.value = ProofOfDeliveryUiState.Loading
+            viewModelScope.launch { prepareHandoffInternal() }
+        }
     }
 
     fun advanceHybridFleet() {
-        if (authorize(Permission.OFFER_CUSTODY) == null) return
-        val current = mutableHybridFleetState.value
-        if (current is HybridFleetState.PreparingDroneOffer || current is HybridFleetState.VerifyingTransfer) return
-        val intermediate = when (current) {
-            is HybridFleetState.BoatArrived -> HybridFleetState.PreparingDroneOffer(current.plan)
-            is HybridFleetState.DroneArrived -> HybridFleetState.VerifyingTransfer(current.plan, current.offer)
-            else -> null
-        }
-        if (intermediate != null) mutableHybridFleetState.value = intermediate
         viewModelScope.launch {
-            if (intermediate != null) delay(650)
-            runCatching { hybridFleetWorkflow.advance() }
-                .onSuccess { mutableHybridFleetState.value = it }
-                .onFailure { mutableHybridFleetState.value = current }
+            if (authorize(Permission.OFFER_CUSTODY) == null) return@launch
+            val current = mutableHybridFleetState.value
+            if (current is HybridFleetState.PreparingDroneOffer || current is HybridFleetState.VerifyingTransfer) return@launch
+            val intermediate = when (current) {
+                is HybridFleetState.BoatArrived -> HybridFleetState.PreparingDroneOffer(current.plan)
+                is HybridFleetState.DroneArrived -> HybridFleetState.VerifyingTransfer(current.plan, current.offer)
+                else -> null
+            }
+            if (intermediate != null) mutableHybridFleetState.value = intermediate
+            viewModelScope.launch {
+                if (intermediate != null) delay(650)
+                runCatching { hybridFleetWorkflow.advance() }
+                    .onSuccess { mutableHybridFleetState.value = it }
+                    .onFailure { mutableHybridFleetState.value = current }
+            }
         }
     }
 
     fun reportBoatDelay() {
-        if (authorize(Permission.OFFER_CUSTODY) == null) return
-        val current = mutableHybridFleetState.value
-        if (current !is HybridFleetState.Ready && current !is HybridFleetState.Replanned) return
         viewModelScope.launch {
-            runCatching {
-                hybridFleetWorkflow.reportBoatDelay(
-                    BoatDelayReport(
-                        delayMinutes = 18,
-                        observedPosition = GeoPoint(25.0400, 91.8000),
-                        simulated = true,
-                    ),
-                )
-            }.onSuccess { mutableHybridFleetState.value = it }
+            if (authorize(Permission.OFFER_CUSTODY) == null) return@launch
+            val current = mutableHybridFleetState.value
+            if (current !is HybridFleetState.Ready && current !is HybridFleetState.Replanned) return@launch
+            viewModelScope.launch {
+                runCatching {
+                    hybridFleetWorkflow.reportBoatDelay(
+                        BoatDelayReport(
+                            delayMinutes = 18,
+                            observedPosition = GeoPoint(25.0400, 91.8000),
+                            simulated = true,
+                        ),
+                    )
+                }.onSuccess { mutableHybridFleetState.value = it }
+            }
         }
     }
 
@@ -450,7 +471,8 @@ class MainScreenViewModel @Inject constructor(
         refreshAuthorization(loaded.readySnapshot())
     }
 
-    private fun authorize(permission: Permission): IdentityUiState.Ready? {
+    private suspend fun authorize(permission: Permission): IdentityUiState.Ready? {
+        loadIdentity()
         val ready = mutableIdentityState.value.readySnapshot()
         val credential = ready?.localCredential
         if (ready == null || credential == null) {

@@ -17,6 +17,7 @@ class RoomMeshIngress(
     private val acknowledgementSigner: MeshAcknowledgementSigner,
     private val nowUnixMs: () -> Long = System::currentTimeMillis,
     private val localApplicationScheduler: suspend () -> Unit = {},
+    private val envelopeVerifier: EnvelopeVerifier = EnvelopeVerifier { _, _ -> false },
 ) {
     init {
         require(localNodeId.isNotBlank()) { "local node id is required" }
@@ -35,6 +36,7 @@ class RoomMeshIngress(
         rejectionReason(envelope, recordedAt)?.let { reason ->
             return rejected(envelope.messageId, reason, recordedAt)
         }
+        if (!envelopeVerifier.verify(envelope, recordedAt)) return rejected(envelope.messageId, "INVALID_ORIGIN_SIGNATURE", recordedAt)
 
         val acknowledgement = database.withTransaction {
             val claimed = database.seenMessageDao().claim(

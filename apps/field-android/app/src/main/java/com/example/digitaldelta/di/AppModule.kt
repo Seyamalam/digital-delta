@@ -78,6 +78,7 @@ object AppModule {
                 DeltaMigrations.VERSION_3_TO_4,
                 DeltaMigrations.VERSION_4_TO_5,
                 DeltaMigrations.VERSION_5_TO_6,
+                DeltaMigrations.VERSION_6_TO_7,
             )
             .build()
 
@@ -105,8 +106,8 @@ object AppModule {
 
     @Provides
     @Singleton
-    fun provideCredentialRevocationPropagator(database: DeltaDatabase): CredentialRevocationPropagator =
-        RoomCredentialRevocationPropagator(database)
+    fun provideCredentialRevocationPropagator(database: DeltaDatabase, deviceKeys: AndroidDeviceIdentityKeyStore, trustAnchors: TrustAnchorRepository): CredentialRevocationPropagator =
+        RoomCredentialRevocationPropagator(database, envelopeSigner = com.example.digitaldelta.domain.mesh.AndroidEnvelopeSecurity(deviceKeys, database.recipientKeyDao(), trustAnchors))
 
     @Provides
     @Singleton
@@ -186,9 +187,12 @@ object AppModule {
     fun provideRequestSubmission(
         database: DeltaDatabase,
         payloadProtector: MeshPayloadProtector,
+        deviceKeys: AndroidDeviceIdentityKeyStore,
+        trustAnchors: TrustAnchorRepository,
     ): ReliefRequestSubmission = DefaultReliefRequestSubmission(
         persistence = RoomRequestPersistence(database),
         payloadProtector = payloadProtector,
+        envelopeSigner = com.example.digitaldelta.domain.mesh.AndroidEnvelopeSecurity(deviceKeys, database.recipientKeyDao(), trustAnchors),
     )
 
     @Provides

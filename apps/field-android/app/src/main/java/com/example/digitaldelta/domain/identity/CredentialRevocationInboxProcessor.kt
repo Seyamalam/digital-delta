@@ -55,7 +55,10 @@ class CredentialRevocationInboxProcessor(
                 }
                 val event = DomainEvent.parseFrom(plaintext)
                 decodedEventId = event.eventId.takeIf(String::isNotBlank)
-                if (!event.hasCredentialRevoked()) return@runCatching ApplicationResult.DEFERRED_UNSUPPORTED
+                if (!event.hasCredentialRevoked()) {
+                    require(com.example.digitaldelta.domain.mesh.AndroidEnvelopeSecurity(deviceKeys, database.recipientKeyDao(), trustAnchors).verify(envelope, nowUnixMs())) { "Origin signature rejected" }
+                    return@runCatching if (com.example.digitaldelta.domain.sync.ReceivedEventApplication(database).apply(event, envelope, localNodeId)) ApplicationResult.APPLIED else ApplicationResult.DEFERRED_UNSUPPORTED
+                }
                 val signed = event.credentialRevoked
                 require(event.eventId == signed.claims.revocationId)
                 require(event.actorIdentityId == signed.claims.issuerIdentityId)

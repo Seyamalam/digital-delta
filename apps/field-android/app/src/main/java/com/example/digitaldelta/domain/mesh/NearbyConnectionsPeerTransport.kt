@@ -307,9 +307,9 @@ class NearbyConnectionsPeerTransport(
         publishPeers()
     }
 
-    private fun isAuthenticated(endpointId: String): Boolean {
+    private suspend fun isAuthenticated(endpointId: String): Boolean {
         val nodeId = endpointNodeIds[endpointId] ?: return false
-        return connectedEndpoints[nodeId] == endpointId
+        return connectedEndpoints[nodeId] == endpointId && identityAuthenticator.isActive(nodeId) && identityAuthenticator.isActive(localNodeId)
     }
 
     private fun rejectAuthentication(endpointId: String, reason: String) {

@@ -28,6 +28,10 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
+import androidx.compose.foundation.layout.imePadding
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
@@ -35,6 +39,7 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardActions
@@ -329,7 +334,7 @@ private fun OfflineUnlockScreen(
 
     Surface(color = MaterialTheme.colorScheme.background) {
         Column(
-            modifier = Modifier.fillMaxSize().statusBarsPadding().navigationBarsPadding().padding(28.dp),
+            modifier = Modifier.fillMaxSize().statusBarsPadding().navigationBarsPadding().imePadding().verticalScroll(rememberScrollState()).padding(28.dp),
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.Center,
         ) {
@@ -401,7 +406,7 @@ private fun OfflineUnlockScreen(
                 Button(
                     onClick = { if (setup) onConfigurePin?.invoke(pin) else onUnlock?.invoke(pin) },
                     enabled = validPin && (!setup || pin == confirmation),
-                    modifier = Modifier.fillMaxWidth().height(52.dp)
+                    modifier = Modifier.fillMaxWidth().heightIn(min = 52.dp)
                         .testTag(if (setup) "configure-pin" else "unlock-pin"),
                 ) {
                     Text(text(if (setup) R.string.save_pin else R.string.unlock, language))
@@ -421,6 +426,7 @@ private fun LanguageChoiceScreen(onLanguageChange: ((Boolean) -> Unit)?) {
                 .fillMaxSize()
                 .statusBarsPadding()
                 .navigationBarsPadding()
+                .verticalScroll(rememberScrollState())
                 .padding(horizontal = 28.dp),
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.Center,
@@ -458,14 +464,14 @@ private fun LanguageChoiceScreen(onLanguageChange: ((Boolean) -> Unit)?) {
             Spacer(Modifier.height(28.dp))
             Button(
                 onClick = { onLanguageChange?.invoke(true) },
-                modifier = Modifier.fillMaxWidth().height(56.dp).testTag("language-bangla"),
+                modifier = Modifier.fillMaxWidth().heightIn(min = 56.dp).testTag("language-bangla"),
             ) {
                 Text(text(R.string.language_bangla, AppLanguage.BANGLA))
             }
             Spacer(Modifier.height(10.dp))
             OutlinedButton(
                 onClick = { onLanguageChange?.invoke(false) },
-                modifier = Modifier.fillMaxWidth().height(56.dp).testTag("language-english"),
+                modifier = Modifier.fillMaxWidth().heightIn(min = 56.dp).testTag("language-english"),
             ) {
                 Text(text(R.string.language_english, AppLanguage.ENGLISH))
             }
@@ -617,9 +623,9 @@ private fun DeltaShell(
                         label = {
                             Text(
                                 text(item.label, language),
-                                maxLines = 1,
+                                maxLines = 2,
                                 overflow = TextOverflow.Ellipsis,
-                                fontSize = 11.sp,
+                                style = MaterialTheme.typography.labelSmall,
                             )
                         },
                         colors = NavigationBarItemDefaults.colors(
@@ -709,7 +715,7 @@ private fun ConnectivityBar(
             modifier = Modifier
                 .fillMaxWidth()
                 .statusBarsPadding()
-                .height(54.dp)
+                .heightIn(min = 64.dp)
                 .padding(start = 14.dp, end = 6.dp),
             verticalAlignment = Alignment.CenterVertically,
         ) {
@@ -724,7 +730,7 @@ private fun ConnectivityBar(
                 Text(
                     authorizationRoleLabel(authorizationState.role, language),
                     color = Color.White.copy(alpha = .78f),
-                    fontSize = 11.sp,
+                    style = MaterialTheme.typography.labelSmall,
                 )
             }
             TextButton(onClick = onLanguageChange) {
@@ -827,7 +833,7 @@ private fun IdentityScreen(
                     OutlinedButton(
                         onClick = { onSelectDeviceProfile?.invoke(profile.code) },
                         enabled = !selected && state !is IdentityUiState.Working,
-                        modifier = Modifier.fillMaxWidth().height(48.dp).testTag("profile-${profile.code}"),
+                        modifier = Modifier.fillMaxWidth().heightIn(min = 48.dp).testTag("profile-${profile.code}"),
                     ) {
                         Icon(if (selected) Icons.Default.CheckCircle else Icons.Default.Hub, null)
                         Spacer(Modifier.width(8.dp))
@@ -900,7 +906,7 @@ private fun IdentityScreen(
                     Spacer(Modifier.height(8.dp))
                     OutlinedButton(
                         onClick = { scanPurpose = QrScanPurpose.ADMIN_TRUST },
-                        modifier = Modifier.fillMaxWidth().height(50.dp).testTag("scan-admin-trust"),
+                        modifier = Modifier.fillMaxWidth().heightIn(min = 50.dp).testTag("scan-admin-trust"),
                     ) {
                         Icon(Icons.Default.QrCodeScanner, null)
                         Spacer(Modifier.width(8.dp))
@@ -910,7 +916,7 @@ private fun IdentityScreen(
                     Button(
                         onClick = { onPinAdministrator?.invoke(trustCode) },
                         enabled = trustCode.isNotBlank() && state !is IdentityUiState.Working,
-                        modifier = Modifier.fillMaxWidth().height(52.dp).testTag("pin-admin"),
+                        modifier = Modifier.fillMaxWidth().heightIn(min = 52.dp).testTag("pin-admin"),
                     ) {
                         Icon(Icons.Default.Shield, null)
                         Spacer(Modifier.width(8.dp))
@@ -944,7 +950,7 @@ private fun IdentityScreen(
                 Spacer(Modifier.height(8.dp))
                 OutlinedButton(
                     onClick = { scanPurpose = QrScanPurpose.RECIPIENT_CREDENTIAL },
-                    modifier = Modifier.fillMaxWidth().height(50.dp).testTag("scan-recipient-credential"),
+                    modifier = Modifier.fillMaxWidth().heightIn(min = 50.dp).testTag("scan-recipient-credential"),
                 ) {
                     Icon(Icons.Default.QrCodeScanner, null)
                     Spacer(Modifier.width(8.dp))
@@ -954,7 +960,7 @@ private fun IdentityScreen(
                 Button(
                     onClick = { onImportRecipientCredential?.invoke(credentialCode) },
                     enabled = ready.trustedIssuerFingerprint != null && credentialCode.isNotBlank() && state !is IdentityUiState.Working,
-                    modifier = Modifier.fillMaxWidth().height(52.dp).testTag("import-credential"),
+                    modifier = Modifier.fillMaxWidth().heightIn(min = 52.dp).testTag("import-credential"),
                 ) {
                     Icon(Icons.Default.AdminPanelSettings, null)
                     Spacer(Modifier.width(8.dp))
@@ -1000,7 +1006,7 @@ private fun IdentityScreen(
                 Spacer(Modifier.height(8.dp))
                 OutlinedButton(
                     onClick = { scanPurpose = QrScanPurpose.CREDENTIAL_REVOCATION },
-                    modifier = Modifier.fillMaxWidth().height(50.dp).testTag("scan-credential-revocation"),
+                    modifier = Modifier.fillMaxWidth().heightIn(min = 50.dp).testTag("scan-credential-revocation"),
                 ) {
                     Icon(Icons.Default.QrCodeScanner, null)
                     Spacer(Modifier.width(8.dp))
@@ -1010,7 +1016,7 @@ private fun IdentityScreen(
                 Button(
                     onClick = { onImportCredentialRevocation?.invoke(revocationCode) },
                     enabled = ready.trustedIssuerFingerprint != null && revocationCode.isNotBlank() && state !is IdentityUiState.Working,
-                    modifier = Modifier.fillMaxWidth().height(52.dp).testTag("import-credential-revocation"),
+                    modifier = Modifier.fillMaxWidth().heightIn(min = 52.dp).testTag("import-credential-revocation"),
                 ) {
                     Icon(Icons.Default.Warning, null)
                     Spacer(Modifier.width(8.dp))
@@ -1233,11 +1239,16 @@ private fun OperationsScreen(
 ) {
     var missionExpanded by rememberSaveable { mutableStateOf(false) }
     val conflictFocused = conflictState !is MissionConflictSnapshot.Idle
+    val listState = rememberLazyListState()
+    LaunchedEffect(conflictFocused) {
+        if (conflictFocused) listState.scrollToItem(0)
+    }
     LazyColumn(
+        state = listState,
         modifier = Modifier.fillMaxSize().background(MaterialTheme.colorScheme.surface),
         contentPadding = PaddingValues(bottom = 18.dp),
     ) {
-        item {
+        if (!conflictFocused) item {
             val mapHeight = when {
                 conflictFocused -> 240.dp
                 missionExpanded -> 330.dp
@@ -1246,15 +1257,6 @@ private fun OperationsScreen(
             Box(Modifier.fillMaxWidth().height(mapHeight)) {
                 FloodMap(routeProgress = 1f, showFailure = false, showRisk = false)
                 SimulationPill(language, Modifier.align(Alignment.TopStart).padding(14.dp))
-                FilledTonalIconButton(
-                    onClick = {},
-                    modifier = Modifier.align(Alignment.BottomEnd).padding(14.dp),
-                ) {
-                    Icon(
-                        Icons.Default.MyLocation,
-                        contentDescription = text(R.string.recenter_map, language),
-                    )
-                }
             }
         }
         if (!conflictFocused) {
@@ -1346,7 +1348,7 @@ private fun ConflictDemoCard(
                 when (current) {
                     MissionConflictSnapshot.Idle -> Button(
                         onClick = { onSimulate?.invoke() },
-                        modifier = Modifier.fillMaxWidth().height(50.dp).testTag("simulate-conflict"),
+                        modifier = Modifier.fillMaxWidth().heightIn(min = 50.dp).testTag("simulate-conflict"),
                     ) {
                         Icon(Icons.Default.Warning, null)
                         Spacer(Modifier.width(8.dp))
@@ -1488,7 +1490,7 @@ private fun MissionSheet(language: AppLanguage, expanded: Boolean, onExpand: () 
                     }
                 }
             }
-            Button(onClick = onExpand, modifier = Modifier.fillMaxWidth().height(52.dp)) {
+            Button(onClick = onExpand, modifier = Modifier.fillMaxWidth().heightIn(min = 52.dp)) {
                 Icon(Icons.Default.Map, null)
                 Spacer(Modifier.width(8.dp))
                 Text(text(R.string.view_mission, language))
@@ -1572,7 +1574,7 @@ private fun RequestScreen(
                         contentColor = if (selected) Color.White else MaterialTheme.colorScheme.onSurface,
                         shape = RoundedCornerShape(12.dp),
                         border = if (selected) null else CardDefaults.outlinedCardBorder(),
-                        modifier = Modifier.weight(1f).height(48.dp),
+                        modifier = Modifier.weight(1f).heightIn(min = 48.dp),
                     ) {
                         Box(contentAlignment = Alignment.Center) { Text(value, fontWeight = FontWeight.Bold) }
                     }
@@ -1607,7 +1609,7 @@ private fun RequestScreen(
                 },
                 enabled = requestQueueState != RequestQueueUiState.Submitting &&
                     authorizationState.allows(Permission.CREATE_REQUEST),
-                modifier = Modifier.fillMaxWidth().height(54.dp).testTag("send-request"),
+                modifier = Modifier.fillMaxWidth().heightIn(min = 54.dp).testTag("send-request"),
             ) {
                 Icon(Icons.AutoMirrored.Filled.Send, null)
                 Spacer(Modifier.width(8.dp))
@@ -1767,7 +1769,7 @@ private fun RouteAndMeshScreen(
                     }
                     Button(
                         onClick = { onToggleRouteFailure?.invoke() },
-                        modifier = Modifier.fillMaxWidth().height(52.dp).testTag("toggle-route-failure"),
+                        modifier = Modifier.fillMaxWidth().heightIn(min = 52.dp).testTag("toggle-route-failure"),
                     ) {
                         Icon(if (flooded) Icons.Default.Replay else Icons.Default.Warning, null)
                         Spacer(Modifier.width(8.dp))
@@ -2100,7 +2102,7 @@ private fun RouteRiskCard(
             Button(
                 onClick = { onToggle?.invoke() },
                 enabled = !evaluating,
-                modifier = Modifier.fillMaxWidth().height(50.dp).testTag("toggle-route-risk"),
+                modifier = Modifier.fillMaxWidth().heightIn(min = 50.dp).testTag("toggle-route-risk"),
             ) {
                 Icon(if (active != null) Icons.Default.Replay else Icons.Default.WaterDrop, null)
                 Spacer(Modifier.width(8.dp))
@@ -2285,7 +2287,7 @@ private fun MeshRelayCard(
             Button(
                 onClick = { if (nearby.running) onStop?.invoke() else onStart?.invoke() },
                 enabled = nearby.running || canRelay,
-                modifier = Modifier.fillMaxWidth().height(48.dp).testTag("mesh-relay-toggle"),
+                modifier = Modifier.fillMaxWidth().heightIn(min = 48.dp).testTag("mesh-relay-toggle"),
             ) {
                 Icon(if (nearby.running) Icons.Default.WifiOff else Icons.Default.Hub, null)
                 Spacer(Modifier.width(8.dp))
@@ -2538,7 +2540,7 @@ private fun HybridFleetCard(
                 OutlinedButton(
                     onClick = { onDelay?.invoke() },
                     enabled = onDelay != null && canOperate,
-                    modifier = Modifier.fillMaxWidth().height(48.dp).testTag("hybrid-fleet-delay"),
+                    modifier = Modifier.fillMaxWidth().heightIn(min = 48.dp).testTag("hybrid-fleet-delay"),
                 ) {
                     Icon(Icons.Default.AccessTime, null)
                     Spacer(Modifier.width(8.dp))
@@ -2551,7 +2553,7 @@ private fun HybridFleetCard(
                     else onAdvance?.invoke()
                 },
                 enabled = !loading && canOperate,
-                modifier = Modifier.fillMaxWidth().height(52.dp).testTag("hybrid-fleet-action"),
+                modifier = Modifier.fillMaxWidth().heightIn(min = 52.dp).testTag("hybrid-fleet-action"),
             ) {
                 Icon(if (state is HybridFleetState.Transferred) Icons.Default.Replay else Icons.Default.Handshake, null)
                 Spacer(Modifier.width(8.dp))
@@ -2776,7 +2778,7 @@ private fun HandoffScreen(
                         OutlinedButton(
                             onClick = { scannerOpen = true },
                             enabled = onScan != null && authorizationState.allows(Permission.ACCEPT_CUSTODY),
-                            modifier = Modifier.fillMaxWidth().height(50.dp).testTag("scan-handoff"),
+                            modifier = Modifier.fillMaxWidth().heightIn(min = 50.dp).testTag("scan-handoff"),
                         ) {
                             Icon(Icons.Default.QrCodeScanner, null)
                             Spacer(Modifier.width(8.dp))
@@ -2785,7 +2787,7 @@ private fun HandoffScreen(
                         Button(
                             onClick = { onVerify?.invoke(false) },
                             enabled = authorizationState.allows(Permission.ACCEPT_CUSTODY),
-                            modifier = Modifier.fillMaxWidth().height(52.dp).testTag("verify-handoff"),
+                            modifier = Modifier.fillMaxWidth().heightIn(min = 52.dp).testTag("verify-handoff"),
                         ) {
                             Icon(
                                 if (state is ProofOfDeliveryUiState.Verified) Icons.Default.Replay
@@ -2804,7 +2806,7 @@ private fun HandoffScreen(
                         OutlinedButton(
                             onClick = { onVerify?.invoke(true) },
                             enabled = authorizationState.allows(Permission.ACCEPT_CUSTODY),
-                            modifier = Modifier.fillMaxWidth().height(50.dp).testTag("tamper-handoff"),
+                            modifier = Modifier.fillMaxWidth().heightIn(min = 50.dp).testTag("tamper-handoff"),
                         ) {
                             Icon(Icons.Default.Warning, null)
                             Spacer(Modifier.width(8.dp))

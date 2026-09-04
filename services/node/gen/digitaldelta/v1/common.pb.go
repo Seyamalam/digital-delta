@@ -495,24 +495,25 @@ func (x *EncryptedPayload) GetContentAlgorithm() string {
 }
 
 type Envelope struct {
-	state                protoimpl.MessageState `protogen:"open.v1"`
-	MessageId            string                 `protobuf:"bytes,1,opt,name=message_id,json=messageId,proto3" json:"message_id,omitempty"`
-	SchemaVersion        uint32                 `protobuf:"varint,2,opt,name=schema_version,json=schemaVersion,proto3" json:"schema_version,omitempty"`
-	MinimumReaderVersion uint32                 `protobuf:"varint,3,opt,name=minimum_reader_version,json=minimumReaderVersion,proto3" json:"minimum_reader_version,omitempty"`
-	SenderNodeId         string                 `protobuf:"bytes,4,opt,name=sender_node_id,json=senderNodeId,proto3" json:"sender_node_id,omitempty"`
-	RecipientNodeId      string                 `protobuf:"bytes,5,opt,name=recipient_node_id,json=recipientNodeId,proto3" json:"recipient_node_id,omitempty"`
-	VectorClock          *VectorClock           `protobuf:"bytes,6,opt,name=vector_clock,json=vectorClock,proto3" json:"vector_clock,omitempty"`
-	CreatedAtUnixMs      int64                  `protobuf:"varint,7,opt,name=created_at_unix_ms,json=createdAtUnixMs,proto3" json:"created_at_unix_ms,omitempty"`
-	ExpiresAtUnixMs      int64                  `protobuf:"varint,8,opt,name=expires_at_unix_ms,json=expiresAtUnixMs,proto3" json:"expires_at_unix_ms,omitempty"`
-	HopCount             uint32                 `protobuf:"varint,9,opt,name=hop_count,json=hopCount,proto3" json:"hop_count,omitempty"`
-	HopLimit             uint32                 `protobuf:"varint,10,opt,name=hop_limit,json=hopLimit,proto3" json:"hop_limit,omitempty"`
-	Priority             PriorityClass          `protobuf:"varint,11,opt,name=priority,proto3,enum=digitaldelta.v1.PriorityClass" json:"priority,omitempty"`
-	EncryptedPayload     *EncryptedPayload      `protobuf:"bytes,12,opt,name=encrypted_payload,json=encryptedPayload,proto3" json:"encrypted_payload,omitempty"`
-	PayloadSha256        []byte                 `protobuf:"bytes,13,opt,name=payload_sha256,json=payloadSha256,proto3" json:"payload_sha256,omitempty"`
-	SenderSignature      *Signature             `protobuf:"bytes,14,opt,name=sender_signature,json=senderSignature,proto3" json:"sender_signature,omitempty"`
-	Simulated            bool                   `protobuf:"varint,15,opt,name=simulated,proto3" json:"simulated,omitempty"`
-	ScenarioSeed         string                 `protobuf:"bytes,16,opt,name=scenario_seed,json=scenarioSeed,proto3" json:"scenario_seed,omitempty"`
-	CorrelationId        string                 `protobuf:"bytes,17,opt,name=correlation_id,json=correlationId,proto3" json:"correlation_id,omitempty"`
+	state                protoimpl.MessageState          `protogen:"open.v1"`
+	MessageId            string                          `protobuf:"bytes,1,opt,name=message_id,json=messageId,proto3" json:"message_id,omitempty"`
+	SchemaVersion        uint32                          `protobuf:"varint,2,opt,name=schema_version,json=schemaVersion,proto3" json:"schema_version,omitempty"`
+	MinimumReaderVersion uint32                          `protobuf:"varint,3,opt,name=minimum_reader_version,json=minimumReaderVersion,proto3" json:"minimum_reader_version,omitempty"`
+	SenderNodeId         string                          `protobuf:"bytes,4,opt,name=sender_node_id,json=senderNodeId,proto3" json:"sender_node_id,omitempty"`
+	RecipientNodeId      string                          `protobuf:"bytes,5,opt,name=recipient_node_id,json=recipientNodeId,proto3" json:"recipient_node_id,omitempty"`
+	VectorClock          *VectorClock                    `protobuf:"bytes,6,opt,name=vector_clock,json=vectorClock,proto3" json:"vector_clock,omitempty"`
+	CreatedAtUnixMs      int64                           `protobuf:"varint,7,opt,name=created_at_unix_ms,json=createdAtUnixMs,proto3" json:"created_at_unix_ms,omitempty"`
+	ExpiresAtUnixMs      int64                           `protobuf:"varint,8,opt,name=expires_at_unix_ms,json=expiresAtUnixMs,proto3" json:"expires_at_unix_ms,omitempty"`
+	HopCount             uint32                          `protobuf:"varint,9,opt,name=hop_count,json=hopCount,proto3" json:"hop_count,omitempty"`
+	HopLimit             uint32                          `protobuf:"varint,10,opt,name=hop_limit,json=hopLimit,proto3" json:"hop_limit,omitempty"`
+	Priority             PriorityClass                   `protobuf:"varint,11,opt,name=priority,proto3,enum=digitaldelta.v1.PriorityClass" json:"priority,omitempty"`
+	EncryptedPayload     *EncryptedPayload               `protobuf:"bytes,12,opt,name=encrypted_payload,json=encryptedPayload,proto3" json:"encrypted_payload,omitempty"`
+	PayloadSha256        []byte                          `protobuf:"bytes,13,opt,name=payload_sha256,json=payloadSha256,proto3" json:"payload_sha256,omitempty"`
+	SenderSignature      *Signature                      `protobuf:"bytes,14,opt,name=sender_signature,json=senderSignature,proto3" json:"sender_signature,omitempty"`
+	Simulated            bool                            `protobuf:"varint,15,opt,name=simulated,proto3" json:"simulated,omitempty"`
+	ScenarioSeed         string                          `protobuf:"bytes,16,opt,name=scenario_seed,json=scenarioSeed,proto3" json:"scenario_seed,omitempty"`
+	CorrelationId        string                          `protobuf:"bytes,17,opt,name=correlation_id,json=correlationId,proto3" json:"correlation_id,omitempty"`
+	SenderCredential     *IdentityProvisioningCredential `protobuf:"bytes,18,opt,name=sender_credential,json=senderCredential,proto3" json:"sender_credential,omitempty"`
 	unknownFields        protoimpl.UnknownFields
 	sizeCache            protoimpl.SizeCache
 }
@@ -664,6 +665,13 @@ func (x *Envelope) GetCorrelationId() string {
 		return x.CorrelationId
 	}
 	return ""
+}
+
+func (x *Envelope) GetSenderCredential() *IdentityProvisioningCredential {
+	if x != nil {
+		return x.SenderCredential
+	}
+	return nil
 }
 
 type Acknowledgement struct {
@@ -1491,7 +1499,7 @@ const file_digitaldelta_v1_common_proto_rawDesc = "" +
 	"\x16associated_data_sha256\x18\x04 \x01(\fR\x14associatedDataSha256\x12-\n" +
 	"\x13wrapped_aes_256_key\x18\x05 \x01(\fR\x10wrappedAes256Key\x12,\n" +
 	"\x12key_wrap_algorithm\x18\x06 \x01(\tR\x10keyWrapAlgorithm\x12+\n" +
-	"\x11content_algorithm\x18\a \x01(\tR\x10contentAlgorithm\"\x91\x06\n" +
+	"\x11content_algorithm\x18\a \x01(\tR\x10contentAlgorithm\"\xef\x06\n" +
 	"\bEnvelope\x12\x1d\n" +
 	"\n" +
 	"message_id\x18\x01 \x01(\tR\tmessageId\x12%\n" +
@@ -1511,7 +1519,8 @@ const file_digitaldelta_v1_common_proto_rawDesc = "" +
 	"\x10sender_signature\x18\x0e \x01(\v2\x1a.digitaldelta.v1.SignatureR\x0fsenderSignature\x12\x1c\n" +
 	"\tsimulated\x18\x0f \x01(\bR\tsimulated\x12#\n" +
 	"\rscenario_seed\x18\x10 \x01(\tR\fscenarioSeed\x12%\n" +
-	"\x0ecorrelation_id\x18\x11 \x01(\tR\rcorrelationId\"\x9c\x02\n" +
+	"\x0ecorrelation_id\x18\x11 \x01(\tR\rcorrelationId\x12\\\n" +
+	"\x11sender_credential\x18\x12 \x01(\v2/.digitaldelta.v1.IdentityProvisioningCredentialR\x10senderCredential\"\x9c\x02\n" +
 	"\x0fAcknowledgement\x12\x1d\n" +
 	"\n" +
 	"message_id\x18\x01 \x01(\tR\tmessageId\x12\x17\n" +
@@ -1651,26 +1660,27 @@ var file_digitaldelta_v1_common_proto_depIdxs = []int32{
 	0,  // 2: digitaldelta.v1.Envelope.priority:type_name -> digitaldelta.v1.PriorityClass
 	7,  // 3: digitaldelta.v1.Envelope.encrypted_payload:type_name -> digitaldelta.v1.EncryptedPayload
 	6,  // 4: digitaldelta.v1.Envelope.sender_signature:type_name -> digitaldelta.v1.Signature
-	2,  // 5: digitaldelta.v1.Acknowledgement.status:type_name -> digitaldelta.v1.AcknowledgementStatus
-	6,  // 6: digitaldelta.v1.Acknowledgement.node_signature:type_name -> digitaldelta.v1.Signature
-	8,  // 7: digitaldelta.v1.PeerFrame.envelope:type_name -> digitaldelta.v1.Envelope
-	9,  // 8: digitaldelta.v1.PeerFrame.acknowledgement:type_name -> digitaldelta.v1.Acknowledgement
-	11, // 9: digitaldelta.v1.PeerFrame.identity_challenge:type_name -> digitaldelta.v1.PeerIdentityChallenge
-	12, // 10: digitaldelta.v1.PeerFrame.identity_proof:type_name -> digitaldelta.v1.PeerIdentityProof
-	11, // 11: digitaldelta.v1.PeerIdentityProof.challenge:type_name -> digitaldelta.v1.PeerIdentityChallenge
-	14, // 12: digitaldelta.v1.PeerIdentityProof.credential:type_name -> digitaldelta.v1.IdentityProvisioningCredential
-	6,  // 13: digitaldelta.v1.PeerIdentityProof.node_signature:type_name -> digitaldelta.v1.Signature
-	3,  // 14: digitaldelta.v1.IdentityProvisioningClaims.role:type_name -> digitaldelta.v1.IdentityRole
-	13, // 15: digitaldelta.v1.IdentityProvisioningCredential.claims:type_name -> digitaldelta.v1.IdentityProvisioningClaims
-	6,  // 16: digitaldelta.v1.IdentityProvisioningCredential.issuer_signature:type_name -> digitaldelta.v1.Signature
-	15, // 17: digitaldelta.v1.SignedCredentialRevocation.claims:type_name -> digitaldelta.v1.CredentialRevocationClaims
-	6,  // 18: digitaldelta.v1.SignedCredentialRevocation.issuer_signature:type_name -> digitaldelta.v1.Signature
-	3,  // 19: digitaldelta.v1.IdentityEnrollmentRequest.role:type_name -> digitaldelta.v1.IdentityRole
-	20, // [20:20] is the sub-list for method output_type
-	20, // [20:20] is the sub-list for method input_type
-	20, // [20:20] is the sub-list for extension type_name
-	20, // [20:20] is the sub-list for extension extendee
-	0,  // [0:20] is the sub-list for field type_name
+	14, // 5: digitaldelta.v1.Envelope.sender_credential:type_name -> digitaldelta.v1.IdentityProvisioningCredential
+	2,  // 6: digitaldelta.v1.Acknowledgement.status:type_name -> digitaldelta.v1.AcknowledgementStatus
+	6,  // 7: digitaldelta.v1.Acknowledgement.node_signature:type_name -> digitaldelta.v1.Signature
+	8,  // 8: digitaldelta.v1.PeerFrame.envelope:type_name -> digitaldelta.v1.Envelope
+	9,  // 9: digitaldelta.v1.PeerFrame.acknowledgement:type_name -> digitaldelta.v1.Acknowledgement
+	11, // 10: digitaldelta.v1.PeerFrame.identity_challenge:type_name -> digitaldelta.v1.PeerIdentityChallenge
+	12, // 11: digitaldelta.v1.PeerFrame.identity_proof:type_name -> digitaldelta.v1.PeerIdentityProof
+	11, // 12: digitaldelta.v1.PeerIdentityProof.challenge:type_name -> digitaldelta.v1.PeerIdentityChallenge
+	14, // 13: digitaldelta.v1.PeerIdentityProof.credential:type_name -> digitaldelta.v1.IdentityProvisioningCredential
+	6,  // 14: digitaldelta.v1.PeerIdentityProof.node_signature:type_name -> digitaldelta.v1.Signature
+	3,  // 15: digitaldelta.v1.IdentityProvisioningClaims.role:type_name -> digitaldelta.v1.IdentityRole
+	13, // 16: digitaldelta.v1.IdentityProvisioningCredential.claims:type_name -> digitaldelta.v1.IdentityProvisioningClaims
+	6,  // 17: digitaldelta.v1.IdentityProvisioningCredential.issuer_signature:type_name -> digitaldelta.v1.Signature
+	15, // 18: digitaldelta.v1.SignedCredentialRevocation.claims:type_name -> digitaldelta.v1.CredentialRevocationClaims
+	6,  // 19: digitaldelta.v1.SignedCredentialRevocation.issuer_signature:type_name -> digitaldelta.v1.Signature
+	3,  // 20: digitaldelta.v1.IdentityEnrollmentRequest.role:type_name -> digitaldelta.v1.IdentityRole
+	21, // [21:21] is the sub-list for method output_type
+	21, // [21:21] is the sub-list for method input_type
+	21, // [21:21] is the sub-list for extension type_name
+	21, // [21:21] is the sub-list for extension extendee
+	0,  // [0:21] is the sub-list for field type_name
 }
 
 func init() { file_digitaldelta_v1_common_proto_init() }

@@ -66,6 +66,7 @@ message Envelope {
   bool simulated = 15;
   string scenario_seed = 16;
   string correlation_id = 17;
+  IdentityProvisioningCredential sender_credential = 18;
 }
 
 enum AcknowledgementStatus {

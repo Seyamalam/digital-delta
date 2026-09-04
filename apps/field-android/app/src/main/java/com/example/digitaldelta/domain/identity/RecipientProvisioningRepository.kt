@@ -67,7 +67,7 @@ class RecipientProvisioningRepository(
             keyId = claims.encryptionKeyId,
             publicKeyDer = claims.rsa2048EncryptionPublicKeyDer.toByteArray(),
             validUntilUnixMs = claims.expiresAtUnixMs,
-            revokedAtUnixMs = null,
+            revokedAtUnixMs = existingRevokedAt,
         )
     }
 
