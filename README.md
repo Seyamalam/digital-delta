@@ -101,6 +101,7 @@ research/                 Source-backed problem and fair research
 - [Proof-of-delivery runbook](docs/PROOF_OF_DELIVERY.md)
 - [Local observer bridge runbook](docs/OBSERVER.md)
 - [Innovation fair research](research/innovation-fair-fit.md)
+- [Five-minute pitch deck manuscript](docs/PITCH_DECK.md)
 
 ## Definition of done
 

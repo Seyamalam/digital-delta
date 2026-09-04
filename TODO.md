@@ -204,5 +204,5 @@ This checklist tracks implementation. Milestone exit criteria live in [MILESTONE
 - [ ] Capture every required item in `SCREENSHOTS.md`. The live observer dashboard overview is now stored in both languages at 1366x768 and 1920x1080; remaining field, fault-state, and physical-device evidence stays listed there.
 - [ ] Rehearse the ten-minute script twenty times.
 - [ ] Record three unchanged successful final passes.
-- [ ] Create the architecture diagram, model card, deck, and backup video.
+- [ ] Create the architecture diagram, model card, deck, and backup video. The Mermaid architecture diagram, model card, and complete ten-slide pitch manuscript now exist; editable PPTX export and backup video remain.
 - [ ] Audit every claim for evidence or a visible simulation label.
