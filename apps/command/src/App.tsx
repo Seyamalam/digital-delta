@@ -1,3 +1,5 @@
+"use client";
+
 import { lazy, Suspense, useEffect, useMemo, useReducer, useState } from "react";
 import { connectObserver, type ObserverConnectOptions, type ObserverStatus, type PresentationObservation } from "./observer";
 import { projectObservations } from "./projection";
@@ -225,7 +227,7 @@ type AppProps = {
   observerUrl?: string;
 };
 
-export function App({ observerConnect: injectedObserverConnect, observerUrl = import.meta.env.VITE_OBSERVER_URL ?? "http://127.0.0.1:7071/observer/events" }: AppProps = {}) {
+export function App({ observerConnect: injectedObserverConnect, observerUrl = process.env.NEXT_PUBLIC_OBSERVER_URL ?? "http://127.0.0.1:7071/observer/events" }: AppProps = {}) {
   const [language, setLanguage] = useState<Language>("bn");
   const [controlMode, setControlMode] = useState<ControlMode>("core");
   const [isReplaying, setIsReplaying] = useState(false);

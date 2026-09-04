@@ -6,6 +6,7 @@
 **/.idea/
 **/node_modules/
 **/dist/
+**/.next/
 **/*.tsbuildinfo
 **/.venv/
 **/__pycache__/
