@@ -126,6 +126,71 @@ func toPresentationEvent(response *deltav1.ObserveResponse) presentationEvent {
 			"riskAdjusted":    route.GetRiskAdjusted(),
 			"explanationCode": route.GetExplanationCode(),
 		}
+	} else if request := event.GetReliefRequestCreated(); request != nil {
+		presentation.Kind = "reliefRequestCreated"
+		presentation.Presentation = map[string]any{
+			"requestId":         request.GetRequestId(),
+			"requesterNodeId":   request.GetRequesterNodeId(),
+			"originNodeId":      request.GetOriginNodeId(),
+			"destinationNodeId": request.GetDestinationNodeId(),
+			"cargoCount":        len(request.GetCargo()),
+		}
+	} else if risk := event.GetEdgeRiskPredicted(); risk != nil {
+		presentation.Kind = "edgeRiskPredicted"
+		presentation.Presentation = map[string]any{
+			"edgeId":          risk.GetEdgeId(),
+			"probability":     risk.GetProbability(),
+			"threshold":       risk.GetThreshold(),
+			"modelVersion":    risk.GetModelVersion(),
+			"simulatedInputs": risk.GetSimulatedInputs(),
+		}
+	} else if edge := event.GetEdgeStatusChanged(); edge != nil {
+		presentation.Kind = "edgeStatusChanged"
+		presentation.Presentation = map[string]any{
+			"edgeId":     edge.GetEdgeId(),
+			"failed":     edge.GetFailed(),
+			"reasonCode": edge.GetReasonCode(),
+			"simulated":  edge.GetSimulated(),
+		}
+	} else if sla := event.GetSlaBreachPredicted(); sla != nil {
+		presentation.Kind = "slaBreachPredicted"
+		presentation.Presentation = map[string]any{
+			"missionId":          sla.GetMissionId(),
+			"priority":           sla.GetPriority().String(),
+			"baselineEtaMinutes": sla.GetBaselineEtaMinutes(),
+			"slowedEtaMinutes":   sla.GetSlowedEtaMinutes(),
+			"slaMinutes":         sla.GetSlaMinutes(),
+			"policyVersion":      sla.GetPolicyVersion(),
+		}
+	} else if rendezvous := event.GetRendezvousPlanned(); rendezvous != nil {
+		presentation.Kind = "rendezvousPlanned"
+		presentation.Presentation = map[string]any{
+			"missionId":                    rendezvous.GetMissionId(),
+			"boatVehicleId":                rendezvous.GetBoatVehicleId(),
+			"droneVehicleId":               rendezvous.GetDroneVehicleId(),
+			"candidateId":                  rendezvous.GetCandidateId(),
+			"latitudeDegrees":              rendezvous.GetLatitudeDegrees(),
+			"longitudeDegrees":             rendezvous.GetLongitudeDegrees(),
+			"boatEtaMinutes":               rendezvous.GetBoatEtaMinutes(),
+			"droneEtaMinutes":              rendezvous.GetDroneEtaMinutes(),
+			"deliveryEtaMinutes":           rendezvous.GetDeliveryEtaMinutes(),
+			"projectedDroneBatteryPercent": rendezvous.GetProjectedDroneBatteryPercent(),
+			"reserveBatteryPercent":        rendezvous.GetReserveBatteryPercent(),
+			"objectiveCode":                rendezvous.GetObjectiveCode(),
+			"simulated":                    rendezvous.GetSimulated(),
+		}
+	} else if vehicle := event.GetVehicleStateChanged(); vehicle != nil {
+		presentation.Kind = "vehicleStateChanged"
+		presentation.Presentation = map[string]any{
+			"vehicleId":        vehicle.GetVehicleId(),
+			"mode":             vehicle.GetMode().String(),
+			"stateCode":        vehicle.GetStateCode(),
+			"nodeId":           vehicle.GetNodeId(),
+			"latitudeDegrees":  vehicle.GetLatitudeDegrees(),
+			"longitudeDegrees": vehicle.GetLongitudeDegrees(),
+			"batteryPercent":   vehicle.GetBatteryPercent(),
+			"simulated":        vehicle.GetSimulated(),
+		}
 	}
 	return presentation
 }

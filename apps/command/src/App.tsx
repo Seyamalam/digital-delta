@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useReducer, useState } from "react";
 import { connectObserver, type ObserverConnectOptions, type ObserverStatus, type PresentationObservation } from "./observer";
+import { projectObservations } from "./projection";
 
 type Language = "bn" | "en";
 type ControlMode = "core" | "faults";
@@ -206,12 +207,17 @@ export function App({ observerConnect: injectedObserverConnect, observerUrl = im
   const [observations, setObservations] = useState<PresentationObservation[]>([]);
   const [state, dispatch] = useReducer(scenarioReducer, initialScenario);
   const t = copy[language];
-  const liveRoute = useMemo(() => [...observations].reverse().find((event) => event.kind === "routePlanned"), [observations]);
-  const liveRoutePresentation = liveRoute?.presentation;
-  const liveEdgeIds = stringArray(liveRoutePresentation?.edgeIds);
-  const liveRouteIsWaterway = liveRoutePresentation?.mode === "TRANSPORT_MODE_WATERWAY";
-  const displayState = liveRoute ? { ...state, failedRoad: liveRouteIsWaterway } : state;
-  const liveEta = typeof liveRoutePresentation?.etaMinutes === "number" ? liveRoutePresentation.etaMinutes : null;
+  const projection = useMemo(() => projectObservations(observations), [observations]);
+  const liveRoute = projection.route;
+  const liveEdgeIds = liveRoute?.edgeIds ?? [];
+  const liveRouteIsWaterway = liveRoute?.mode === "TRANSPORT_MODE_WATERWAY";
+  const displayState = {
+    ...state,
+    failedRoad: state.failedRoad || projection.failedEdges.size > 0 || liveRouteIsWaterway,
+    predictedRisk: state.predictedRisk || projection.edgeRisks.size > 0,
+    vehicleDelayed: state.vehicleDelayed || projection.delayedVehicleIds.size > 0,
+  };
+  const liveEta = liveRoute?.etaMinutes ?? null;
   const events = useMemo(() => buildEvents(state, language, observations), [state, language, observations]);
   const observerConnector = injectedObserverConnect ?? (typeof EventSource === "undefined" ? null : connectObserver);
 
@@ -264,6 +270,10 @@ export function App({ observerConnect: injectedObserverConnect, observerUrl = im
   const routeLabel = liveRoute
     ? `${liveRouteIsWaterway ? (language === "bn" ? "নৌযান" : "Boat") : (language === "bn" ? "ট্রাক" : "Truck")} • ${liveEdgeIds.join(" → ")}`
     : state.failedRoad ? t.routeValue : t.truckRoute;
+  const rendezvousLabel = projection.rendezvous?.candidateId ?? "R3";
+  const rendezvousCoordinates = projection.rendezvous?.latitudeDegrees !== undefined && projection.rendezvous.longitudeDegrees !== undefined
+    ? `${projection.rendezvous.latitudeDegrees.toFixed(4)}, ${projection.rendezvous.longitudeDegrees.toFixed(4)}`
+    : "25.0200, 91.7000";
 
   return (
     <main className="command-shell" data-language={language}>
@@ -286,7 +296,7 @@ export function App({ observerConnect: injectedObserverConnect, observerUrl = im
       <section className="mission-strip" aria-label={t.mission}>
         <div className="priority">P0</div>
         <div className="mission-title"><span>{t.simulated}</span><strong>{t.mission}</strong></div>
-        <div className="mission-metric"><small>{t.eta}</small><strong>{liveEta ?? ((state.failedRoad ? 45 : 65) + (state.vehicleDelayed ? 18 : 0))}<em> min</em></strong></div>
+        <div className="mission-metric"><small>{t.eta}</small><strong>{liveEta ?? ((displayState.failedRoad ? 45 : 65) + (displayState.vehicleDelayed ? 18 : 0))}<em> min</em></strong></div>
         <div className="mission-alert"><small>{t.droneRequired}</small><strong>{displayState.failedRoad ? t.warning : t.fieldSafe}</strong></div>
       </section>
 
@@ -296,7 +306,7 @@ export function App({ observerConnect: injectedObserverConnect, observerUrl = im
           <DeltaMap state={displayState} language={language} />
           <div className="route-caption">
             <div><span>{t.route}</span><strong>{routeLabel}</strong></div>
-            <div className="route-proof"><span>R3 RENDEZVOUS</span><strong>25.0200, 91.7000</strong></div>
+            <div className="route-proof"><span>{rendezvousLabel} RENDEZVOUS</span><strong>{rendezvousCoordinates}</strong></div>
           </div>
         </section>
 
@@ -325,7 +335,7 @@ export function App({ observerConnect: injectedObserverConnect, observerUrl = im
         </section>
 
         <section className="panel event-panel" aria-live="polite">
-          <PanelHeading eyebrow="PROTOBUF LEDGER" title={t.events} meta={`SEED 20260412 • ${events.length}`} />
+          <PanelHeading eyebrow="PROTOBUF LEDGER" title={t.events} meta={projection.latestSequence > 0 ? `LIVE SEQ ${projection.latestSequence} • ${events.length}` : `SEED 20260412 • ${events.length}`} />
           <ol>{events.map((event) => <li key={event.id}><time>{event.time}</time><i className={event.tone} /><div><strong>{event.title}</strong><span>{event.detail}</span></div><code>{event.id}</code></li>)}</ol>
         </section>
 
@@ -426,7 +436,16 @@ function buildEvents(state: ScenarioState, language: Language, observations: Pre
   if (state.duplicateRejected) events.push({ id: "DEDUP…44A1", time: "08:02:01", tone: "green", title: en ? "Duplicate envelope rejected" : "ডুপ্লিকেট এনভেলপ প্রত্যাখ্যাত", detail: "MESSAGE ID ALREADY CLAIMED" });
   if (state.tamperRejected) events.push({ id: "POD…BAD5", time: "08:02:06", tone: "green", title: en ? "Signature mismatch rejected" : "স্বাক্ষর অমিল প্রত্যাখ্যাত", detail: "CUSTODY CHAIN UNCHANGED" });
   for (const observation of observations) {
-    const live = observation.kind === "routePlanned";
+    const eventTitles: Record<string, [string, string]> = {
+      reliefRequestCreated: ["Relief request received", "ত্রাণ অনুরোধ গ্রহণ করা হয়েছে"],
+      edgeRiskPredicted: ["Route risk prediction received", "পথের ঝুঁকি পূর্বাভাস গ্রহণ করা হয়েছে"],
+      edgeStatusChanged: ["Edge status changed", "পথের অবস্থা পরিবর্তিত"],
+      routePlanned: ["Live route received", "লাইভ পথ গ্রহণ করা হয়েছে"],
+      slaBreachPredicted: ["SLA warning received", "SLA সতর্কতা গ্রহণ করা হয়েছে"],
+      rendezvousPlanned: ["Rendezvous plan received", "মিলনস্থল পরিকল্পনা গ্রহণ করা হয়েছে"],
+      vehicleStateChanged: ["Vehicle state changed", "যানের অবস্থা পরিবর্তিত"],
+    };
+    const titles = eventTitles[observation.kind] ?? ["Live field event received", "লাইভ মাঠ ইভেন্ট গ্রহণ করা হয়েছে"];
     const eventTime = new Date(observation.occurredAtUnixMs).toLocaleTimeString(en ? "en-GB" : "bn-BD", {
       hour: "2-digit",
       minute: "2-digit",
@@ -437,14 +456,10 @@ function buildEvents(state: ScenarioState, language: Language, observations: Pre
     events.push({
       id: observation.eventId,
       time: eventTime,
-      tone: observation.simulated ? "amber" : live ? "blue" : "teal",
-      title: live ? (en ? "Live route received" : "লাইভ পথ গ্রহণ করা হয়েছে") : (en ? "Live field event received" : "লাইভ মাঠ ইভেন্ট গ্রহণ করা হয়েছে"),
+      tone: observation.simulated ? "amber" : observation.kind === "routePlanned" ? "blue" : "teal",
+      title: en ? titles[0] : titles[1],
       detail: `${observation.sourceNodeId} • SEQ ${observation.sequence} • ${observation.simulated ? "SIMULATED EVENT" : "LIVE EVENT"}`,
     });
   }
   return events;
-}
-
-function stringArray(value: unknown): string[] {
-  return Array.isArray(value) ? value.filter((item): item is string => typeof item === "string") : [];
 }

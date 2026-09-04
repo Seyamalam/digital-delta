@@ -148,7 +148,9 @@ Payload encryption is hybrid: each message receives a random AES-256-GCM content
 
 ### Dashboard observation
 
-The dashboard may use gRPC-Web, Connect, WebSocket, or server-sent events on the local demonstration network. JSON is acceptable for a presentation-only observer if documented. It must never be confused with the mesh payload format.
+Field nodes publish `DomainEvent` messages to the Go `ObserverService` over local gRPC when the laptop is reachable. The Go service assigns a durable ordered sequence and supports cursor replay. A server-sent event bridge converts each stored event into a strict allow-listed JSON presentation object for the browser. It never serializes mesh envelopes, encrypted payloads, wrapped content keys, or signature bytes. JSON exists only across this laptop-local presentation boundary and must never be confused with the Protobuf mesh format.
+
+The React dashboard is a disposable projection and starts from the deterministic seed if the observer is unavailable. When events are available it rebuilds hazard, route, rendezvous, vehicle, and ledger state in sequence order. Closing either the SSE connection or the entire laptop cannot block Room operations, routing, triage, queueing, or custody workflows on a field phone. Observer publication remains on the controlled local network until signed peer authentication is completed.
 
 ## Local storage
 

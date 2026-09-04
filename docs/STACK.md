@@ -63,7 +63,7 @@ The nearby path carries framed Protocol Buffer envelopes. It is not called gRPC.
 | Package manager | pnpm |
 | Map | Bundled SVG topology for the deterministic fair scenario; optional offline MapLibre region later |
 | Styling | CSS variables and an accessible Digital Delta component system |
-| Local connection | gRPC-Web, Connect, or WebSocket gateway, final choice pending a spike |
+| Local connection | Protobuf gRPC publication/replay into Go; allow-listed SSE projection into the browser |
 | Projector targets | 1366 by 768 and 1920 by 1080 |
 
 The dashboard is an observer. It can disappear without stopping the phones.
