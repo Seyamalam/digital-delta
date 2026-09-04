@@ -1,5 +1,10 @@
 <resources>
     <string name="app_name">ডিজিটাল ডেল্টা</string>
+    <string name="choose_language_bangla_title">ভাষা নির্বাচন করুন</string>
+    <string name="choose_language_english_title">Choose your field language</string>
+    <string name="choose_language_offline_note">দুটি ভাষাই ফোনে সংরক্ষিত এবং অফলাইনে কাজ করে</string>
+    <string name="language_bangla">বাংলা</string>
+    <string name="language_english">English</string>
     <string name="loading_title">অফলাইন পথ প্রস্তুত হচ্ছে</string>
     <string name="loading_subtitle">পরিচয় সুরক্ষা • মিশন পুনর্গঠন • মেশ পরীক্ষা</string>
     <string name="offline">অফলাইন</string>

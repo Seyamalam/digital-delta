@@ -43,7 +43,7 @@ This checklist tracks implementation. Milestone exit criteria live in [MILESTONE
 
 - [x] Bundle Bangla and English strings into the app.
 - [x] Add `values/strings.xml`, `values-bn/strings.xml`, and generated locale configuration.
-- [ ] Add a first-run language chooser with `বাংলা` first and `English` second.
+- [x] Add a first-run language chooser with `বাংলা` first and `English` second.
 - [x] Persist the selected language in Proto DataStore.
 - [x] Bundle Noto Sans Bengali with its offline SIL Open Font License and verify the font hash locally.
 - [x] Create the glossary in `packages/localization/glossary.csv`.

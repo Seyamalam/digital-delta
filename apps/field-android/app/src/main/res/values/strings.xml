@@ -1,5 +1,10 @@
 <resources>
     <string name="app_name">Digital Delta</string>
+    <string name="choose_language_bangla_title">ভাষা নির্বাচন করুন</string>
+    <string name="choose_language_english_title">Choose your field language</string>
+    <string name="choose_language_offline_note">দুটি ভাষাই ফোনে সংরক্ষিত এবং অফলাইনে কাজ করে</string>
+    <string name="language_bangla">বাংলা</string>
+    <string name="language_english">English</string>
     <string name="loading_title">Building the offline route</string>
     <string name="loading_subtitle">Securing identity • rebuilding missions • checking mesh</string>
     <string name="offline">Offline</string>

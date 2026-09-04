@@ -64,6 +64,7 @@ class ProductionRequestFlowTest {
             )
         }
 
+        chooseBanglaIfRequired("nav-request")
         composeTestRule.waitUntilAtLeastOneExists(hasTestTag("nav-request"), timeoutMillis = 4_000)
         composeTestRule.onNode(hasTestTag("nav-request")).performClick()
         composeTestRule.onNode(hasScrollAction()).performTouchInput { swipeUp() }
@@ -96,6 +97,16 @@ class ProductionRequestFlowTest {
         val event = DomainEvent.parseFrom(plaintext)
         assertEquals("N6", event.reliefRequestCreated.destinationNodeId)
         assertTrue(encrypted.wrappedAes256Key.size() >= 256)
+    }
+
+    private fun chooseBanglaIfRequired(destinationTag: String) {
+        composeTestRule.waitUntil(timeoutMillis = 8_000) {
+            composeTestRule.onAllNodes(hasTestTag("language-bangla")).fetchSemanticsNodes().isNotEmpty() ||
+                composeTestRule.onAllNodes(hasTestTag(destinationTag)).fetchSemanticsNodes().isNotEmpty()
+        }
+        if (composeTestRule.onAllNodes(hasTestTag("language-bangla")).fetchSemanticsNodes().isNotEmpty()) {
+            composeTestRule.onNode(hasTestTag("language-bangla")).performClick()
+        }
     }
 
     private fun productionEntryPoint(): DigitalDeltaGraphEntryPoint =

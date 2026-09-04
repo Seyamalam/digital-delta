@@ -49,6 +49,7 @@ import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.test.StandardTestDispatcher
 import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.resetMain
@@ -495,6 +496,7 @@ private class FakeProofOfDeliveryWorkflow : ProofOfDeliveryWorkflow {
 private class FakeSettingsRepository : UserSettingsRepository {
     val languageState = MutableStateFlow(LanguagePreference.BANGLA)
     override val language: Flow<LanguagePreference> = languageState
+    override val languageSelected: Flow<Boolean> = languageState.map { true }
 
     override suspend fun setLanguage(language: LanguagePreference) {
         languageState.value = language

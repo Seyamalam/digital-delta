@@ -177,6 +177,7 @@ fun DigitalDeltaApp(
     modifier: Modifier = Modifier,
     showBootSequence: Boolean = true,
     useBangla: Boolean = true,
+    languageSelected: Boolean = true,
     onLanguageChange: ((Boolean) -> Unit)? = null,
     requestQueueState: RequestQueueUiState = RequestQueueUiState.Idle,
     onQueueRequest: ((Int, Int, Int, String) -> Unit)? = null,
@@ -222,6 +223,8 @@ fun DigitalDeltaApp(
     ) { isBooting ->
         if (isBooting) {
             DeltaBootScreen()
+        } else if (!languageSelected) {
+            LanguageChoiceScreen(onLanguageChange)
         } else {
             DeltaShell(
                 useBangla = useBangla,
@@ -255,6 +258,66 @@ fun DigitalDeltaApp(
                 onAdvanceHybridFleet = onAdvanceHybridFleet,
                 onResetHybridFleet = onResetHybridFleet,
             )
+        }
+    }
+}
+
+@Composable
+private fun LanguageChoiceScreen(onLanguageChange: ((Boolean) -> Unit)?) {
+    Surface(color = MaterialTheme.colorScheme.background) {
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .statusBarsPadding()
+                .navigationBarsPadding()
+                .padding(horizontal = 28.dp),
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.Center,
+        ) {
+            Surface(
+                color = DeltaTeal,
+                contentColor = Color.White,
+                shape = CircleShape,
+                modifier = Modifier.size(72.dp),
+            ) {
+                Box(contentAlignment = Alignment.Center) {
+                    Icon(Icons.Default.Hub, contentDescription = null, modifier = Modifier.size(38.dp))
+                }
+            }
+            Spacer(Modifier.height(24.dp))
+            Text(
+                text(R.string.choose_language_bangla_title, AppLanguage.BANGLA),
+                style = MaterialTheme.typography.headlineMedium,
+                textAlign = TextAlign.Center,
+                modifier = Modifier.semantics { heading() },
+            )
+            Text(
+                text(R.string.choose_language_english_title, AppLanguage.ENGLISH),
+                style = MaterialTheme.typography.titleLarge,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                textAlign = TextAlign.Center,
+            )
+            Spacer(Modifier.height(10.dp))
+            Text(
+                text(R.string.choose_language_offline_note, AppLanguage.BANGLA),
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                textAlign = TextAlign.Center,
+            )
+            Spacer(Modifier.height(28.dp))
+            Button(
+                onClick = { onLanguageChange?.invoke(true) },
+                modifier = Modifier.fillMaxWidth().height(56.dp).testTag("language-bangla"),
+            ) {
+                Text(text(R.string.language_bangla, AppLanguage.BANGLA))
+            }
+            Spacer(Modifier.height(10.dp))
+            OutlinedButton(
+                onClick = { onLanguageChange?.invoke(false) },
+                modifier = Modifier.fillMaxWidth().height(56.dp).testTag("language-english"),
+            ) {
+                Text(text(R.string.language_english, AppLanguage.ENGLISH))
+            }
         }
     }
 }

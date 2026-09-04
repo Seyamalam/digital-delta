@@ -18,6 +18,7 @@ class ProductionIdentityFlowTest {
 
     @Test
     fun deviceBoundEnrollmentBecomesVisibleThroughProductionGraph() {
+        chooseBanglaIfRequired("identity-open")
         composeTestRule.waitUntilAtLeastOneExists(hasTestTag("identity-open"), timeoutMillis = 4_000)
         composeTestRule.onNode(hasTestTag("identity-open")).performClick()
         composeTestRule.waitUntilAtLeastOneExists(hasTestTag("identity-screen"), timeoutMillis = 8_000)
@@ -33,5 +34,15 @@ class ProductionIdentityFlowTest {
         composeTestRule.onNode(hasTestTag("scan-admin-trust")).assertIsDisplayed()
         composeTestRule.onNode(hasScrollAction()).performScrollToNode(hasTestTag("scan-recipient-credential"))
         composeTestRule.onNode(hasTestTag("scan-recipient-credential")).assertIsDisplayed()
+    }
+
+    private fun chooseBanglaIfRequired(destinationTag: String) {
+        composeTestRule.waitUntil(timeoutMillis = 8_000) {
+            composeTestRule.onAllNodes(hasTestTag("language-bangla")).fetchSemanticsNodes().isNotEmpty() ||
+                composeTestRule.onAllNodes(hasTestTag(destinationTag)).fetchSemanticsNodes().isNotEmpty()
+        }
+        if (composeTestRule.onAllNodes(hasTestTag("language-bangla")).fetchSemanticsNodes().isNotEmpty()) {
+            composeTestRule.onNode(hasTestTag("language-bangla")).performClick()
+        }
     }
 }

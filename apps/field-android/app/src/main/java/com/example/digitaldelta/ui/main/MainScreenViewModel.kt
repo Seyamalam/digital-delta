@@ -63,6 +63,12 @@ class MainScreenViewModel @Inject constructor(
         initialValue = LanguagePreference.BANGLA,
     )
 
+    val languageSelected: StateFlow<Boolean> = settingsRepository.languageSelected.stateIn(
+        scope = viewModelScope,
+        started = SharingStarted.Eagerly,
+        initialValue = true,
+    )
+
     private val mutableRequestQueueState = MutableStateFlow<RequestQueueUiState>(RequestQueueUiState.Idle)
     val requestQueueState: StateFlow<RequestQueueUiState> = mutableRequestQueueState.asStateFlow()
 

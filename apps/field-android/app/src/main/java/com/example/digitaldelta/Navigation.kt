@@ -25,6 +25,7 @@ fun MainNavigation(meshRuntimeStateStore: MeshRuntimeStateStore) {
   val viewModel: MainScreenViewModel = viewModel()
   val context = LocalContext.current
   val language by viewModel.language.collectAsStateWithLifecycle()
+  val languageSelected by viewModel.languageSelected.collectAsStateWithLifecycle()
   val requestQueueState by viewModel.requestQueueState.collectAsStateWithLifecycle()
   val identityState by viewModel.identityState.collectAsStateWithLifecycle()
   val conflictState by viewModel.conflictState.collectAsStateWithLifecycle()
@@ -71,6 +72,7 @@ fun MainNavigation(meshRuntimeStateStore: MeshRuntimeStateStore) {
 
   DigitalDeltaApp(
     useBangla = language == LanguagePreference.BANGLA,
+    languageSelected = languageSelected,
     onLanguageChange = viewModel::setBangla,
     requestQueueState = requestQueueState,
     onQueueRequest = viewModel::queueRequest,

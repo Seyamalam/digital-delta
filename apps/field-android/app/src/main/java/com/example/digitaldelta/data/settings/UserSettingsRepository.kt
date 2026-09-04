@@ -21,6 +21,7 @@ enum class LanguagePreference {
 
 interface UserSettingsRepository {
     val language: Flow<LanguagePreference>
+    val languageSelected: Flow<Boolean>
     suspend fun setLanguage(language: LanguagePreference)
 }
 
@@ -34,6 +35,12 @@ class ProtoUserSettingsRepository(
                 InterfaceLanguage.INTERFACE_LANGUAGE_ENGLISH -> LanguagePreference.ENGLISH
                 else -> LanguagePreference.BANGLA
             }
+        }
+
+    override val languageSelected: Flow<Boolean> = dataStore.data
+        .catch { emit(UserSettings.getDefaultInstance()) }
+        .map { settings ->
+            settings.interfaceLanguage != InterfaceLanguage.INTERFACE_LANGUAGE_UNSPECIFIED
         }
 
     override suspend fun setLanguage(language: LanguagePreference) {
