@@ -101,6 +101,29 @@ class DeltaMigrationTest {
         }
     }
 
+    @Test
+    fun migrationFourToFivePreservesInboxAndAddsApplicationLedger() {
+        helper.createDatabase(TEST_DATABASE_V5, 4).apply {
+            execSQL(
+                "INSERT INTO mesh_inbox " +
+                    "(messageId, wireBytes, senderNodeId, recipientNodeId, expiresAtUnixMs, " +
+                    "hopCount, hopLimit, receivedAtUnixMs) VALUES " +
+                    "('message-local', X'0102', 'N1', 'N4', 200, 0, 8, 100)",
+            )
+            close()
+        }
+
+        helper.runMigrationsAndValidate(
+            TEST_DATABASE_V5,
+            5,
+            true,
+            DeltaMigrations.VERSION_4_TO_5,
+        ).use { migrated ->
+            assertEquals(1, migrated.count("SELECT COUNT(*) FROM mesh_inbox"))
+            assertEquals(0, migrated.count("SELECT COUNT(*) FROM inbox_applications"))
+        }
+    }
+
     private fun SupportSQLiteDatabase.count(query: String): Int =
         query(query).use { cursor ->
             check(cursor.moveToFirst())
@@ -111,5 +134,6 @@ class DeltaMigrationTest {
         private const val TEST_DATABASE = "delta-migration-test"
         private const val TEST_DATABASE_V3 = "delta-migration-v3-test"
         private const val TEST_DATABASE_V4 = "delta-migration-v4-test"
+        private const val TEST_DATABASE_V5 = "delta-migration-v5-test"
     }
 }

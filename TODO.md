@@ -20,7 +20,7 @@ This checklist tracks implementation. Milestone exit criteria live in [MILESTONE
 - [x] Add root setup, format, lint, test, seed, recoverable reset, and demo commands through the Makefile and local scripts.
 - [x] Add an environment example with the local observer URL and no secrets.
 - [x] Scaffold the Android project with Gradle Kotlin DSL and a version catalog.
-- [ ] Add the complete Android dependency set. Compose, Material 3, Navigation 3, ZXing, Protobuf Lite, gRPC OkHttp, Hilt, Room, DataStore, Nearby Connections, and test dependencies are present; WorkManager, Tink, MapLibre, and ONNX remain.
+- [ ] Add the complete Android dependency set. Compose, Material 3, Navigation 3, ZXing, Protobuf Lite, gRPC OkHttp, Hilt, Room, DataStore, Nearby Connections, WorkManager, ONNX Runtime, CameraX, bundled ML Kit, and test dependencies are present; MapLibre Native remains. Direct audited JCA primitives currently replace Tink.
 - [x] Add a local Kotlin and Android verification runner; extend it for Go, TypeScript, and Protobuf compatibility as those projects land. Hosted CI and GitHub Actions are deliberately excluded.
 - [ ] Add deterministic clocks, random seeds, and device IDs for demo scenarios.
 - [x] Add a fixture validator for node and edge references through `SylhetMapParser` and the bundled-asset connected test.
@@ -65,8 +65,8 @@ This checklist tracks implementation. Milestone exit criteria live in [MILESTONE
 - [x] Hide forbidden actions and enforce the same signed-credential policy below the user interface.
 - [x] Add RSA-PSS-signed, hash-chained authorization audit events and a visible bilingual latest-entry ID.
 - [x] Add a persisted five-attempt, 30-second offline PIN lockout.
-- [ ] Add key revocation and expiry events that propagate later. Signed Protobuf revocation issue/verify, offline QR scan/paste, exact-credential application, stale-credential replay protection, and immediate local authorization/key disablement are complete; encrypted automatic peer forwarding remains.
-- [ ] Test valid, expired, revoked, malformed, and wrong-role credentials. Valid, expired, signed revoked, malformed/tampered, future-dated, untrusted-issuer, wrong-target, profile/role/key mismatch, and stale-credential replay cases pass; multi-phone propagation remains.
+- [x] Add signed credential revocation propagation and enforce signed credential expiry at every use. Revocations are encrypted separately for known peers, stored and relayed as Protobuf envelopes, applied by the intended recipient, and forwarded onward after verification.
+- [x] Test valid, expired, revoked, malformed, and wrong-role credentials. Valid, expired, signed revoked, malformed/tampered, future-dated, untrusted-issuer, wrong-target, profile/role/key mismatch, stale-credential replay, encrypted propagation, idempotence, and ciphertext/AAD mutation cases pass.
 
 ## M2 distributed data and CRDT sync
 
@@ -88,7 +88,7 @@ This checklist tracks implementation. Milestone exit criteria live in [MILESTONE
 - [x] Implement Nearby Connections using the cluster strategy; physical three-phone evidence remains.
 - [x] Add Android 12 and newer Bluetooth and nearby-device permission handling, including Android 17 local-network policy.
 - [x] Implement the active relay as an Android `connectedDevice` foreground service.
-- [ ] Use WorkManager only for deferred retries, queue cleanup, and maintenance.
+- [x] Use WorkManager only for deferred inbox application, retry, deduplication cleanup, and expired-queue maintenance; the live mesh remains in its visible foreground service.
 - [x] Implement neighbor advertising and discovery with an explicit human accept or reject step.
 - [ ] Authenticate peers before accepting payloads. Nearby comparison digits are followed by mutual fresh-nonce challenge-response using administrator-signed credentials and device RSA-PSS keys; envelopes and acknowledgements are blocked until verification, and signed receipts are checked before the outbox advances. Physical multi-phone evidence remains.
 - [x] Persist distinct N1 coordinator, N4 clinic, N6 hospital, and RLY-01 relay profiles; stop the active relay before profile changes and generate role-bound enrollment identities from the selected profile.

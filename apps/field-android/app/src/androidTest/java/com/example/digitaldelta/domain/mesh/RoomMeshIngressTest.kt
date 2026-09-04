@@ -90,6 +90,24 @@ class RoomMeshIngressTest {
         assertTrue(database.outboxDao().pending(now, 10).isEmpty())
     }
 
+    @Test
+    fun localRecipientSchedulesDurableApplicationButRelayDoesNot() = runTest {
+        val now = 1_800_000_000_000
+        var scheduled = 0
+        val ingress = RoomMeshIngress(
+            database,
+            localNodeId = "C",
+            acknowledgementSigner = PASSTHROUGH_SIGNER,
+            nowUnixMs = { now },
+            localApplicationScheduler = { scheduled++ },
+        )
+
+        ingress.receive(MeshWireCodec.encode(envelope("local-message", now, now + 60_000, 0, 3)))
+
+        assertEquals(1, scheduled)
+        assertTrue(database.outboxDao().pending(now, 10).isEmpty())
+    }
+
     private fun envelope(
         messageId: String,
         createdAt: Long,

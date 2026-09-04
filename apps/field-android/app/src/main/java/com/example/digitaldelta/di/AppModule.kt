@@ -27,6 +27,9 @@ import com.example.digitaldelta.domain.identity.ProtoTrustAnchorRepository
 import com.example.digitaldelta.domain.identity.ProtoDeviceProfileRepository
 import com.example.digitaldelta.domain.identity.RecipientProvisioningRepository
 import com.example.digitaldelta.domain.identity.RoomRecipientKeyDirectory
+import com.example.digitaldelta.domain.identity.CredentialRevocationPropagator
+import com.example.digitaldelta.domain.identity.RoomCredentialRevocationPropagator
+import com.example.digitaldelta.domain.identity.CredentialRevocationInboxProcessor
 import com.example.digitaldelta.domain.identity.TrustAnchorRepository
 import com.example.digitaldelta.domain.request.DefaultReliefRequestSubmission
 import com.example.digitaldelta.domain.request.ReliefRequestSubmission
@@ -73,6 +76,7 @@ object AppModule {
                 DeltaMigrations.VERSION_1_TO_2,
                 DeltaMigrations.VERSION_2_TO_3,
                 DeltaMigrations.VERSION_3_TO_4,
+                DeltaMigrations.VERSION_4_TO_5,
             )
             .build()
 
@@ -100,6 +104,27 @@ object AppModule {
 
     @Provides
     @Singleton
+    fun provideCredentialRevocationPropagator(database: DeltaDatabase): CredentialRevocationPropagator =
+        RoomCredentialRevocationPropagator(database)
+
+    @Provides
+    @Singleton
+    fun provideCredentialRevocationInboxProcessor(
+        database: DeltaDatabase,
+        deviceKeys: AndroidDeviceIdentityKeyStore,
+        recipients: RecipientProvisioningRepository,
+        trustAnchors: TrustAnchorRepository,
+        propagator: CredentialRevocationPropagator,
+    ): CredentialRevocationInboxProcessor = CredentialRevocationInboxProcessor(
+        database,
+        deviceKeys,
+        recipients,
+        trustAnchors,
+        propagator,
+    )
+
+    @Provides
+    @Singleton
     fun provideDeviceIdentityKeyStore(): AndroidDeviceIdentityKeyStore = AndroidDeviceIdentityKeyStore()
 
     @Provides
@@ -121,11 +146,13 @@ object AppModule {
         trustAnchors: TrustAnchorRepository,
         recipients: RecipientProvisioningRepository,
         deviceProfiles: DeviceProfileRepository,
+        revocationPropagator: CredentialRevocationPropagator,
     ): IdentityProvisioningCoordinator = DefaultIdentityProvisioningCoordinator(
         deviceKeys = deviceKeys,
         trustAnchors = trustAnchors,
         recipients = recipients,
         deviceProfiles = deviceProfiles,
+        revocationPropagator = revocationPropagator,
     )
 
     @Provides

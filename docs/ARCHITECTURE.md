@@ -46,6 +46,8 @@ The field app is a native Android application written in Kotlin and Jetpack Comp
 
 Nearby Connections runs behind a `PeerTransport` interface. An Android foreground service owns an active relay session. WorkManager handles deferrable cleanup and retry work but does not run the continuous mesh. The first supported device baseline is Android 8 or newer, subject to confirmation against the phones used at the fair.
 
+Signed credential revocations use the same offline path without exposing their payload to relay nodes. The importing phone records a non-simulated `credential_revoked` domain event and creates a separately encrypted P0 envelope for each known peer, including the revoked target's last provisioned key. The destination persists the envelope before acknowledgement. Deferred maintenance then decrypts only locally addressed records, verifies the envelope digest and administrator signature, applies the exact credential once, records an application disposition, and fans the signed event onward while excluding the immediate sender. WorkManager is deliberately limited to this bounded application/cleanup work; it never replaces the live foreground relay.
+
 ### Node and simulation service
 
 Responsibilities:

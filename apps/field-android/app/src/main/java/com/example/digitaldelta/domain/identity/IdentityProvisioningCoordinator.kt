@@ -43,6 +43,7 @@ class DefaultIdentityProvisioningCoordinator(
     private val enrollmentRequests: EnrollmentRequestService = EnrollmentRequestService(),
     private val nowUnixMs: () -> Long = System::currentTimeMillis,
     private val secureRandom: SecureRandom = SecureRandom(),
+    private val revocationPropagator: CredentialRevocationPropagator = NoOpCredentialRevocationPropagator,
 ) : IdentityProvisioningCoordinator {
     override suspend fun snapshot(): IdentityProvisioningSnapshot = withContext(Dispatchers.IO) {
         snapshotInternal()
@@ -74,11 +75,18 @@ class DefaultIdentityProvisioningCoordinator(
     override suspend fun acceptCredentialRevocation(code: String): RevocationReceipt = withContext(Dispatchers.IO) {
         val trustedIssuer = trustAnchors.trustedIssuer.first()
             ?: throw IllegalStateException("administrator trust key is not pinned")
-        recipients.acceptRevocation(
-            revocationBytes = decodeCode(code, REVOCATION_PREFIX),
+        val bytes = decodeCode(code, REVOCATION_PREFIX)
+        val receipt = recipients.acceptRevocation(
+            revocationBytes = bytes,
             trustedIssuerPublicKeyDer = trustedIssuer.publicKeyDer,
             nowUnixMs = nowUnixMs(),
         )
+        revocationPropagator.propagate(
+            revocationBytes = bytes,
+            receipt = receipt,
+            senderNodeId = deviceProfiles.profile.first().nodeId,
+        )
+        receipt
     }
 
     private suspend fun snapshotInternal(): IdentityProvisioningSnapshot {

@@ -16,6 +16,7 @@ class RoomMeshIngress(
     private val localNodeId: String,
     private val acknowledgementSigner: MeshAcknowledgementSigner,
     private val nowUnixMs: () -> Long = System::currentTimeMillis,
+    private val localApplicationScheduler: suspend () -> Unit = {},
 ) {
     init {
         require(localNodeId.isNotBlank()) { "local node id is required" }
@@ -35,7 +36,7 @@ class RoomMeshIngress(
             return rejected(envelope.messageId, reason, recordedAt)
         }
 
-        return database.withTransaction {
+        val acknowledgement = database.withTransaction {
             val claimed = database.seenMessageDao().claim(
                 SeenMessageEntity(
                     messageId = envelope.messageId,
@@ -84,6 +85,10 @@ class RoomMeshIngress(
                 recordedAt = recordedAt,
             )
         }
+        if (envelope.recipientNodeId == localNodeId) {
+            runCatching { localApplicationScheduler() }
+        }
+        return acknowledgement
     }
 
     private fun rejectionReason(envelope: Envelope, now: Long): String? = when {

@@ -74,6 +74,8 @@ Local authorization uses the same trust boundary. Selecting an allow-listed prof
 
 Each authorization decision is appended as a Protobuf `SignedAuthorizationAuditEntry`. The device signs the canonical entry with its non-exportable RSA-PSS key, and every entry commits to the SHA-256 hash of the preceding signed event. Verification checks event/entry binding, chain order, signer key ID, algorithm, and signature. The identity screen exposes the latest audit ID without displaying protected cargo data.
 
+Credential revocation uses an administrator-signed Protobuf claim bound to the original credential ID, identity, node, reason, time, and random nonce. A receiving phone verifies that claim against its pinned administrator key and updates only an exact installed credential. Reinstalling the same credential preserves the revoked state. For propagation, the phone wraps the signed event separately for each known peer with AES-256-GCM and RSA-OAEP; relays store and forward only the envelope. A WorkManager task applies locally addressed inbox records, maintains an idempotent application ledger, retries only transient trust dependencies, and quarantines malformed or cryptographically altered payloads. The continuous Nearby radio remains in the foreground service.
+
 ## Proof-of-delivery verification
 
 The verifier checks:

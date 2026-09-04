@@ -7,6 +7,7 @@ import com.example.digitaldelta.domain.identity.IdentityProvisioningCoordinator
 import com.example.digitaldelta.domain.identity.AuthorizationAuditTrail
 import com.example.digitaldelta.domain.identity.RecipientProvisioningRepository
 import com.example.digitaldelta.domain.identity.TrustAnchorRepository
+import com.example.digitaldelta.domain.identity.CredentialRevocationInboxProcessor
 import com.example.digitaldelta.domain.mesh.MeshRuntimeStateStore
 import dagger.hilt.EntryPoint
 import dagger.hilt.InstallIn
@@ -26,5 +27,6 @@ interface DigitalDeltaGraphEntryPoint {
     fun authorizationAuditTrail(): AuthorizationAuditTrail
     fun recipientProvisioningRepository(): RecipientProvisioningRepository
     fun trustAnchorRepository(): TrustAnchorRepository
+    fun credentialRevocationInboxProcessor(): CredentialRevocationInboxProcessor
     fun meshRuntimeStateStore(): MeshRuntimeStateStore
 }

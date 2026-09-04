@@ -94,6 +94,7 @@ dependencies {
   implementation(libs.androidx.camera.view)
   implementation(libs.androidx.camera.mlkit.vision)
   implementation(libs.mlkit.barcode.scanning)
+  implementation(libs.androidx.work.runtime)
   ksp(libs.hilt.compiler)
   ksp(libs.androidx.room.compiler)
   androidTestImplementation(libs.androidx.room.testing)

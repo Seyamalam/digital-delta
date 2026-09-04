@@ -160,6 +160,7 @@ class MeshRelayService : Service() {
                 database = graph.database(),
                 localNodeId = profile.nodeId,
                 acknowledgementSigner = acknowledgementSigner,
+                localApplicationScheduler = { MeshMaintenance.scheduleNow(applicationContext) },
             ),
             identityAuthenticator = AndroidPeerIdentityAuthenticator(
                 localNodeId = profile.nodeId,

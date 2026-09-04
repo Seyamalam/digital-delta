@@ -49,6 +49,16 @@ data class MeshInboxEntity(
     val receivedAtUnixMs: Long,
 )
 
+@Entity(tableName = "inbox_applications", indices = [Index(value = ["state", "updatedAtUnixMs"])])
+data class InboxApplicationEntity(
+    @PrimaryKey val messageId: String,
+    val state: String,
+    val eventId: String?,
+    val reasonCode: String?,
+    val attemptCount: Int,
+    val updatedAtUnixMs: Long,
+)
+
 @Entity(tableName = "seen_messages", indices = [Index(value = ["expiresAtUnixMs"])])
 data class SeenMessageEntity(
     @PrimaryKey val messageId: String,
@@ -204,6 +214,24 @@ interface MeshInboxDao {
 
     @Query("SELECT COUNT(*) FROM mesh_inbox")
     suspend fun count(): Int
+
+    @Query(
+        "SELECT mesh_inbox.* FROM mesh_inbox " +
+            "LEFT JOIN inbox_applications ON inbox_applications.messageId = mesh_inbox.messageId " +
+            "WHERE mesh_inbox.recipientNodeId = :localNodeId " +
+            "AND (inbox_applications.messageId IS NULL OR inbox_applications.state = 'RETRY') " +
+            "ORDER BY mesh_inbox.receivedAtUnixMs ASC, mesh_inbox.messageId ASC LIMIT :limit",
+    )
+    suspend fun pendingApplication(localNodeId: String, limit: Int): List<MeshInboxEntity>
+}
+
+@Dao
+interface InboxApplicationDao {
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    suspend fun upsert(application: InboxApplicationEntity)
+
+    @Query("SELECT * FROM inbox_applications WHERE messageId = :messageId LIMIT 1")
+    suspend fun find(messageId: String): InboxApplicationEntity?
 }
 
 @Dao
@@ -228,6 +256,12 @@ interface NonceDao {
 interface OperationLogDao {
     @Insert(onConflict = OnConflictStrategy.ABORT)
     suspend fun append(operation: OperationEntity)
+
+    @Insert(onConflict = OnConflictStrategy.IGNORE)
+    suspend fun appendIfAbsent(operation: OperationEntity): Long
+
+    @Query("SELECT * FROM operation_log WHERE eventId = :eventId LIMIT 1")
+    suspend fun find(eventId: String): OperationEntity?
 
     @Query(
         """
@@ -255,6 +289,9 @@ interface RecipientKeyDao {
 
     @Query("SELECT * FROM recipient_keys ORDER BY provisionedAtUnixMs DESC, nodeId ASC LIMIT 1")
     suspend fun mostRecentlyProvisioned(): RecipientKeyEntity?
+
+    @Query("SELECT * FROM recipient_keys WHERE expiresAtUnixMs > :nowUnixMs ORDER BY nodeId ASC")
+    suspend fun validAt(nowUnixMs: Long): List<RecipientKeyEntity>
 
     @Query(
         "UPDATE recipient_keys SET revokedAtUnixMs = :revokedAtUnixMs " +
@@ -328,8 +365,9 @@ interface ConflictDao {
         SeenMessageEntity::class,
         MissionProjectionEntity::class,
         ConflictEntity::class,
+        InboxApplicationEntity::class,
     ],
-    version = 4,
+    version = 5,
     exportSchema = true,
 )
 abstract class DeltaDatabase : RoomDatabase() {
@@ -341,6 +379,7 @@ abstract class DeltaDatabase : RoomDatabase() {
     abstract fun seenMessageDao(): SeenMessageDao
     abstract fun missionProjectionDao(): MissionProjectionDao
     abstract fun conflictDao(): ConflictDao
+    abstract fun inboxApplicationDao(): InboxApplicationDao
 }
 
 object DeltaMigrations {
@@ -462,6 +501,28 @@ object DeltaMigrations {
             db.execSQL(
                 "CREATE INDEX IF NOT EXISTS index_conflicts_missionId_state_createdAtUnixMs " +
                     "ON conflicts (missionId, state, createdAtUnixMs)",
+            )
+        }
+    }
+
+    val VERSION_4_TO_5 = object : Migration(4, 5) {
+        override fun migrate(db: SupportSQLiteDatabase) {
+            db.execSQL(
+                """
+                CREATE TABLE IF NOT EXISTS inbox_applications (
+                    messageId TEXT NOT NULL,
+                    state TEXT NOT NULL,
+                    eventId TEXT,
+                    reasonCode TEXT,
+                    attemptCount INTEGER NOT NULL,
+                    updatedAtUnixMs INTEGER NOT NULL,
+                    PRIMARY KEY(messageId)
+                )
+                """.trimIndent(),
+            )
+            db.execSQL(
+                "CREATE INDEX IF NOT EXISTS index_inbox_applications_state_updatedAtUnixMs " +
+                    "ON inbox_applications (state, updatedAtUnixMs)",
             )
         }
     }

@@ -27,6 +27,7 @@ onnxRuntime = "1.23.2"
 camerax = "1.6.2"
 mlkitBarcode = "17.3.0"
 truth = "1.4.5"
+workManager = "2.11.1"
 
 [libraries]
 androidx-core-ktx = { module = "androidx.core:core-ktx", version.ref = "androidxCore" }
@@ -73,6 +74,7 @@ androidx-camera-view = { module = "androidx.camera:camera-view", version.ref = "
 androidx-camera-mlkit-vision = { module = "androidx.camera:camera-mlkit-vision", version.ref = "camerax" }
 mlkit-barcode-scanning = { module = "com.google.mlkit:barcode-scanning", version.ref = "mlkitBarcode" }
 truth = { module = "com.google.truth:truth", version.ref = "truth" }
+androidx-work-runtime = { module = "androidx.work:work-runtime-ktx", version.ref = "workManager" }
 
 [plugins]
 android-application = { id = "com.android.application", version.ref = "androidGradlePlugin" }
