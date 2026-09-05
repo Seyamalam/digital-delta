@@ -39,7 +39,7 @@ func main() {
 
 func parseFlags() configuration {
 	var configuration configuration
-	flag.StringVar(&configuration.target, "target", "127.0.0.1:7070", "NodeMeshService address")
+	flag.StringVar(&configuration.target, "target", "127.0.0.1:7070", "ReducedMeshLoadHarnessService address")
 	flag.IntVar(&configuration.connections, "connections", 10_000, "simultaneous gRPC connections")
 	flag.DurationVar(&configuration.timeout, "timeout", 2*time.Minute, "whole-run timeout")
 	flag.DurationVar(&configuration.hold, "hold", 5*time.Second, "time to retain all acknowledged streams")
@@ -95,7 +95,7 @@ func run(parent context.Context, configuration configuration) error {
 				return
 			}
 			defer connection.Close()
-			stream, err := deltav1.NewNodeMeshServiceClient(connection).Synchronize(ctx)
+			stream, err := deltav1.NewReducedMeshLoadHarnessServiceClient(connection).Synchronize(ctx)
 			if err != nil {
 				results <- connectionResult{err: err}
 				return
@@ -114,7 +114,7 @@ func run(parent context.Context, configuration configuration) error {
 				Priority:             deltav1.PriorityClass_PRIORITY_CLASS_P2,
 				PayloadSha256:        make([]byte, 32),
 			}
-			if err := stream.Send(&deltav1.SynchronizeRequest{Envelope: envelope}); err != nil {
+			if err := stream.Send(&deltav1.ReducedMeshLoadHarnessServiceSynchronizeRequest{Envelope: envelope}); err != nil {
 				results <- connectionResult{err: err}
 				return
 			}

@@ -58,6 +58,14 @@ func parseFlags() config {
 }
 
 func run(ctx context.Context, configuration config) error {
+	if err := requireLoopback(configuration.listenAddress); err != nil {
+		return err
+	}
+	if configuration.legacyObserver {
+		if err := requireLoopback(configuration.observerListenAddress); err != nil {
+			return err
+		}
+	}
 	if !configuration.legacyObserver {
 		return runMeshOnly(ctx, configuration)
 	}
@@ -98,7 +106,7 @@ func run(ctx context.Context, configuration config) error {
 		grpc.MaxRecvMsgSize(2*1024*1024),
 		grpc.MaxSendMsgSize(2*1024*1024),
 	)
-	deltav1.RegisterNodeMeshServiceServer(server, mesh.NewService(store))
+	deltav1.RegisterReducedMeshLoadHarnessServiceServer(server, mesh.NewService(store))
 	deltav1.RegisterObserverServiceServer(server, observer.NewService(observerHub))
 	observerHTTP := &http.Server{
 		Handler:           observer.NewHTTPHandler(observerHub, splitOrigins(configuration.dashboardOrigins)),
@@ -160,10 +168,10 @@ func runMeshOnly(ctx context.Context, configuration config) error {
 	}
 	defer listener.Close()
 	server := grpc.NewServer(grpc.MaxRecvMsgSize(2*1024*1024), grpc.MaxSendMsgSize(2*1024*1024))
-	deltav1.RegisterNodeMeshServiceServer(server, mesh.NewService(store))
+	deltav1.RegisterReducedMeshLoadHarnessServiceServer(server, mesh.NewService(store))
 	serveError := make(chan error, 1)
 	go func() { serveError <- server.Serve(listener) }()
-	slog.Info("mesh node ready; observer is Hono", "node_id", configuration.nodeID, "listen", listener.Addr().String())
+	slog.Warn("REDUCED LOAD HARNESS ONLY: no origin authentication or signed acknowledgements; field mesh is Android", "node_id", configuration.nodeID, "listen", listener.Addr().String())
 	select {
 	case err := <-serveError:
 		return err
@@ -175,6 +183,18 @@ func runMeshOnly(ctx context.Context, configuration config) error {
 	case <-done:
 	case <-time.After(5 * time.Second):
 		server.Stop()
+	}
+	return nil
+}
+
+func requireLoopback(address string) error {
+	host, _, err := net.SplitHostPort(address)
+	if err != nil {
+		return err
+	}
+	ip := net.ParseIP(host)
+	if ip == nil || !ip.IsLoopback() {
+		return errors.New("reduced harness must bind a literal loopback address")
 	}
 	return nil
 }

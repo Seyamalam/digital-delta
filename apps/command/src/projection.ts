@@ -19,6 +19,7 @@ export type ObserverProjection = {
   includesSimulated: boolean;
   failedEdges: Set<string>;
   edgeRisks: Map<string, number>;
+  riskEvidence: Map<string, { probability: number; threshold: number; occurredAtUnixMs: number }>;
   delayedVehicleIds: Set<string>;
   route?: ProjectedRoute;
   rendezvous?: ProjectedRendezvous;
@@ -33,6 +34,7 @@ export function projectObservations(observations: PresentationObservation[], pre
     includesSimulated: previous?.includesSimulated ?? false,
     failedEdges: new Set(previous?.failedEdges),
     edgeRisks: new Map(previous?.edgeRisks),
+    riskEvidence: new Map(previous?.riskEvidence),
     delayedVehicleIds: new Set(previous?.delayedVehicleIds),
     requests: new Map(previous?.requests),
     sources: new Map(previous?.sources),
@@ -58,7 +60,11 @@ export function projectObservations(observations: PresentationObservation[], pre
     if (observation.kind === "edgeRiskPredicted") {
       const edgeId = asString(value.edgeId);
       const probability = asNumber(value.probability);
-      if (edgeId && probability !== undefined) projection.edgeRisks.set(edgeId, probability);
+      const threshold = asNumber(value.threshold) ?? 0.65;
+      if (edgeId && probability !== undefined && probability >= 0 && probability <= 1 && threshold >= 0 && threshold <= 1) {
+        projection.edgeRisks.set(edgeId, probability);
+        projection.riskEvidence.set(edgeId, { probability, threshold, occurredAtUnixMs: observation.occurredAtUnixMs });
+      }
     }
     if (observation.kind === "routePlanned") {
       projection.route = {
@@ -86,6 +92,14 @@ export function projectObservations(observations: PresentationObservation[], pre
     }
   }
   return projection;
+}
+
+/** Two-hour forecast horizon; stale/future evidence stays in history, not active warnings. */
+export function activePredictedRisks(projection: ObserverProjection, nowUnixMs: number): Map<string, number> {
+  return new Map([...projection.riskEvidence].filter(([, risk]) =>
+    risk.probability > 0 && risk.probability >= risk.threshold &&
+    nowUnixMs >= risk.occurredAtUnixMs && nowUnixMs - risk.occurredAtUnixMs < 2 * 60 * 60 * 1000,
+  ).map(([id, risk]) => [id, risk.probability]));
 }
 
 function asString(value: unknown): string | undefined {

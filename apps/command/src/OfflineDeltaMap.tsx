@@ -82,6 +82,21 @@ export function OfflineDeltaMap({ useWaterRoute, showRisk, simulated, language, 
   }, []);
 
   useEffect(() => {
+    const labels: Record<string, string> = {
+      ".maplibregl-ctrl-zoom-in": say("Zoom in", "বড় করুন"),
+      ".maplibregl-ctrl-zoom-out": say("Zoom out", "ছোট করুন"),
+      ".maplibregl-ctrl-attrib-button": say("Toggle attribution", "মানচিত্রের উৎস দেখুন বা লুকান"),
+      ".maplibregl-canvas": say("Interactive geographic map", "ইন্টারঅ্যাক্টিভ ভৌগোলিক মানচিত্র"),
+    };
+    for (const [selector, label] of Object.entries(labels)) {
+      host.current?.querySelectorAll(selector).forEach((element) => {
+        element.setAttribute("aria-label", label);
+        element.setAttribute("title", label);
+      });
+    }
+  }, [language, status]);
+
+  useEffect(() => {
     const source = map.current?.getSource("mission");
     if (source instanceof GeoJSONSource) {
       source.setData(latestData.current);

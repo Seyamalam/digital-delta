@@ -10,7 +10,7 @@ import (
 )
 
 type Service struct {
-	deltav1.UnimplementedNodeMeshServiceServer
+	deltav1.UnimplementedReducedMeshLoadHarnessServiceServer
 	store *Store
 }
 
@@ -18,7 +18,7 @@ func NewService(store *Store) *Service {
 	return &Service{store: store}
 }
 
-func (s *Service) Synchronize(stream grpc.BidiStreamingServer[deltav1.SynchronizeRequest, deltav1.SynchronizeResponse]) error {
+func (s *Service) Synchronize(stream grpc.BidiStreamingServer[deltav1.ReducedMeshLoadHarnessServiceSynchronizeRequest, deltav1.ReducedMeshLoadHarnessServiceSynchronizeResponse]) error {
 	for {
 		request, err := stream.Recv()
 		if errors.Is(err, io.EOF) {
@@ -46,7 +46,7 @@ func (s *Service) Synchronize(stream grpc.BidiStreamingServer[deltav1.Synchroniz
 			"reason_code", acknowledgement.GetReasonCode(),
 			"simulated", envelope.GetSimulated(),
 		)
-		if err := stream.Send(&deltav1.SynchronizeResponse{Acknowledgement: acknowledgement}); err != nil {
+		if err := stream.Send(&deltav1.ReducedMeshLoadHarnessServiceSynchronizeResponse{Acknowledgement: acknowledgement}); err != nil {
 			return err
 		}
 	}

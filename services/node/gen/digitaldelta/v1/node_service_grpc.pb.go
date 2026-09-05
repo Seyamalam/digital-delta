@@ -115,6 +115,109 @@ var NodeMeshService_ServiceDesc = grpc.ServiceDesc{
 }
 
 const (
+	ReducedMeshLoadHarnessService_Synchronize_FullMethodName = "/digitaldelta.v1.ReducedMeshLoadHarnessService/Synchronize"
+)
+
+// ReducedMeshLoadHarnessServiceClient is the client API for ReducedMeshLoadHarnessService service.
+//
+// For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
+//
+// Isolated engineering workload: no credential verification or signed receipts.
+// Never register this implementation under NodeMeshService or use for field traffic.
+type ReducedMeshLoadHarnessServiceClient interface {
+	Synchronize(ctx context.Context, opts ...grpc.CallOption) (grpc.BidiStreamingClient[ReducedMeshLoadHarnessServiceSynchronizeRequest, ReducedMeshLoadHarnessServiceSynchronizeResponse], error)
+}
+
+type reducedMeshLoadHarnessServiceClient struct {
+	cc grpc.ClientConnInterface
+}
+
+func NewReducedMeshLoadHarnessServiceClient(cc grpc.ClientConnInterface) ReducedMeshLoadHarnessServiceClient {
+	return &reducedMeshLoadHarnessServiceClient{cc}
+}
+
+func (c *reducedMeshLoadHarnessServiceClient) Synchronize(ctx context.Context, opts ...grpc.CallOption) (grpc.BidiStreamingClient[ReducedMeshLoadHarnessServiceSynchronizeRequest, ReducedMeshLoadHarnessServiceSynchronizeResponse], error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	stream, err := c.cc.NewStream(ctx, &ReducedMeshLoadHarnessService_ServiceDesc.Streams[0], ReducedMeshLoadHarnessService_Synchronize_FullMethodName, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	x := &grpc.GenericClientStream[ReducedMeshLoadHarnessServiceSynchronizeRequest, ReducedMeshLoadHarnessServiceSynchronizeResponse]{ClientStream: stream}
+	return x, nil
+}
+
+// This type alias is provided for backwards compatibility with existing code that references the prior non-generic stream type by name.
+type ReducedMeshLoadHarnessService_SynchronizeClient = grpc.BidiStreamingClient[ReducedMeshLoadHarnessServiceSynchronizeRequest, ReducedMeshLoadHarnessServiceSynchronizeResponse]
+
+// ReducedMeshLoadHarnessServiceServer is the server API for ReducedMeshLoadHarnessService service.
+// All implementations must embed UnimplementedReducedMeshLoadHarnessServiceServer
+// for forward compatibility.
+//
+// Isolated engineering workload: no credential verification or signed receipts.
+// Never register this implementation under NodeMeshService or use for field traffic.
+type ReducedMeshLoadHarnessServiceServer interface {
+	Synchronize(grpc.BidiStreamingServer[ReducedMeshLoadHarnessServiceSynchronizeRequest, ReducedMeshLoadHarnessServiceSynchronizeResponse]) error
+	mustEmbedUnimplementedReducedMeshLoadHarnessServiceServer()
+}
+
+// UnimplementedReducedMeshLoadHarnessServiceServer must be embedded to have
+// forward compatible implementations.
+//
+// NOTE: this should be embedded by value instead of pointer to avoid a nil
+// pointer dereference when methods are called.
+type UnimplementedReducedMeshLoadHarnessServiceServer struct{}
+
+func (UnimplementedReducedMeshLoadHarnessServiceServer) Synchronize(grpc.BidiStreamingServer[ReducedMeshLoadHarnessServiceSynchronizeRequest, ReducedMeshLoadHarnessServiceSynchronizeResponse]) error {
+	return status.Error(codes.Unimplemented, "method Synchronize not implemented")
+}
+func (UnimplementedReducedMeshLoadHarnessServiceServer) mustEmbedUnimplementedReducedMeshLoadHarnessServiceServer() {
+}
+func (UnimplementedReducedMeshLoadHarnessServiceServer) testEmbeddedByValue() {}
+
+// UnsafeReducedMeshLoadHarnessServiceServer may be embedded to opt out of forward compatibility for this service.
+// Use of this interface is not recommended, as added methods to ReducedMeshLoadHarnessServiceServer will
+// result in compilation errors.
+type UnsafeReducedMeshLoadHarnessServiceServer interface {
+	mustEmbedUnimplementedReducedMeshLoadHarnessServiceServer()
+}
+
+func RegisterReducedMeshLoadHarnessServiceServer(s grpc.ServiceRegistrar, srv ReducedMeshLoadHarnessServiceServer) {
+	// If the following call panics, it indicates UnimplementedReducedMeshLoadHarnessServiceServer was
+	// embedded by pointer and is nil.  This will cause panics if an
+	// unimplemented method is ever invoked, so we test this at initialization
+	// time to prevent it from happening at runtime later due to I/O.
+	if t, ok := srv.(interface{ testEmbeddedByValue() }); ok {
+		t.testEmbeddedByValue()
+	}
+	s.RegisterService(&ReducedMeshLoadHarnessService_ServiceDesc, srv)
+}
+
+func _ReducedMeshLoadHarnessService_Synchronize_Handler(srv interface{}, stream grpc.ServerStream) error {
+	return srv.(ReducedMeshLoadHarnessServiceServer).Synchronize(&grpc.GenericServerStream[ReducedMeshLoadHarnessServiceSynchronizeRequest, ReducedMeshLoadHarnessServiceSynchronizeResponse]{ServerStream: stream})
+}
+
+// This type alias is provided for backwards compatibility with existing code that references the prior non-generic stream type by name.
+type ReducedMeshLoadHarnessService_SynchronizeServer = grpc.BidiStreamingServer[ReducedMeshLoadHarnessServiceSynchronizeRequest, ReducedMeshLoadHarnessServiceSynchronizeResponse]
+
+// ReducedMeshLoadHarnessService_ServiceDesc is the grpc.ServiceDesc for ReducedMeshLoadHarnessService service.
+// It's only intended for direct use with grpc.RegisterService,
+// and not to be introspected or modified (even as a copy)
+var ReducedMeshLoadHarnessService_ServiceDesc = grpc.ServiceDesc{
+	ServiceName: "digitaldelta.v1.ReducedMeshLoadHarnessService",
+	HandlerType: (*ReducedMeshLoadHarnessServiceServer)(nil),
+	Methods:     []grpc.MethodDesc{},
+	Streams: []grpc.StreamDesc{
+		{
+			StreamName:    "Synchronize",
+			Handler:       _ReducedMeshLoadHarnessService_Synchronize_Handler,
+			ServerStreams: true,
+			ClientStreams: true,
+		},
+	},
+	Metadata: "digitaldelta/v1/node_service.proto",
+}
+
+const (
 	ObserverService_Publish_FullMethodName = "/digitaldelta.v1.ObserverService/Publish"
 	ObserverService_Observe_FullMethodName = "/digitaldelta.v1.ObserverService/Observe"
 )

@@ -2,7 +2,7 @@
 
 import { createContext, useContext, useEffect, useReducer, useState, type ReactNode } from "react";
 import { connectObserver, type ObserverConnectOptions, type ObserverStatus, type PresentationObservation } from "../observer";
-import { projectObservations } from "../projection";
+import { activePredictedRisks, projectObservations } from "../projection";
 import { copy, initialScenario, scenarioReducer, type Language } from "./scenario";
 
 export type OperationsOptions = {
@@ -26,6 +26,11 @@ function useOperationsState({ observerConnect, observerUrl = process.env.NEXT_PU
   const [observerStatus, setObserverStatus] = useState<ObserverStatus>("connecting");
   const [mode, setMode] = useState<"field" | "exercise">("exercise");
   const [isReplaying, setIsReplaying] = useState(false);
+  const [now, setNow] = useState(() => Date.now());
+  useEffect(() => {
+    const timer = window.setInterval(() => setNow(Date.now()), 30_000);
+    return () => window.clearInterval(timer);
+  }, []);
   const connector = observerConnect ?? connectObserver;
   useEffect(() => {
     if (!state.observerConnected || (!observerConnect && typeof EventSource === "undefined")) return;
@@ -46,7 +51,7 @@ function useOperationsState({ observerConnect, observerUrl = process.env.NEXT_PU
   const exercise = mode === "exercise";
   const projection = feed.projection;
   const failedEdges = exercise ? new Set(state.failedRoad ? ["E3"] : []) : projection.failedEdges;
-  const edgeRisks = exercise ? new Map(state.predictedRisk ? [["E3", 0.973]] : []) : projection.edgeRisks;
+  const edgeRisks = exercise ? new Map(state.predictedRisk ? [["E3", 0.973]] : []) : activePredictedRisks(projection, now);
   const edgeIds = exercise ? (state.failedRoad || state.predictedRisk ? ["E6", "E7"] : ["E1", "E3"]) : projection.route?.edgeIds ?? [];
   const eta = exercise ? (state.failedRoad || state.predictedRisk ? 200 : 65) + (state.vehicleDelayed ? 18 : 0) : projection.route?.etaMinutes;
   const routeMode = exercise ? (state.failedRoad || state.predictedRisk ? "TRANSPORT_MODE_WATERWAY" : "TRANSPORT_MODE_ROAD") : projection.route?.mode;

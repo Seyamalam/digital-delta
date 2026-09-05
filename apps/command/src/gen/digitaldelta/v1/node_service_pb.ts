@@ -14,7 +14,41 @@ import type { Message } from "@bufbuild/protobuf";
  * Describes the file digitaldelta/v1/node_service.proto.
  */
 export const file_digitaldelta_v1_node_service: GenFile = /*@__PURE__*/
-  fileDesc("CiJkaWdpdGFsZGVsdGEvdjEvbm9kZV9zZXJ2aWNlLnByb3RvEg9kaWdpdGFsZGVsdGEudjEiQQoSU3luY2hyb25pemVSZXF1ZXN0EisKCGVudmVsb3BlGAEgASgLMhkuZGlnaXRhbGRlbHRhLnYxLkVudmVsb3BlIlAKE1N5bmNocm9uaXplUmVzcG9uc2USOQoPYWNrbm93bGVkZ2VtZW50GAEgASgLMiAuZGlnaXRhbGRlbHRhLnYxLkFja25vd2xlZGdlbWVudCI9Cg5PYnNlcnZlUmVxdWVzdBITCgtvYnNlcnZlcl9pZBgBIAEoCRIWCg5hZnRlcl9zZXF1ZW5jZRgCIAEoBCJoCg9PYnNlcnZlUmVzcG9uc2USEAoIc2VxdWVuY2UYASABKAQSFgoOc291cmNlX25vZGVfaWQYAiABKAkSKwoFZXZlbnQYAyABKAsyHC5kaWdpdGFsZGVsdGEudjEuRG9tYWluRXZlbnQiZAodT2JzZXJ2ZXJTZXJ2aWNlUHVibGlzaFJlcXVlc3QSFgoOc291cmNlX25vZGVfaWQYASABKAkSKwoFZXZlbnQYAiABKAsyHC5kaWdpdGFsZGVsdGEudjEuRG9tYWluRXZlbnQiMgoeT2JzZXJ2ZXJTZXJ2aWNlUHVibGlzaFJlc3BvbnNlEhAKCHNlcXVlbmNlGAEgASgEMm8KD05vZGVNZXNoU2VydmljZRJcCgtTeW5jaHJvbml6ZRIjLmRpZ2l0YWxkZWx0YS52MS5TeW5jaHJvbml6ZVJlcXVlc3QaJC5kaWdpdGFsZGVsdGEudjEuU3luY2hyb25pemVSZXNwb25zZSgBMAEyzQEKD09ic2VydmVyU2VydmljZRJqCgdQdWJsaXNoEi4uZGlnaXRhbGRlbHRhLnYxLk9ic2VydmVyU2VydmljZVB1Ymxpc2hSZXF1ZXN0Gi8uZGlnaXRhbGRlbHRhLnYxLk9ic2VydmVyU2VydmljZVB1Ymxpc2hSZXNwb25zZRJOCgdPYnNlcnZlEh8uZGlnaXRhbGRlbHRhLnYxLk9ic2VydmVSZXF1ZXN0GiAuZGlnaXRhbGRlbHRhLnYxLk9ic2VydmVSZXNwb25zZTABQnUKIWNvbS5leGFtcGxlLmRpZ2l0YWxkZWx0YS5wcm90by52MUgDUAFaTGdpdGh1Yi5jb20vU2V5YW1hbGFtL2RpZ2l0YWwtZGVsdGEvc2VydmljZXMvbm9kZS9nZW4vZGlnaXRhbGRlbHRhL3YxO2RlbHRhdjFiBnByb3RvMw", [file_digitaldelta_v1_common, file_digitaldelta_v1_events]);
+  fileDesc("CiJkaWdpdGFsZGVsdGEvdjEvbm9kZV9zZXJ2aWNlLnByb3RvEg9kaWdpdGFsZGVsdGEudjEiXgovUmVkdWNlZE1lc2hMb2FkSGFybmVzc1NlcnZpY2VTeW5jaHJvbml6ZVJlcXVlc3QSKwoIZW52ZWxvcGUYASABKAsyGS5kaWdpdGFsZGVsdGEudjEuRW52ZWxvcGUibQowUmVkdWNlZE1lc2hMb2FkSGFybmVzc1NlcnZpY2VTeW5jaHJvbml6ZVJlc3BvbnNlEjkKD2Fja25vd2xlZGdlbWVudBgBIAEoCzIgLmRpZ2l0YWxkZWx0YS52MS5BY2tub3dsZWRnZW1lbnQiQQoSU3luY2hyb25pemVSZXF1ZXN0EisKCGVudmVsb3BlGAEgASgLMhkuZGlnaXRhbGRlbHRhLnYxLkVudmVsb3BlIlAKE1N5bmNocm9uaXplUmVzcG9uc2USOQoPYWNrbm93bGVkZ2VtZW50GAEgASgLMiAuZGlnaXRhbGRlbHRhLnYxLkFja25vd2xlZGdlbWVudCI9Cg5PYnNlcnZlUmVxdWVzdBITCgtvYnNlcnZlcl9pZBgBIAEoCRIWCg5hZnRlcl9zZXF1ZW5jZRgCIAEoBCJoCg9PYnNlcnZlUmVzcG9uc2USEAoIc2VxdWVuY2UYASABKAQSFgoOc291cmNlX25vZGVfaWQYAiABKAkSKwoFZXZlbnQYAyABKAsyHC5kaWdpdGFsZGVsdGEudjEuRG9tYWluRXZlbnQiZAodT2JzZXJ2ZXJTZXJ2aWNlUHVibGlzaFJlcXVlc3QSFgoOc291cmNlX25vZGVfaWQYASABKAkSKwoFZXZlbnQYAiABKAsyHC5kaWdpdGFsZGVsdGEudjEuRG9tYWluRXZlbnQiMgoeT2JzZXJ2ZXJTZXJ2aWNlUHVibGlzaFJlc3BvbnNlEhAKCHNlcXVlbmNlGAEgASgEMm8KD05vZGVNZXNoU2VydmljZRJcCgtTeW5jaHJvbml6ZRIjLmRpZ2l0YWxkZWx0YS52MS5TeW5jaHJvbml6ZVJlcXVlc3QaJC5kaWdpdGFsZGVsdGEudjEuU3luY2hyb25pemVSZXNwb25zZSgBMAEyuAEKHVJlZHVjZWRNZXNoTG9hZEhhcm5lc3NTZXJ2aWNlEpYBCgtTeW5jaHJvbml6ZRJALmRpZ2l0YWxkZWx0YS52MS5SZWR1Y2VkTWVzaExvYWRIYXJuZXNzU2VydmljZVN5bmNocm9uaXplUmVxdWVzdBpBLmRpZ2l0YWxkZWx0YS52MS5SZWR1Y2VkTWVzaExvYWRIYXJuZXNzU2VydmljZVN5bmNocm9uaXplUmVzcG9uc2UoATABMs0BCg9PYnNlcnZlclNlcnZpY2USagoHUHVibGlzaBIuLmRpZ2l0YWxkZWx0YS52MS5PYnNlcnZlclNlcnZpY2VQdWJsaXNoUmVxdWVzdBovLmRpZ2l0YWxkZWx0YS52MS5PYnNlcnZlclNlcnZpY2VQdWJsaXNoUmVzcG9uc2USTgoHT2JzZXJ2ZRIfLmRpZ2l0YWxkZWx0YS52MS5PYnNlcnZlUmVxdWVzdBogLmRpZ2l0YWxkZWx0YS52MS5PYnNlcnZlUmVzcG9uc2UwAUJ1CiFjb20uZXhhbXBsZS5kaWdpdGFsZGVsdGEucHJvdG8udjFIA1ABWkxnaXRodWIuY29tL1NleWFtYWxhbS9kaWdpdGFsLWRlbHRhL3NlcnZpY2VzL25vZGUvZ2VuL2RpZ2l0YWxkZWx0YS92MTtkZWx0YXYxYgZwcm90bzM", [file_digitaldelta_v1_common, file_digitaldelta_v1_events]);
+
+/**
+ * @generated from message digitaldelta.v1.ReducedMeshLoadHarnessServiceSynchronizeRequest
+ */
+export type ReducedMeshLoadHarnessServiceSynchronizeRequest = Message<"digitaldelta.v1.ReducedMeshLoadHarnessServiceSynchronizeRequest"> & {
+  /**
+   * @generated from field: digitaldelta.v1.Envelope envelope = 1;
+   */
+  envelope?: Envelope | undefined;
+};
+
+/**
+ * Describes the message digitaldelta.v1.ReducedMeshLoadHarnessServiceSynchronizeRequest.
+ * Use `create(ReducedMeshLoadHarnessServiceSynchronizeRequestSchema)` to create a new message.
+ */
+export const ReducedMeshLoadHarnessServiceSynchronizeRequestSchema: GenMessage<ReducedMeshLoadHarnessServiceSynchronizeRequest> = /*@__PURE__*/
+  messageDesc(file_digitaldelta_v1_node_service, 0);
+
+/**
+ * @generated from message digitaldelta.v1.ReducedMeshLoadHarnessServiceSynchronizeResponse
+ */
+export type ReducedMeshLoadHarnessServiceSynchronizeResponse = Message<"digitaldelta.v1.ReducedMeshLoadHarnessServiceSynchronizeResponse"> & {
+  /**
+   * @generated from field: digitaldelta.v1.Acknowledgement acknowledgement = 1;
+   */
+  acknowledgement?: Acknowledgement | undefined;
+};
+
+/**
+ * Describes the message digitaldelta.v1.ReducedMeshLoadHarnessServiceSynchronizeResponse.
+ * Use `create(ReducedMeshLoadHarnessServiceSynchronizeResponseSchema)` to create a new message.
+ */
+export const ReducedMeshLoadHarnessServiceSynchronizeResponseSchema: GenMessage<ReducedMeshLoadHarnessServiceSynchronizeResponse> = /*@__PURE__*/
+  messageDesc(file_digitaldelta_v1_node_service, 1);
 
 /**
  * @generated from message digitaldelta.v1.SynchronizeRequest
@@ -31,7 +65,7 @@ export type SynchronizeRequest = Message<"digitaldelta.v1.SynchronizeRequest"> &
  * Use `create(SynchronizeRequestSchema)` to create a new message.
  */
 export const SynchronizeRequestSchema: GenMessage<SynchronizeRequest> = /*@__PURE__*/
-  messageDesc(file_digitaldelta_v1_node_service, 0);
+  messageDesc(file_digitaldelta_v1_node_service, 2);
 
 /**
  * @generated from message digitaldelta.v1.SynchronizeResponse
@@ -48,7 +82,7 @@ export type SynchronizeResponse = Message<"digitaldelta.v1.SynchronizeResponse">
  * Use `create(SynchronizeResponseSchema)` to create a new message.
  */
 export const SynchronizeResponseSchema: GenMessage<SynchronizeResponse> = /*@__PURE__*/
-  messageDesc(file_digitaldelta_v1_node_service, 1);
+  messageDesc(file_digitaldelta_v1_node_service, 3);
 
 /**
  * @generated from message digitaldelta.v1.ObserveRequest
@@ -70,7 +104,7 @@ export type ObserveRequest = Message<"digitaldelta.v1.ObserveRequest"> & {
  * Use `create(ObserveRequestSchema)` to create a new message.
  */
 export const ObserveRequestSchema: GenMessage<ObserveRequest> = /*@__PURE__*/
-  messageDesc(file_digitaldelta_v1_node_service, 2);
+  messageDesc(file_digitaldelta_v1_node_service, 4);
 
 /**
  * @generated from message digitaldelta.v1.ObserveResponse
@@ -97,7 +131,7 @@ export type ObserveResponse = Message<"digitaldelta.v1.ObserveResponse"> & {
  * Use `create(ObserveResponseSchema)` to create a new message.
  */
 export const ObserveResponseSchema: GenMessage<ObserveResponse> = /*@__PURE__*/
-  messageDesc(file_digitaldelta_v1_node_service, 3);
+  messageDesc(file_digitaldelta_v1_node_service, 5);
 
 /**
  * @generated from message digitaldelta.v1.ObserverServicePublishRequest
@@ -119,7 +153,7 @@ export type ObserverServicePublishRequest = Message<"digitaldelta.v1.ObserverSer
  * Use `create(ObserverServicePublishRequestSchema)` to create a new message.
  */
 export const ObserverServicePublishRequestSchema: GenMessage<ObserverServicePublishRequest> = /*@__PURE__*/
-  messageDesc(file_digitaldelta_v1_node_service, 4);
+  messageDesc(file_digitaldelta_v1_node_service, 6);
 
 /**
  * @generated from message digitaldelta.v1.ObserverServicePublishResponse
@@ -136,7 +170,7 @@ export type ObserverServicePublishResponse = Message<"digitaldelta.v1.ObserverSe
  * Use `create(ObserverServicePublishResponseSchema)` to create a new message.
  */
 export const ObserverServicePublishResponseSchema: GenMessage<ObserverServicePublishResponse> = /*@__PURE__*/
-  messageDesc(file_digitaldelta_v1_node_service, 5);
+  messageDesc(file_digitaldelta_v1_node_service, 7);
 
 /**
  * @generated from service digitaldelta.v1.NodeMeshService
@@ -152,6 +186,24 @@ export const NodeMeshService: GenService<{
   },
 }> = /*@__PURE__*/
   serviceDesc(file_digitaldelta_v1_node_service, 0);
+
+/**
+ * Isolated engineering workload: no credential verification or signed receipts.
+ * Never register this implementation under NodeMeshService or use for field traffic.
+ *
+ * @generated from service digitaldelta.v1.ReducedMeshLoadHarnessService
+ */
+export const ReducedMeshLoadHarnessService: GenService<{
+  /**
+   * @generated from rpc digitaldelta.v1.ReducedMeshLoadHarnessService.Synchronize
+   */
+  synchronize: {
+    methodKind: "bidi_streaming";
+    input: typeof ReducedMeshLoadHarnessServiceSynchronizeRequestSchema;
+    output: typeof ReducedMeshLoadHarnessServiceSynchronizeResponseSchema;
+  },
+}> = /*@__PURE__*/
+  serviceDesc(file_digitaldelta_v1_node_service, 1);
 
 /**
  * @generated from service digitaldelta.v1.ObserverService
@@ -174,5 +226,5 @@ export const ObserverService: GenService<{
     output: typeof ObserveResponseSchema;
   },
 }> = /*@__PURE__*/
-  serviceDesc(file_digitaldelta_v1_node_service, 1);
+  serviceDesc(file_digitaldelta_v1_node_service, 2);
 

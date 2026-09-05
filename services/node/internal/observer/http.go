@@ -52,10 +52,14 @@ func (h *HTTPHandler) events(writer http.ResponseWriter, request *http.Request) 
 		}
 		for _, response := range responses {
 			encoded, err := json.Marshal(toPresentationEvent(response))
-			if err != nil {
-				return
+			kind := "observation"
+			if err != nil || validateEvent(response.Event) != nil {
+				// Retain the original record for investigation; expose no bad payload.
+				// A named rejection advances the cursor so subsequent records replay.
+				kind = "observation-rejected"
+				encoded = []byte(`{"reason":"INVALID_RETAINED_RECORD"}`)
 			}
-			if _, err := fmt.Fprintf(writer, "id: %d\nevent: observation\ndata: %s\n\n", response.GetSequence(), encoded); err != nil {
+			if _, err := fmt.Fprintf(writer, "id: %d\nevent: %s\ndata: %s\n\n", response.GetSequence(), kind, encoded); err != nil {
 				return
 			}
 			flusher.Flush()
@@ -108,6 +112,12 @@ type presentationEvent struct {
 // observer. It deliberately excludes cargo contents, signatures and ciphertext.
 // Sequence numbers are assigned by D1, not this publisher.
 func PublicObservationJSON(source string, event *deltav1.DomainEvent) ([]byte, error) {
+	if event == nil {
+		return nil, fmt.Errorf("event required")
+	}
+	if err := validateEvent(event); err != nil {
+		return nil, err
+	}
 	return json.Marshal(toPresentationEvent(&deltav1.ObserveResponse{SourceNodeId: source, Event: event}))
 }
 

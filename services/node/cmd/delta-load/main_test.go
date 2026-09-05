@@ -26,7 +26,7 @@ func TestRunMaintainsAcknowledgedConcurrentStreams(t *testing.T) {
 		t.Fatal(err)
 	}
 	server := grpc.NewServer()
-	deltav1.RegisterNodeMeshServiceServer(server, mesh.NewService(store))
+	deltav1.RegisterReducedMeshLoadHarnessServiceServer(server, mesh.NewService(store))
 	go server.Serve(listener)
 	defer server.Stop()
 

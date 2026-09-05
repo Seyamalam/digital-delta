@@ -14,6 +14,20 @@ service NodeMeshService {
   rpc Synchronize(stream SynchronizeRequest) returns (stream SynchronizeResponse);
 }
 
+// Isolated engineering workload: no credential verification or signed receipts.
+// Never register this implementation under NodeMeshService or use for field traffic.
+service ReducedMeshLoadHarnessService {
+  rpc Synchronize(stream ReducedMeshLoadHarnessServiceSynchronizeRequest) returns (stream ReducedMeshLoadHarnessServiceSynchronizeResponse);
+}
+
+message ReducedMeshLoadHarnessServiceSynchronizeRequest {
+  Envelope envelope = 1;
+}
+
+message ReducedMeshLoadHarnessServiceSynchronizeResponse {
+  Acknowledgement acknowledgement = 1;
+}
+
 message SynchronizeRequest {
   Envelope envelope = 1;
 }

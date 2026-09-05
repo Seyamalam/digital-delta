@@ -18,3 +18,16 @@ func TestDefaultDashboardOriginsMatchNextDevelopmentServer(t *testing.T) {
 		}
 	}
 }
+
+func TestReducedHarnessRejectsNonLoopbackBindings(t *testing.T) {
+	for _, address := range []string{"0.0.0.0:7070", ":7070", "192.168.1.1:7070", "localhost:7070"} {
+		if requireLoopback(address) == nil {
+			t.Fatalf("accepted %s", address)
+		}
+	}
+	for _, address := range []string{"127.0.0.1:7070", "[::1]:7070"} {
+		if err := requireLoopback(address); err != nil {
+			t.Fatal(err)
+		}
+	}
+}

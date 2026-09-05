@@ -27,7 +27,7 @@ func TestSynchronizeStreamsDurableAcknowledgements(t *testing.T) {
 
 	listener := bufconn.Listen(1024 * 1024)
 	server := grpc.NewServer()
-	deltav1.RegisterNodeMeshServiceServer(server, NewService(store))
+	deltav1.RegisterReducedMeshLoadHarnessServiceServer(server, NewService(store))
 	go func() { _ = server.Serve(listener) }()
 	t.Cleanup(server.Stop)
 
@@ -43,11 +43,11 @@ func TestSynchronizeStreamsDurableAcknowledgements(t *testing.T) {
 	}
 	t.Cleanup(func() { _ = connection.Close() })
 
-	stream, err := deltav1.NewNodeMeshServiceClient(connection).Synchronize(ctx)
+	stream, err := deltav1.NewReducedMeshLoadHarnessServiceClient(connection).Synchronize(ctx)
 	if err != nil {
 		t.Fatal(err)
 	}
-	if err := stream.Send(&deltav1.SynchronizeRequest{Envelope: validEnvelope(now)}); err != nil {
+	if err := stream.Send(&deltav1.ReducedMeshLoadHarnessServiceSynchronizeRequest{Envelope: validEnvelope(now)}); err != nil {
 		t.Fatal(err)
 	}
 	response, err := stream.Recv()
