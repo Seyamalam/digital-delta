@@ -28,3 +28,4 @@ artifacts/demo-state-backups/
 # Generated inspection intermediates stay local; final DOCX, PDF, and PPTX are versioned.
 output/qa/
 .artifacts/
+apps/field-android/app/src/debug/assets/observer-local-evidence.json

@@ -77,6 +77,8 @@ message ConflictResolved {
   bytes selected_value = 2;
   string resolver_identity_id = 3;
   string reason_code = 4;
+  string mission_id = 5;
+  VectorClock vector_clock = 6;
 }
 
 message SlaBreachPredicted {

@@ -25,7 +25,13 @@ class MeshOutboxDispatcher(
     private val acknowledgementVerifier: MeshAcknowledgementVerifier,
     private val nowUnixMs: () -> Long = System::currentTimeMillis,
 ) {
-    suspend fun dispatch(peerId: String, limit: Int = 20): DispatchReport {
+    suspend fun dispatchConnected(peerIds: Set<String>) {
+        // Deliver directly before offering any remaining work to intermediaries.
+        peerIds.sorted().forEach { dispatch(it, destinationOnly = true) }
+        peerIds.sorted().forEach { dispatch(it) }
+    }
+
+    suspend fun dispatch(peerId: String, limit: Int = 20, destinationOnly: Boolean = false): DispatchReport {
         require(peerId.isNotBlank()) { "peer id is required" }
         require(limit in 1..100) { "dispatch limit must be between 1 and 100" }
         val now = nowUnixMs()
@@ -40,7 +46,10 @@ class MeshOutboxDispatcher(
         while (pending.size < limit) {
             val page = database.outboxDao().pendingForPeer(peerId, now, limit, offset)
             if (page.isEmpty()) break
-            pending.addAll(page.filter { MeshWireCodec.decode(it.wireBytes).senderNodeId != peerId }.take(limit - pending.size))
+            pending.addAll(page.filter {
+                val envelope = MeshWireCodec.decode(it.wireBytes)
+                envelope.senderNodeId != peerId && (!destinationOnly || envelope.recipientNodeId == peerId)
+            }.take(limit - pending.size))
             offset += page.size
             if (page.size < limit) break
         }
@@ -85,8 +94,15 @@ class MeshOutboxDispatcher(
                 }
 
                 acknowledgement.status == AcknowledgementStatus.ACKNOWLEDGEMENT_STATUS_REJECTED -> {
-                    database.outboxDao().markDeadLetter(item.messageId)
-                    deadLettered += 1
+                    if (peerId == envelope.recipientNodeId) {
+                        database.outboxDao().markDeadLetter(item.messageId)
+                        deadLettered += 1
+                    } else {
+                        // One intermediate node cannot retire another destination's copy.
+                        database.meshForwardDao().record(com.example.digitaldelta.data.local.MeshForwardReceipt(item.messageId, peerId, acknowledgement.recordedAtUnixMs))
+                        database.outboxDao().scheduleRetry(item.messageId, now)
+                        retried += 1
+                    }
                 }
 
                 else -> {

@@ -1,5 +1,25 @@
 # Testing and evidence strategy
 
+## Independent field workflow regressions
+
+`IndependentFieldWorkflowTest` uses three separate Room files and disjoint Keystore
+namespaces. It exercises signed A→B→C forwarding with A still connected, relay and
+recipient restart, duplicate admission, accepted medical quantity, independent edits,
+coordinator resolution, equal convergence hashes, and provisioned cross-identity PoD
+with tamper/replay rejection. This is protocol/storage evidence, not physical-radio QA.
+
+Its publication recovery test always exercises offline retry and restart with a
+controlled transport. If the ignored debug asset `observer-local-evidence.json`
+is supplied, it additionally sends the actual phone-created, visibly simulated
+request to a local Hono/D1 instance and checks the returned event ID exactly once.
+The asset contains `{endpoint, sourceNodeId, token}` and must never be committed or
+distributed. Only debug permits `http://10.0.2.2`; release requires HTTPS.
+
+The September 5 remediation run passed 70 connected tests on emulator-5554 with
+zero failures/skips, including that actual HTTP extension against local port 7073.
+This does not prove a physical camera scan, receipt return to the sender, generalized
+driver assignment, target-phone memory, or three full unchanged venue rehearsals.
+
 ## September 5 migration checkpoint
 
 The current observer is Hono/Workers with D1, not the legacy Go observer. Its local

@@ -53,6 +53,7 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.stateIn
+import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
@@ -119,6 +120,17 @@ class MainScreenViewModel @Inject constructor(
     init {
         viewModelScope.launch { loadUnlockState() }
         viewModelScope.launch { loadIdentity() }
+        viewModelScope.launch { identityCoordinator.authorityChanges.collect { loadIdentity() } }
+        // Expiry changes authority without a database write. Commands still check
+        // the exact current time; this keeps an idle, open screen truthful too.
+        viewModelScope.launch {
+            mutableIdentityState.collectLatest { state ->
+                val ready = state.readySnapshot()
+                val expiry = ready?.localCredential?.expiresAtMillis ?: return@collectLatest
+                delay((expiry - System.currentTimeMillis()).coerceAtLeast(0))
+                refreshAuthorization(ready)
+            }
+        }
         viewModelScope.launch { mutableConflictState.value = conflictCoordinator.snapshot() }
         viewModelScope.launch { prepareHandoffInternal() }
     }
@@ -376,7 +388,10 @@ class MainScreenViewModel @Inject constructor(
     fun verifyScannedHandoff(code: String) {
         viewModelScope.launch {
             if (authorize(Permission.ACCEPT_CUSTODY) == null) return@launch
-            val offer = mutableProofOfDeliveryState.value.offerOrNull() ?: return@launch
+            val offer = runCatching { com.example.digitaldelta.domain.pod.DeliveryOfferCodec().preview(code) }.getOrElse {
+                mutableProofOfDeliveryState.value = ProofOfDeliveryUiState.Failed
+                return@launch
+            }
             if (mutableProofOfDeliveryState.value is ProofOfDeliveryUiState.Verifying) return@launch
             verifyOfferCode(offer, code)
         }
@@ -465,7 +480,11 @@ class MainScreenViewModel @Inject constructor(
     }
 
     private suspend fun loadIdentity() {
-        val loaded = runCatching { identityCoordinator.snapshot().toUiState() }
+        val loaded = runCatching {
+            val snapshot = identityCoordinator.snapshot()
+            val previous = mutableIdentityState.value.readySnapshot()?.takeIf { it.localNodeId == snapshot.localNodeId }
+            snapshot.toUiState(lastRevocation = previous?.lastRevocation)
+        }
             .getOrElse { IdentityUiState.Failed(null, IdentityFailure.KEYSTORE) }
         mutableIdentityState.value = loaded
         refreshAuthorization(loaded.readySnapshot())

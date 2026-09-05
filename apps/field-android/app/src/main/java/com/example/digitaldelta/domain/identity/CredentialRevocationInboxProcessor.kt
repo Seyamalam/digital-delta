@@ -57,6 +57,8 @@ class CredentialRevocationInboxProcessor(
                 decodedEventId = event.eventId.takeIf(String::isNotBlank)
                 if (!event.hasCredentialRevoked()) {
                     require(com.example.digitaldelta.domain.mesh.AndroidEnvelopeSecurity(deviceKeys, database.recipientKeyDao(), trustAnchors).verify(envelope, nowUnixMs())) { "Origin signature rejected" }
+                    val issuer = trustAnchors.trustedIssuer.first() ?: throw TransientApplicationException("Trust anchor unavailable")
+                    recipients.accept(envelope.senderCredential.toByteArray(), issuer.publicKeyDer, nowUnixMs())
                     return@runCatching if (com.example.digitaldelta.domain.sync.ReceivedEventApplication(database).apply(event, envelope, localNodeId)) ApplicationResult.APPLIED else ApplicationResult.DEFERRED_UNSUPPORTED
                 }
                 val signed = event.credentialRevoked
@@ -83,7 +85,7 @@ class CredentialRevocationInboxProcessor(
                 ApplicationResult.APPLIED
             }
             val outcome = result.getOrElse { error ->
-                if (error is TransientApplicationException) ApplicationResult.RETRY else ApplicationResult.REJECTED
+                if (error is TransientApplicationException || error is com.example.digitaldelta.domain.sync.MissingEventDependency) ApplicationResult.RETRY else ApplicationResult.REJECTED
             }
             database.inboxApplicationDao().upsert(
                 InboxApplicationEntity(

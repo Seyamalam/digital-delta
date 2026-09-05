@@ -35,6 +35,8 @@ class RecipientProvisioningRepository(
     private val credentials: ProvisioningCredentialService = ProvisioningCredentialService(),
     private val revocations: CredentialRevocationService = CredentialRevocationService(),
 ) {
+    val authorities = dao.observeAuthorities()
+
     suspend fun accept(
         credentialBytes: ByteArray,
         trustedIssuerPublicKeyDer: ByteArray,

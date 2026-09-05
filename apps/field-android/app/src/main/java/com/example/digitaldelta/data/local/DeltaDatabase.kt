@@ -19,6 +19,18 @@ enum class QueueState {
     DEAD_LETTER,
 }
 
+@Entity(tableName = "observer_publications", primaryKeys = ["eventId", "destination"])
+data class ObserverPublication(val eventId: String, val destination: String, val status: String, val recordedAtUnixMs: Long)
+
+@Dao
+interface ObserverPublicationDao {
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    suspend fun record(value: ObserverPublication)
+
+    @Query("SELECT * FROM operation_log WHERE NOT EXISTS (SELECT 1 FROM observer_publications p WHERE p.eventId = operation_log.eventId AND p.destination = :destination) ORDER BY createdAtUnixMs, eventId LIMIT :limit")
+    suspend fun pending(destination: String, limit: Int): List<OperationEntity>
+}
+
 @Entity(tableName = "mesh_forward_receipts", primaryKeys = ["messageId", "peerId"])
 data class MeshForwardReceipt(val messageId: String, val peerId: String, val recordedAtUnixMs: Long)
 
@@ -263,7 +275,7 @@ interface MeshInboxDao {
             "LEFT JOIN inbox_applications ON inbox_applications.messageId = mesh_inbox.messageId " +
             "WHERE mesh_inbox.recipientNodeId = :localNodeId " +
             "AND (inbox_applications.messageId IS NULL OR inbox_applications.state = 'RETRY') " +
-            "ORDER BY mesh_inbox.receivedAtUnixMs ASC, mesh_inbox.messageId ASC LIMIT :limit",
+            "ORDER BY COALESCE(inbox_applications.attemptCount, 0) ASC, mesh_inbox.receivedAtUnixMs ASC, mesh_inbox.messageId ASC LIMIT :limit",
     )
     suspend fun pendingApplication(localNodeId: String, limit: Int): List<MeshInboxEntity>
 }
@@ -297,6 +309,11 @@ interface NonceDao {
 
 @Dao
 interface OperationLogDao {
+    @Query("SELECT * FROM operation_log WHERE eventType = 'RELIEF_REQUEST_CREATED' ORDER BY createdAtUnixMs DESC, eventId")
+    fun observeRequests(): kotlinx.coroutines.flow.Flow<List<OperationEntity>>
+
+    @Query("SELECT * FROM operation_log WHERE eventType = 'RELIEF_REQUEST_CREATED' ORDER BY createdAtUnixMs DESC, eventId")
+    suspend fun requests(): List<OperationEntity>
     @Insert(onConflict = OnConflictStrategy.ABORT)
     suspend fun append(operation: OperationEntity)
 
@@ -324,6 +341,9 @@ interface OperationLogDao {
 
 @Dao
 interface RecipientKeyDao {
+    @Query("SELECT * FROM recipient_keys ORDER BY nodeId")
+    fun observeAuthorities(): kotlinx.coroutines.flow.Flow<List<RecipientKeyEntity>>
+
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun upsert(key: RecipientKeyEntity)
 
@@ -351,6 +371,8 @@ interface RecipientKeyDao {
 
 @Dao
 interface MissionProjectionDao {
+    @Query("SELECT * FROM mission_projections ORDER BY missionId, fieldCode")
+    fun observeAll(): kotlinx.coroutines.flow.Flow<List<MissionProjectionEntity>>
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun upsert(projection: MissionProjectionEntity)
 
@@ -381,6 +403,10 @@ interface CargoAssignmentDao {
 
 @Dao
 interface ConflictDao {
+    @Query("SELECT EXISTS(SELECT 1 FROM conflicts WHERE missionId = :missionId AND state = 'OPEN')")
+    suspend fun hasOpen(missionId: String): Boolean
+    @Query("SELECT * FROM conflicts WHERE state = 'OPEN' ORDER BY createdAtUnixMs, conflictId")
+    fun observeOpen(): kotlinx.coroutines.flow.Flow<List<ConflictEntity>>
     @Insert(onConflict = OnConflictStrategy.ABORT)
     suspend fun insert(conflict: ConflictEntity)
 
@@ -426,11 +452,13 @@ interface ConflictDao {
         ConflictEntity::class,
         InboxApplicationEntity::class,
         MeshForwardReceipt::class,
+        ObserverPublication::class,
     ],
-    version = 7,
+    version = 8,
     exportSchema = true,
 )
 abstract class DeltaDatabase : RoomDatabase() {
+    abstract fun observerPublicationDao(): ObserverPublicationDao
     abstract fun meshForwardDao(): MeshForwardDao
     abstract fun outboxDao(): OutboxDao
     abstract fun nonceDao(): NonceDao
@@ -445,6 +473,11 @@ abstract class DeltaDatabase : RoomDatabase() {
 }
 
 object DeltaMigrations {
+    val VERSION_7_TO_8 = object : Migration(7, 8) {
+        override fun migrate(db: SupportSQLiteDatabase) {
+            db.execSQL("CREATE TABLE IF NOT EXISTS observer_publications (eventId TEXT NOT NULL, destination TEXT NOT NULL, status TEXT NOT NULL, recordedAtUnixMs INTEGER NOT NULL, PRIMARY KEY(eventId, destination))")
+        }
+    }
     val VERSION_6_TO_7 = object : Migration(6, 7) {
         override fun migrate(db: SupportSQLiteDatabase) {
             db.execSQL("CREATE TABLE IF NOT EXISTS mesh_forward_receipts (messageId TEXT NOT NULL, peerId TEXT NOT NULL, recordedAtUnixMs INTEGER NOT NULL, PRIMARY KEY(messageId, peerId))")

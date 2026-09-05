@@ -374,3 +374,32 @@ artifacts/
 - Model runtime size and memory budget
 
 Record decisions and evidence in [DECISIONS.md](DECISIONS.md).
+
+## September 5 remediation checkpoint
+
+The native Missions workspace reads accepted requests and projections from Room.
+Local request creation writes that projection atomically with its encrypted outbox.
+Signed mission edits and coordinator resolutions use independent recipient encryption
+and the inbox application path. Missing dependencies remain retryable; retry ordering
+cannot permanently starve new creation events. Transport receipts are not acceptance.
+
+Operational custody uses persisted requests, current projections and provisioned
+participant credentials. The production dependency graph no longer uses same-phone
+demo aliases. M8 retains an explicitly simulated boat/drone exercise. The initial
+operational custodian is currently the requesting node; generalized driver assignment
+and returning the signed receipt to the sender are not yet closed.
+
+Optional headquarters publication uses the operation log as durable work and
+`observer_publications` as its per-destination receipt ledger (Room schema 8).
+WorkManager sends allowlisted summaries to Hono using a separately provisioned,
+source-bound token encrypted under an Android Keystore AES key. HTTPS is required
+in release; debug permits explicit emulator/loopback HTTP addresses. Publication
+failure cannot roll back field work. The Android allowlist currently covers request,
+route and SLA summaries; cargo details, free text, keys, signatures and mesh payloads
+are excluded. Only the request workflow currently schedules immediate publication;
+the periodic worker also drains eligible locally recorded events.
+
+Go's engineering workload is registered only as `ReducedMeshLoadHarnessService`,
+with separate request/response types and literal loopback binding. It does not
+implement the secured `NodeMeshService` contract. Its performance reports must
+remain labelled reduced-workload measurements.

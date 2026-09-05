@@ -294,4 +294,33 @@
     <string name="increase_value">%1$s বাড়ান</string>
     <string name="priority_p0_short">P0</string>
     <string name="predicted_risk_value">পূর্বাভাস %1$s</string>
+    <string name="observer_optional_title">ঐচ্ছিক সদর দপ্তর প্রকাশনা</string>
+    <string name="observer_privacy_help">শুধু অনুরোধের আইডি ও পথের সারাংশ পাঠানো হবে। সরবরাহের বিস্তারিত ও চাবি ফোনেই থাকবে। সদর দপ্তর সংযুক্ত না থাকলেও মাঠের কাজ চলবে। প্রকাশিত সারাংশ ফিরিয়ে নেওয়া যাবে না।</string>
+    <string name="observer_enabled">সক্রিয় · অপেক্ষমাণ রেকর্ড আলাদাভাবে আবার পাঠানো হবে</string>
+    <string name="observer_disabled">নিষ্ক্রিয় · মাঠের কাজ স্থানীয় থাকবে</string>
+    <string name="observer_configuration">প্রশাসকের প্রকাশক কনফিগারেশন</string>
+    <string name="observer_configuration_error">কনফিগারেশন সংরক্ষণ হয়নি। এই ফোনের নোড, HTTPS ঠিকানা ও প্রকাশক টোকেন পরীক্ষা করুন।</string>
+    <string name="observer_enable">সারাংশ প্রকাশ সক্রিয় করুন</string>
+    <string name="observer_disable">পরবর্তী প্রকাশ বন্ধ করুন</string>
+    <string name="nav_missions">মিশন</string>
+    <string name="mission_workspace_help">এই ফোনে গৃহীত অনুরোধ। সম্পাদনা স্থানীয়ভাবে সংরক্ষিত হয় এবং মিশনের অন্য অংশগ্রহণকারীর জন্য এনক্রিপ্ট করা হয়।</string>
+    <string name="mission_empty">এখনো কোনো গৃহীত অনুরোধ নেই। অনুরোধ তৈরি করুন অথবা মেশের মাধ্যমে গ্রহণ করুন।</string>
+    <string name="mission_destination">গন্তব্য নোড</string>
+    <string name="mission_priority">অগ্রাধিকার (1=P0, 2=P1, 3=P2, 4=P3)</string>
+    <string name="mission_quantity">চিকিৎসা সামগ্রীর পরিমাণ</string>
+    <string name="mission_note">মিশনের নোট</string>
+    <string name="mission_edit">মিশন সম্পাদনা</string>
+    <string name="mission_edit_help">নিরাপত্তাসংশ্লিষ্ট একসঙ্গে করা সম্পাদনার জন্য সমন্বয়কারীর সিদ্ধান্ত প্রয়োজন। গন্তব্য পরিচিত নোড হতে হবে; পরিমাণ পূর্ণসংখ্যা হতে হবে।</string>
+    <string name="mission_save">সম্পাদনা সংরক্ষণ ও সারিতে রাখুন</string>
+    <string name="mission_action_error">কাজটি প্রয়োগ হয়নি। বর্তমান ভূমিকা, অন্য ফোনের পরিচয়পত্র, মান ও অমীমাংসিত দ্বন্দ্ব পরীক্ষা করুন।</string>
+    <string name="mission_simulated">সিমুলেটেড অনুরোধ</string>
+    <string name="mission_field_record">গৃহীত ফিল্ড রেকর্ড · সরবরাহের নিশ্চয়তা নয়</string>
+    <string name="mission_route_assumptions">পরিকল্পনার হিসাব · সংরক্ষিত নেটওয়ার্ক ও মহড়ার যাত্রাসময়, সরাসরি সড়কের অবস্থা নয়</string>
+    <string name="mission_no_route">সংরক্ষিত নেটওয়ার্কে ট্রাক বা নৌযানের পথ নেই। মানুষের পরিকল্পনা প্রয়োজন।</string>
+    <string name="mission_minutes">মিনিট</string>
+    <string name="mission_sla_warning">৩০% ধীরগতিতে অগ্রাধিকারের সময়সীমা অতিক্রম হবে। পরিকল্পনা পর্যালোচনা করুন।</string>
+    <string name="mission_sla_within">৩০% ধীরগতিতেও আনুমানিক আগমন অগ্রাধিকারের সময়সীমার মধ্যে থাকবে।</string>
+    <string name="mission_conflict_help">নিরাপত্তাসংশ্লিষ্ট দ্বন্দ্ব অমীমাংসিত। হস্তান্তরের আগে সমন্বয়কারীকে গ্রহণযোগ্য মান নির্বাচন করতে হবে।</string>
+    <string name="mission_resolve">মান নিশ্চিত করুন</string>
+    <string name="mission_hash">অবস্থার হ্যাশ · SHA-256 %1$s</string>
 </resources>

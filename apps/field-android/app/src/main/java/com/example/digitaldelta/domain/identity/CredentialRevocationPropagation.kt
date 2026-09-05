@@ -56,7 +56,11 @@ class RoomCredentialRevocationPropagator(
         val eventBytes = event.toByteArray()
         val eventHash = sha256(eventBytes)
         val now = nowUnixMs()
-        val recipients = database.recipientKeyDao().validAt(now)
+        val local = database.recipientKeyDao().findByNodeId(senderNodeId)
+        val inactive = local != null && (local.revokedAtUnixMs != null || local.issuedAtUnixMs > now || local.expiresAtUnixMs <= now)
+        // Learning our own revocation must succeed locally, but cannot authorize
+        // any new envelope from this now-revoked key. The issuer/other peers relay it.
+        val recipients = (if (inactive) emptyList() else database.recipientKeyDao().validAt(now))
             .filterNot { it.nodeId == senderNodeId || it.nodeId in excludedNodeIds }
         val envelopes = recipients.map { recipient ->
             val messageId = "${receipt.revocationId}:$senderNodeId:${recipient.nodeId}"

@@ -79,6 +79,7 @@ object AppModule {
                 DeltaMigrations.VERSION_4_TO_5,
                 DeltaMigrations.VERSION_5_TO_6,
                 DeltaMigrations.VERSION_6_TO_7,
+                DeltaMigrations.VERSION_7_TO_8,
             )
             .build()
 
@@ -185,12 +186,13 @@ object AppModule {
     @Provides
     @Singleton
     fun provideRequestSubmission(
+        @ApplicationContext context: Context,
         database: DeltaDatabase,
         payloadProtector: MeshPayloadProtector,
         deviceKeys: AndroidDeviceIdentityKeyStore,
         trustAnchors: TrustAnchorRepository,
     ): ReliefRequestSubmission = DefaultReliefRequestSubmission(
-        persistence = RoomRequestPersistence(database),
+        persistence = RoomRequestPersistence(database, applyLocalProjection = true) { com.example.digitaldelta.service.ObserverPublication.schedule(context) },
         payloadProtector = payloadProtector,
         envelopeSigner = com.example.digitaldelta.domain.mesh.AndroidEnvelopeSecurity(deviceKeys, database.recipientKeyDao(), trustAnchors),
     )
@@ -228,10 +230,12 @@ object AppModule {
         database: DeltaDatabase,
         deviceKeys: AndroidDeviceIdentityKeyStore,
         recipients: RecipientProvisioningRepository,
-    ): ProofOfDeliveryWorkflow = RoomProofOfDeliveryWorkflow(
+        profiles: DeviceProfileRepository,
+    ): ProofOfDeliveryWorkflow = com.example.digitaldelta.domain.pod.OperationalProofOfDeliveryWorkflow(
         database,
         deviceKeys,
-        senderCredentialLookup = recipients::installedIdentity,
+        recipients,
+        profiles,
     )
 
     @Provides

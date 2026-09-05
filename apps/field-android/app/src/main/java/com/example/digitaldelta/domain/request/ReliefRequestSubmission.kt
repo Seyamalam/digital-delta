@@ -41,12 +41,17 @@ interface RequestPersistence {
     suspend fun persist(operation: OperationEntity, envelope: MeshEnvelopeEntity)
 }
 
-class RoomRequestPersistence(private val database: DeltaDatabase) : RequestPersistence {
+class RoomRequestPersistence(private val database: DeltaDatabase, private val applyLocalProjection: Boolean = false, private val afterCommit: () -> Unit = {}) : RequestPersistence {
     override suspend fun persist(operation: OperationEntity, envelope: MeshEnvelopeEntity) {
         database.withTransaction {
-            database.operationLogDao().append(operation)
+            if (applyLocalProjection) {
+                val origin = MeshWireCodec.decode(envelope.wireBytes)
+                com.example.digitaldelta.domain.sync.ReceivedEventApplication(database).apply(DomainEvent.parseFrom(operation.payloadBytes), origin, origin.senderNodeId)
+            } else database.operationLogDao().append(operation)
             check(database.outboxDao().enqueue(envelope) > 0) { "duplicate mesh message id" }
         }
+        // Publication scheduling failure cannot roll back or fail a field request.
+        runCatching { afterCommit() }
     }
 }
 

@@ -44,6 +44,18 @@ class ReceivedEventApplicationTest {
         assertTrue(database.operationLogDao().forMission("request-1").isEmpty())
     }
 
+    @Test fun outOfOrderEditRemainsRetryableAndAppliesAfterCreation() = runTest {
+        val edit = update("request-1", "clinic-1")
+        val failure = runCatching { application.apply(edit, origin, "N6") }.exceptionOrNull()
+        assertTrue(failure is MissingEventDependency)
+        assertNull(database.operationLogDao().find(edit.eventId))
+        application.apply(request(), origin, "N6")
+        application.apply(edit, origin, "N6")
+        application.apply(edit, origin, "N6")
+        assertEquals("2", database.missionProjectionDao().find("request-1", "PRIORITY")?.value)
+        assertEquals(2, database.operationLogDao().forMission("request-1").size)
+    }
+
     @Test fun unrelatedClinicCannotEditAnotherClinicsMission() = runTest {
         application.apply(request(), origin, "N6")
         val stranger = origin.toBuilder().setSenderNodeId("N5").setSenderCredential(

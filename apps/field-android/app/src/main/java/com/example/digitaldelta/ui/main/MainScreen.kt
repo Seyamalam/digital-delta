@@ -165,6 +165,7 @@ private enum class AppLanguage(val tag: String) {
 }
 
 private enum class DeltaDestination(@param:StringRes val label: Int, val icon: ImageVector) {
+    MISSIONS(R.string.nav_missions, Icons.Default.Inventory2),
     OPERATIONS(R.string.nav_operations, Icons.Default.Map),
     REQUEST(R.string.nav_request, Icons.Default.AddCircle),
     ROUTE(R.string.nav_route, Icons.Default.Hub),
@@ -658,6 +659,7 @@ private fun DeltaShell(
                 return@AnimatedContent
             }
             when (selected) {
+                DeltaDestination.MISSIONS -> MissionWorkspace(language.tag)
                 DeltaDestination.OPERATIONS -> OperationsScreen(
                     language = language,
                     authorizationState = authorizationState,
@@ -819,6 +821,7 @@ private fun IdentityScreen(
                 }
             }
             item { AuthorizationCard(language, authorizationState) }
+            item { ObserverSettingsCard(language.tag, ready.localNodeId) }
             item {
                 SectionLabel(text(R.string.device_profile, language))
                 Spacer(Modifier.height(8.dp))
@@ -2774,7 +2777,7 @@ private fun HandoffScreen(
                             }
                         }
                     }
-                    if (offer != null && state !is ProofOfDeliveryUiState.Verifying) {
+                    if (state !is ProofOfDeliveryUiState.Verifying) {
                         OutlinedButton(
                             onClick = { scannerOpen = true },
                             enabled = onScan != null && authorizationState.allows(Permission.ACCEPT_CUSTODY),
@@ -2784,6 +2787,8 @@ private fun HandoffScreen(
                             Spacer(Modifier.width(8.dp))
                             Text(text(R.string.scan_delivery_qr, language))
                         }
+                    }
+                    if (offer != null && state !is ProofOfDeliveryUiState.Verifying) {
                         Button(
                             onClick = { onVerify?.invoke(false) },
                             enabled = authorizationState.allows(Permission.ACCEPT_CUSTODY),
@@ -2826,8 +2831,8 @@ private fun HandoffScreen(
                     }
                     if (offer != null) {
                         DetailRow(text(R.string.delivery_id, language), offer.deliveryId, Icons.Default.Inventory2)
-                        DetailRow(text(R.string.sender, language), "Boat-02", Icons.Default.DirectionsBoat)
-                        DetailRow(text(R.string.recipient, language), "Hospital-01", Icons.Default.LocalHospital)
+                        DetailRow(text(R.string.sender, language), offer.senderIdentityId, Icons.Default.DirectionsBoat)
+                        DetailRow(text(R.string.recipient, language), offer.recipientIdentityId, Icons.Default.LocalHospital)
                         DetailRow(
                             text(R.string.payload_hash, language),
                             offer.payloadSha256.toShortHex(),

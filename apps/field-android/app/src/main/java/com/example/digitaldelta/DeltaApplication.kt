@@ -9,5 +9,7 @@ class DeltaApplication : Application() {
         super.onCreate()
         com.example.digitaldelta.service.MeshMaintenance.schedulePeriodic(this)
         com.example.digitaldelta.service.MeshMaintenance.scheduleNow(this)
+        com.example.digitaldelta.service.ObserverPublication.periodic(this)
+        com.example.digitaldelta.service.ObserverPublication.schedule(this)
     }
 }

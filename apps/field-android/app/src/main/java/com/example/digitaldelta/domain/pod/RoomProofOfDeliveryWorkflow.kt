@@ -333,10 +333,12 @@ class RoomProofOfDeliveryWorkflow(
             transfer.senderSignature,
         )
         val unsignedReceipt = transfer.toBuilder().clearRecipientSignature().build()
-        val recipient = deviceKeys.createOrGet(scenario.recipientNodeId)
+        val installedRecipient = senderCredentialLookup(scenario.recipientNodeId)
+            ?.takeIf { it.identityId == scenario.recipientIdentityId }
+        val demoRecipient = if (installedRecipient == null && scenario.simulatedVehicle) deviceKeys.createOrGet(scenario.recipientNodeId) else null
         val recipientValid = verifySignature(
-            recipient.signingPublicKeyDer,
-            recipient.signingKeyId,
+            installedRecipient?.signingPublicKeyDer ?: demoRecipient?.signingPublicKeyDer ?: return false,
+            installedRecipient?.signingKeyId ?: demoRecipient?.signingKeyId ?: return false,
             unsignedReceipt.toByteArray(),
             transfer.recipientSignature,
         )

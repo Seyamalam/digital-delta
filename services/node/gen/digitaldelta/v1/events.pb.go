@@ -615,6 +615,8 @@ type ConflictResolved struct {
 	SelectedValue      []byte                 `protobuf:"bytes,2,opt,name=selected_value,json=selectedValue,proto3" json:"selected_value,omitempty"`
 	ResolverIdentityId string                 `protobuf:"bytes,3,opt,name=resolver_identity_id,json=resolverIdentityId,proto3" json:"resolver_identity_id,omitempty"`
 	ReasonCode         string                 `protobuf:"bytes,4,opt,name=reason_code,json=reasonCode,proto3" json:"reason_code,omitempty"`
+	MissionId          string                 `protobuf:"bytes,5,opt,name=mission_id,json=missionId,proto3" json:"mission_id,omitempty"`
+	VectorClock        *VectorClock           `protobuf:"bytes,6,opt,name=vector_clock,json=vectorClock,proto3" json:"vector_clock,omitempty"`
 	unknownFields      protoimpl.UnknownFields
 	sizeCache          protoimpl.SizeCache
 }
@@ -675,6 +677,20 @@ func (x *ConflictResolved) GetReasonCode() string {
 		return x.ReasonCode
 	}
 	return ""
+}
+
+func (x *ConflictResolved) GetMissionId() string {
+	if x != nil {
+		return x.MissionId
+	}
+	return ""
+}
+
+func (x *ConflictResolved) GetVectorClock() *VectorClock {
+	if x != nil {
+		return x.VectorClock
+	}
+	return nil
 }
 
 type SlaBreachPredicted struct {
@@ -1942,14 +1958,17 @@ const file_digitaldelta_v1_events_proto_rawDesc = "" +
 	"left_clock\x18\x06 \x01(\v2\x1c.digitaldelta.v1.VectorClockR\tleftClock\x12=\n" +
 	"\vright_clock\x18\a \x01(\v2\x1c.digitaldelta.v1.VectorClockR\n" +
 	"rightClock\x12:\n" +
-	"\x19requires_human_resolution\x18\b \x01(\bR\x17requiresHumanResolution\"\xad\x01\n" +
+	"\x19requires_human_resolution\x18\b \x01(\bR\x17requiresHumanResolution\"\x8d\x02\n" +
 	"\x10ConflictResolved\x12\x1f\n" +
 	"\vconflict_id\x18\x01 \x01(\tR\n" +
 	"conflictId\x12%\n" +
 	"\x0eselected_value\x18\x02 \x01(\fR\rselectedValue\x120\n" +
 	"\x14resolver_identity_id\x18\x03 \x01(\tR\x12resolverIdentityId\x12\x1f\n" +
 	"\vreason_code\x18\x04 \x01(\tR\n" +
-	"reasonCode\"\x97\x02\n" +
+	"reasonCode\x12\x1d\n" +
+	"\n" +
+	"mission_id\x18\x05 \x01(\tR\tmissionId\x12?\n" +
+	"\fvector_clock\x18\x06 \x01(\v2\x1c.digitaldelta.v1.VectorClockR\vvectorClock\"\x97\x02\n" +
 	"\x12SlaBreachPredicted\x12\x1d\n" +
 	"\n" +
 	"mission_id\x18\x01 \x01(\tR\tmissionId\x12:\n" +
@@ -2111,34 +2130,35 @@ var file_digitaldelta_v1_events_proto_depIdxs = []int32{
 	20, // 3: digitaldelta.v1.MissionFieldUpdated.vector_clock:type_name -> digitaldelta.v1.VectorClock
 	20, // 4: digitaldelta.v1.ConflictRaised.left_clock:type_name -> digitaldelta.v1.VectorClock
 	20, // 5: digitaldelta.v1.ConflictRaised.right_clock:type_name -> digitaldelta.v1.VectorClock
-	18, // 6: digitaldelta.v1.SlaBreachPredicted.priority:type_name -> digitaldelta.v1.PriorityClass
-	10, // 7: digitaldelta.v1.SignedDeliveryOffer.offer:type_name -> digitaldelta.v1.DeliveryOffer
-	21, // 8: digitaldelta.v1.SignedDeliveryOffer.sender_signature:type_name -> digitaldelta.v1.Signature
-	21, // 9: digitaldelta.v1.CustodyTransfer.sender_signature:type_name -> digitaldelta.v1.Signature
-	21, // 10: digitaldelta.v1.CustodyTransfer.recipient_signature:type_name -> digitaldelta.v1.Signature
-	19, // 11: digitaldelta.v1.VehicleStateChanged.mode:type_name -> digitaldelta.v1.TransportMode
-	22, // 12: digitaldelta.v1.AuthorizationAuditEntry.role:type_name -> digitaldelta.v1.IdentityRole
-	15, // 13: digitaldelta.v1.SignedAuthorizationAuditEntry.entry:type_name -> digitaldelta.v1.AuthorizationAuditEntry
-	21, // 14: digitaldelta.v1.SignedAuthorizationAuditEntry.actor_signature:type_name -> digitaldelta.v1.Signature
-	1,  // 15: digitaldelta.v1.DomainEvent.relief_request_created:type_name -> digitaldelta.v1.ReliefRequestCreated
-	2,  // 16: digitaldelta.v1.DomainEvent.edge_status_changed:type_name -> digitaldelta.v1.EdgeStatusChanged
-	3,  // 17: digitaldelta.v1.DomainEvent.edge_risk_predicted:type_name -> digitaldelta.v1.EdgeRiskPredicted
-	4,  // 18: digitaldelta.v1.DomainEvent.route_planned:type_name -> digitaldelta.v1.RoutePlanned
-	6,  // 19: digitaldelta.v1.DomainEvent.conflict_raised:type_name -> digitaldelta.v1.ConflictRaised
-	7,  // 20: digitaldelta.v1.DomainEvent.conflict_resolved:type_name -> digitaldelta.v1.ConflictResolved
-	8,  // 21: digitaldelta.v1.DomainEvent.sla_breach_predicted:type_name -> digitaldelta.v1.SlaBreachPredicted
-	9,  // 22: digitaldelta.v1.DomainEvent.preemption_confirmed:type_name -> digitaldelta.v1.PreemptionConfirmed
-	12, // 23: digitaldelta.v1.DomainEvent.custody_transfer:type_name -> digitaldelta.v1.CustodyTransfer
-	5,  // 24: digitaldelta.v1.DomainEvent.mission_field_updated:type_name -> digitaldelta.v1.MissionFieldUpdated
-	13, // 25: digitaldelta.v1.DomainEvent.vehicle_state_changed:type_name -> digitaldelta.v1.VehicleStateChanged
-	14, // 26: digitaldelta.v1.DomainEvent.rendezvous_planned:type_name -> digitaldelta.v1.RendezvousPlanned
-	16, // 27: digitaldelta.v1.DomainEvent.authorization_audit:type_name -> digitaldelta.v1.SignedAuthorizationAuditEntry
-	23, // 28: digitaldelta.v1.DomainEvent.credential_revoked:type_name -> digitaldelta.v1.SignedCredentialRevocation
-	29, // [29:29] is the sub-list for method output_type
-	29, // [29:29] is the sub-list for method input_type
-	29, // [29:29] is the sub-list for extension type_name
-	29, // [29:29] is the sub-list for extension extendee
-	0,  // [0:29] is the sub-list for field type_name
+	20, // 6: digitaldelta.v1.ConflictResolved.vector_clock:type_name -> digitaldelta.v1.VectorClock
+	18, // 7: digitaldelta.v1.SlaBreachPredicted.priority:type_name -> digitaldelta.v1.PriorityClass
+	10, // 8: digitaldelta.v1.SignedDeliveryOffer.offer:type_name -> digitaldelta.v1.DeliveryOffer
+	21, // 9: digitaldelta.v1.SignedDeliveryOffer.sender_signature:type_name -> digitaldelta.v1.Signature
+	21, // 10: digitaldelta.v1.CustodyTransfer.sender_signature:type_name -> digitaldelta.v1.Signature
+	21, // 11: digitaldelta.v1.CustodyTransfer.recipient_signature:type_name -> digitaldelta.v1.Signature
+	19, // 12: digitaldelta.v1.VehicleStateChanged.mode:type_name -> digitaldelta.v1.TransportMode
+	22, // 13: digitaldelta.v1.AuthorizationAuditEntry.role:type_name -> digitaldelta.v1.IdentityRole
+	15, // 14: digitaldelta.v1.SignedAuthorizationAuditEntry.entry:type_name -> digitaldelta.v1.AuthorizationAuditEntry
+	21, // 15: digitaldelta.v1.SignedAuthorizationAuditEntry.actor_signature:type_name -> digitaldelta.v1.Signature
+	1,  // 16: digitaldelta.v1.DomainEvent.relief_request_created:type_name -> digitaldelta.v1.ReliefRequestCreated
+	2,  // 17: digitaldelta.v1.DomainEvent.edge_status_changed:type_name -> digitaldelta.v1.EdgeStatusChanged
+	3,  // 18: digitaldelta.v1.DomainEvent.edge_risk_predicted:type_name -> digitaldelta.v1.EdgeRiskPredicted
+	4,  // 19: digitaldelta.v1.DomainEvent.route_planned:type_name -> digitaldelta.v1.RoutePlanned
+	6,  // 20: digitaldelta.v1.DomainEvent.conflict_raised:type_name -> digitaldelta.v1.ConflictRaised
+	7,  // 21: digitaldelta.v1.DomainEvent.conflict_resolved:type_name -> digitaldelta.v1.ConflictResolved
+	8,  // 22: digitaldelta.v1.DomainEvent.sla_breach_predicted:type_name -> digitaldelta.v1.SlaBreachPredicted
+	9,  // 23: digitaldelta.v1.DomainEvent.preemption_confirmed:type_name -> digitaldelta.v1.PreemptionConfirmed
+	12, // 24: digitaldelta.v1.DomainEvent.custody_transfer:type_name -> digitaldelta.v1.CustodyTransfer
+	5,  // 25: digitaldelta.v1.DomainEvent.mission_field_updated:type_name -> digitaldelta.v1.MissionFieldUpdated
+	13, // 26: digitaldelta.v1.DomainEvent.vehicle_state_changed:type_name -> digitaldelta.v1.VehicleStateChanged
+	14, // 27: digitaldelta.v1.DomainEvent.rendezvous_planned:type_name -> digitaldelta.v1.RendezvousPlanned
+	16, // 28: digitaldelta.v1.DomainEvent.authorization_audit:type_name -> digitaldelta.v1.SignedAuthorizationAuditEntry
+	23, // 29: digitaldelta.v1.DomainEvent.credential_revoked:type_name -> digitaldelta.v1.SignedCredentialRevocation
+	30, // [30:30] is the sub-list for method output_type
+	30, // [30:30] is the sub-list for method input_type
+	30, // [30:30] is the sub-list for extension type_name
+	30, // [30:30] is the sub-list for extension extendee
+	0,  // [0:30] is the sub-list for field type_name
 }
 
 func init() { file_digitaldelta_v1_events_proto_init() }

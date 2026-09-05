@@ -23,7 +23,7 @@ class RoomMeshIngress(
         require(localNodeId.isNotBlank()) { "local node id is required" }
     }
 
-    suspend fun receive(wireBytes: ByteArray): Acknowledgement {
+    suspend fun receive(wireBytes: ByteArray, previousHopNodeId: String? = null): Acknowledgement {
         val recordedAt = nowUnixMs()
         if (wireBytes.isEmpty() || wireBytes.size > MAX_ENVELOPE_BYTES) {
             return rejected("", "INVALID_SIZE", recordedAt)
@@ -39,6 +39,11 @@ class RoomMeshIngress(
         if (!envelopeVerifier.verify(envelope, recordedAt)) return rejected(envelope.messageId, "INVALID_ORIGIN_SIGNATURE", recordedAt)
 
         val acknowledgement = database.withTransaction {
+            // The authenticated immediate neighbor already has these bytes. Persist
+            // this provenance even for duplicates so restart cannot bounce them back.
+            previousHopNodeId?.takeIf { it.isNotBlank() }?.let {
+                database.meshForwardDao().record(com.example.digitaldelta.data.local.MeshForwardReceipt(envelope.messageId, it, recordedAt))
+            }
             val claimed = database.seenMessageDao().claim(
                 SeenMessageEntity(
                     messageId = envelope.messageId,

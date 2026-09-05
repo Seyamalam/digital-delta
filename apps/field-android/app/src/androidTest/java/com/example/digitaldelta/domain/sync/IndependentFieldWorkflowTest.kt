@@ -1,0 +1,169 @@
+package com.example.digitaldelta.domain.sync
+
+import android.content.Context
+import androidx.room.Room
+import androidx.test.core.app.ApplicationProvider
+import androidx.test.ext.junit.runners.AndroidJUnit4
+import com.example.digitaldelta.data.local.DeltaDatabase
+import com.example.digitaldelta.domain.identity.*
+import com.example.digitaldelta.domain.mesh.*
+import com.example.digitaldelta.domain.request.*
+import com.example.digitaldelta.domain.observer.*
+import com.example.digitaldelta.domain.pod.*
+import com.example.digitaldelta.proto.v1.*
+import com.google.protobuf.ByteString
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.test.runTest
+import org.junit.After
+import org.junit.Assert.*
+import org.junit.Test
+import org.junit.runner.RunWith
+import java.security.KeyPairGenerator
+import java.security.KeyStore
+import java.util.UUID
+
+/** Separate Room files and non-overlapping Keystore namespaces, not physical radios. */
+@RunWith(AndroidJUnit4::class)
+class IndependentFieldWorkflowTest {
+    private val context = ApplicationProvider.getApplicationContext<Context>()
+    private val namespace = "delta-review-${UUID.randomUUID()}"
+    private val phones = mutableListOf<Phone>()
+    private val issuer = KeyPairGenerator.getInstance("RSA").apply { initialize(2048) }.generateKeyPair()
+    private val trust = object : TrustAnchorRepository {
+        override val trustedIssuer = MutableStateFlow<TrustedIssuerKey?>(TrustedIssuerKey(issuer.public.encoded, "test-issuer"))
+        override suspend fun pin(publicKeyDer: ByteArray) = error("Already pinned")
+    }
+
+    private inner class Phone(val profile: LocalDeviceProfile) {
+        val file = "$namespace-${profile.nodeId}.db"
+        var db = open()
+        val keys = AndroidDeviceIdentityKeyStore("$namespace-${profile.nodeId}")
+        val profiles = object : DeviceProfileRepository {
+            override val profile = MutableStateFlow(this@Phone.profile)
+            override suspend fun select(code: String) = error("Fixed independent device")
+        }
+        val security get() = AndroidEnvelopeSecurity(keys, db.recipientKeyDao(), trust)
+        val recipients get() = RecipientProvisioningRepository(db.recipientKeyDao())
+        val protector get() = DirectoryBackedMeshPayloadProtector(RoomRecipientKeyDirectory(db.recipientKeyDao()))
+        val publisher get() = MissionEventPublisher(db, profiles, protector, security)
+        fun open() = Room.databaseBuilder(context, DeltaDatabase::class.java, file).build()
+        fun restart() { db.close(); db = open() }
+        suspend fun receive(bytes: ByteArray, previousHop: String) = RoomMeshIngress(db, profile.nodeId,
+            AndroidMeshAcknowledgementSigner(profile.nodeId, keys), envelopeVerifier = security).receive(bytes, previousHop)
+        suspend fun apply() = CredentialRevocationInboxProcessor(db, keys, recipients, trust, NoOpCredentialRevocationPropagator).process(profile.nodeId)
+        suspend fun sendTo(vararg peers: Phone) {
+            val transport = object : PeerTransport {
+                override suspend fun send(peerId: String, wireBytes: ByteArray) = peers.first { it.profile.nodeId == peerId }.receive(wireBytes, profile.nodeId)
+            }
+            MeshOutboxDispatcher(db, transport, DirectoryMeshAcknowledgementVerifier(RoomPeerSigningIdentityDirectory(db.recipientKeyDao())))
+                .dispatchConnected(peers.map { it.profile.nodeId }.toSet())
+        }
+    }
+
+    private suspend fun setupPhones(): List<Phone> {
+        val nodes = listOf(DeviceProfiles.require(DeviceProfiles.COORDINATOR), DeviceProfiles.require(DeviceProfiles.RELAY), DeviceProfiles.require(DeviceProfiles.HOSPITAL))
+        val created = nodes.map { Phone(it).also(phones::add) }
+        val now = System.currentTimeMillis()
+        for (phone in created) {
+            val public = phone.keys.createOrGet(phone.profile.nodeId)
+            val claims = IdentityProvisioningClaims.newBuilder().setCredentialId("cred-${phone.profile.nodeId}")
+                .setIdentityId(phone.profile.identityId).setNodeId(phone.profile.nodeId).setDisplayName(phone.profile.displayName).setRole(phone.profile.role)
+                .setEncryptionKeyId(public.encryptionKeyId).setRsa2048EncryptionPublicKeyDer(ByteString.copyFrom(public.encryptionPublicKeyDer))
+                .setSigningKeyId(public.signingKeyId).setRsa2048SigningPublicKeyDer(ByteString.copyFrom(public.signingPublicKeyDer))
+                .setIssuedAtUnixMs(now - 60_000).setExpiresAtUnixMs(now + 86_400_000).setIssuerIdentityId("test-admin").build()
+            val credential = ProvisioningCredentialService().issue(claims, "test-admin-key", issuer.private.encoded)
+            for (replica in created) replica.recipients.accept(credential, issuer.public.encoded, now)
+        }
+        return created
+    }
+
+    @After fun close() {
+        phones.forEach { it.db.close(); context.deleteDatabase(it.file) }
+        val store = KeyStore.getInstance("AndroidKeyStore").apply { load(null) }
+        store.aliases().toList().filter { it.startsWith("$namespace-") }.forEach(store::deleteEntry)
+    }
+
+    @Test fun signedRequestSurvivesRelayRestartThenIndependentEditsConvergeAndCustodyVerifies() = runTest {
+        val (a, b, c) = setupPhones()
+        val receipt = DefaultReliefRequestSubmission(RoomRequestPersistence(a.db, applyLocalProjection = true), a.protector,
+            envelopeSigner = a.security).submit(ReliefRequestDraft(a.profile.nodeId, "N1", c.profile.nodeId,
+            listOf(CargoDraft("medicine", 5, "pack")), PriorityClass.PRIORITY_CLASS_P0, false, "", a.profile.identityId))
+        val original = a.db.outboxDao().find(receipt.messageId)!!
+        a.sendTo(b)
+        assertTrue(b.db.operationLogDao().forMission(receipt.requestId).isEmpty()) // relay cannot decrypt/apply
+        b.restart()
+        b.sendTo(a, c) // Origin stays connected and sorts first; direct recipient wins.
+        assertEquals(1, c.apply().applied)
+        c.receive(original.wireBytes, a.profile.nodeId)
+        c.restart()
+        assertEquals(0, c.apply().applied)
+        assertEquals("5", c.db.missionProjectionDao().find(receipt.requestId, "MEDICAL_QUANTITY")?.value)
+        assertEquals(1, c.db.operationLogDao().forMission(receipt.requestId).size)
+
+        a.publisher.edit(receipt.requestId, MissionField.PRIORITY, "2")
+        c.publisher.edit(receipt.requestId, MissionField.PRIORITY, "3")
+        c.sendTo(a); assertEquals(1, a.apply().applied)
+        a.sendTo(c); assertEquals(1, c.apply().applied)
+        val conflictA = a.db.conflictDao().latestForMission(receipt.requestId)!!
+        val conflictC = c.db.conflictDao().latestForMission(receipt.requestId)!!
+        assertEquals(conflictA.conflictId, conflictC.conflictId)
+        assertEquals("OPEN", conflictA.state)
+        a.publisher.resolve(conflictA.conflictId, ConflictSide.LEFT)
+        a.sendTo(c); assertEquals(1, c.apply().applied)
+        assertEquals(a.db.missionProjectionDao().find(receipt.requestId, "PRIORITY")?.convergenceHash,
+            c.db.missionProjectionDao().find(receipt.requestId, "PRIORITY")?.convergenceHash)
+
+        val sender = OperationalProofOfDeliveryWorkflow(a.db, a.keys, a.recipients, a.profiles)
+        val recipient = OperationalProofOfDeliveryWorkflow(c.db, c.keys, c.recipients, c.profiles)
+        val offer = sender.prepare()
+        assertFalse(offer.simulatedVehicle)
+        assertEquals(a.profile.identityId, offer.senderIdentityId)
+        assertEquals(DeliveryOfferRejection.INVALID_SIGNATURE,
+            (recipient.verify(sender.tamperForDemo(offer.qrCode)) as DeliveryReceiptResult.Rejected).reason)
+        val accepted = recipient.verify(offer.qrCode) as DeliveryReceiptResult.Verified
+        assertEquals(1, accepted.chain.size)
+        assertTrue(recipient.reconstructChain().valid)
+        assertEquals(DeliveryOfferRejection.REPLAY_REJECTED, (recipient.verify(offer.qrCode) as DeliveryReceiptResult.Rejected).reason)
+    }
+
+    @Test fun optionalPublicationRetriesAfterDisconnectWithoutRepeatingFieldEffects() = runTest {
+        val (a) = setupPhones()
+        val receipt = DefaultReliefRequestSubmission(RoomRequestPersistence(a.db, applyLocalProjection = true), a.protector,
+            envelopeSigner = a.security).submit(ReliefRequestDraft("N1", "N1", "N6", listOf(CargoDraft("medicine", 5, "pack")), PriorityClass.PRIORITY_CLASS_P0, true, "android-observer-recovery-test", a.profile.identityId))
+        var online = false
+        val published = mutableListOf<String>()
+        val transport = ObservationTransport { _, bytes ->
+            check(online) { "laptop disconnected" }
+            val text = bytes.decodeToString()
+            assertFalse(text.contains("medicine")); assertFalse(text.contains("payload")); assertFalse(text.contains("signature"))
+            published += org.json.JSONObject(text).getString("eventId")
+            201
+        }
+        val config = ObserverConfiguration("https://observer.example/v1/observations", "N1", "test-token-not-for-production-123456")
+        assertFalse(ObserverPublisher(a.db, transport).drain(config))
+        assertNotNull(a.db.outboxDao().find(receipt.messageId))
+        a.restart(); online = true
+        assertTrue(ObserverPublisher(a.db, transport).drain(config))
+        assertTrue(ObserverPublisher(a.db, transport).drain(config))
+        assertEquals(1, published.size)
+        assertEquals(1, a.db.operationLogDao().forMission(receipt.requestId).size)
+        // Optional additional live boundary evidence. Never required for offline field checks.
+        // The ignored, debug-only credential is created by the local evidence setup.
+        if (context.assets.list("")?.contains("observer-local-evidence.json") == true) {
+            val configCode = context.assets.open("observer-local-evidence.json").bufferedReader().use { it.readText() }
+            val local = ObserverConfiguration.parse(configCode, allowEmulatorHttp = true)
+            assertTrue(ObserverPublisher(a.db, HttpObservationTransport()).drain(local))
+            assertTrue(ObserverPublisher(a.db, HttpObservationTransport()).drain(local))
+            val records = kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) {
+                java.net.URI(local.endpoint).toURL().openConnection().apply { connectTimeout = 5_000; readTimeout = 5_000 }
+                    .getInputStream().bufferedReader().use { it.readText() }
+            }
+            val rows = org.json.JSONObject(records).getJSONArray("observations")
+            val matching = (0 until rows.length()).map(rows::getJSONObject).filter { it.getString("eventId") == published.single() }
+            assertEquals(1, matching.size)
+            assertEquals(receipt.requestId, matching.single().getJSONObject("presentation").getString("requestId"))
+            assertTrue(matching.single().getBoolean("simulated"))
+            android.util.Log.i("DeltaObserverEvidence", "HTTP_HONO_MATCH eventId=${published.single()} requestId=${receipt.requestId}")
+        }
+    }
+}

@@ -294,4 +294,33 @@
     <string name="increase_value">Increase %1$s</string>
     <string name="priority_p0_short">P0</string>
     <string name="predicted_risk_value">PREDICTED %1$s</string>
+    <string name="observer_optional_title">Optional headquarters publishing</string>
+    <string name="observer_privacy_help">Share request IDs and route summaries only. Cargo details and keys stay on this phone. Field work continues when headquarters is unavailable. Already published summaries cannot be recalled.</string>
+    <string name="observer_enabled">Enabled · pending records retry independently</string>
+    <string name="observer_disabled">Disabled · field work stays local</string>
+    <string name="observer_configuration">Administrator publisher configuration</string>
+    <string name="observer_configuration_error">Configuration could not be saved. Check this phone’s node, HTTPS endpoint and publisher token.</string>
+    <string name="observer_enable">Enable summary publishing</string>
+    <string name="observer_disable">Disable future publishing</string>
+    <string name="nav_missions">Missions</string>
+    <string name="mission_workspace_help">Requests accepted on this phone. Edits are saved locally and encrypted for the other mission participant.</string>
+    <string name="mission_empty">No accepted requests yet. Create a request or receive one through the mesh.</string>
+    <string name="mission_destination">Destination node</string>
+    <string name="mission_priority">Priority (1=P0, 2=P1, 3=P2, 4=P3)</string>
+    <string name="mission_quantity">Medical quantity</string>
+    <string name="mission_note">Mission note</string>
+    <string name="mission_edit">Edit mission</string>
+    <string name="mission_edit_help">Safety-critical concurrent edits require a coordinator’s decision. Destination must be a known node; quantity is a whole number.</string>
+    <string name="mission_save">Save and queue edit</string>
+    <string name="mission_action_error">Action could not be applied. Check your current role, peer credentials, value and unresolved conflicts.</string>
+    <string name="mission_simulated">Simulated request</string>
+    <string name="mission_field_record">Accepted field record · not a delivery confirmation</string>
+    <string name="mission_route_assumptions">Planning estimate · packaged network and scenario travel times, not live road conditions</string>
+    <string name="mission_no_route">No truck or boat route in the packaged network. Human planning required.</string>
+    <string name="mission_minutes">min</string>
+    <string name="mission_sla_warning">30% slowdown would breach the priority deadline. Review the plan.</string>
+    <string name="mission_sla_within">Estimated arrival remains within the priority deadline at 30% slowdown.</string>
+    <string name="mission_conflict_help">Unresolved safety conflict. A coordinator must select the accepted value before handoff.</string>
+    <string name="mission_resolve">Confirm value</string>
+    <string name="mission_hash">State hash · SHA-256 %1$s</string>
 </resources>

@@ -170,9 +170,7 @@ class MeshRelayService : Service() {
                 pendingQueueDepth,
                 relaySelection,
             )
-            activeController.state.value.connectedNodeIds.forEach { peerId ->
-                dispatcher.dispatch(peerId)
-            }
+            dispatcher.dispatchConnected(activeController.state.value.connectedNodeIds)
             delay(intervalMillis)
         }
     }

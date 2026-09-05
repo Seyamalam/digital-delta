@@ -110,7 +110,7 @@ class NearbyConnectionsPeerTransport(
                                 rejectAuthentication(endpointId, "UNAUTHENTICATED_ENVELOPE")
                                 return@launch
                             }
-                            val acknowledgement = ingress.receive(body.wireBytes)
+                            val acknowledgement = ingress.receive(body.wireBytes, endpointNodeIds[endpointId])
                             client.sendPayload(
                                 endpointId,
                                 Payload.fromBytes(PeerFrameCodec.encodeAcknowledgement(acknowledgement)),
@@ -237,6 +237,10 @@ class NearbyConnectionsPeerTransport(
 
     override suspend fun send(peerId: String, wireBytes: ByteArray): com.example.digitaldelta.proto.v1.Acknowledgement {
         val endpointId = connectedEndpoints[peerId] ?: error("peer $peerId is not connected")
+        if (!isAuthenticated(endpointId)) {
+            rejectAuthentication(endpointId, "PEER_AUTHORITY_EXPIRED_OR_REVOKED")
+            throw SecurityException("Peer or local authority is no longer active")
+        }
         val envelope = MeshWireCodec.decode(wireBytes)
         val pending = CompletableDeferred<com.example.digitaldelta.proto.v1.Acknowledgement>()
         check(pendingAcknowledgements.putIfAbsent(envelope.messageId, pending) == null) {

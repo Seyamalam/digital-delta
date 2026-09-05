@@ -1,0 +1,810 @@
+{
+  "formatVersion": 1,
+  "database": {
+    "version": 8,
+    "identityHash": "6c2a425426ef80fae58c9ca54502f6ad",
+    "entities": [
+      {
+        "tableName": "mesh_outbox",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`messageId` TEXT NOT NULL, `wireBytes` BLOB NOT NULL, `priority` INTEGER NOT NULL, `expiresAtUnixMs` INTEGER NOT NULL, `state` TEXT NOT NULL, `attemptCount` INTEGER NOT NULL, `nextAttemptAtUnixMs` INTEGER NOT NULL, `acknowledgedAtUnixMs` INTEGER, PRIMARY KEY(`messageId`))",
+        "fields": [
+          {
+            "fieldPath": "messageId",
+            "columnName": "messageId",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "wireBytes",
+            "columnName": "wireBytes",
+            "affinity": "BLOB",
+            "notNull": true
+          },
+          {
+            "fieldPath": "priority",
+            "columnName": "priority",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "expiresAtUnixMs",
+            "columnName": "expiresAtUnixMs",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "state",
+            "columnName": "state",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "attemptCount",
+            "columnName": "attemptCount",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "nextAttemptAtUnixMs",
+            "columnName": "nextAttemptAtUnixMs",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "acknowledgedAtUnixMs",
+            "columnName": "acknowledgedAtUnixMs",
+            "affinity": "INTEGER"
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": false,
+          "columnNames": [
+            "messageId"
+          ]
+        },
+        "indices": [
+          {
+            "name": "index_mesh_outbox_state_nextAttemptAtUnixMs_priority",
+            "unique": false,
+            "columnNames": [
+              "state",
+              "nextAttemptAtUnixMs",
+              "priority"
+            ],
+            "orders": [],
+            "createSql": "CREATE INDEX IF NOT EXISTS `index_mesh_outbox_state_nextAttemptAtUnixMs_priority` ON `${TABLE_NAME}` (`state`, `nextAttemptAtUnixMs`, `priority`)"
+          }
+        ]
+      },
+      {
+        "tableName": "used_nonces",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`nonceSha256` TEXT NOT NULL, `deliveryId` TEXT NOT NULL, `usedAtUnixMs` INTEGER NOT NULL, PRIMARY KEY(`nonceSha256`))",
+        "fields": [
+          {
+            "fieldPath": "nonceSha256",
+            "columnName": "nonceSha256",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "deliveryId",
+            "columnName": "deliveryId",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "usedAtUnixMs",
+            "columnName": "usedAtUnixMs",
+            "affinity": "INTEGER",
+            "notNull": true
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": false,
+          "columnNames": [
+            "nonceSha256"
+          ]
+        },
+        "indices": [
+          {
+            "name": "index_used_nonces_deliveryId",
+            "unique": false,
+            "columnNames": [
+              "deliveryId"
+            ],
+            "orders": [],
+            "createSql": "CREATE INDEX IF NOT EXISTS `index_used_nonces_deliveryId` ON `${TABLE_NAME}` (`deliveryId`)"
+          }
+        ]
+      },
+      {
+        "tableName": "operation_log",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`eventId` TEXT NOT NULL, `missionId` TEXT NOT NULL, `eventType` TEXT NOT NULL, `payloadBytes` BLOB NOT NULL, `createdAtUnixMs` INTEGER NOT NULL, PRIMARY KEY(`eventId`))",
+        "fields": [
+          {
+            "fieldPath": "eventId",
+            "columnName": "eventId",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "missionId",
+            "columnName": "missionId",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "eventType",
+            "columnName": "eventType",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "payloadBytes",
+            "columnName": "payloadBytes",
+            "affinity": "BLOB",
+            "notNull": true
+          },
+          {
+            "fieldPath": "createdAtUnixMs",
+            "columnName": "createdAtUnixMs",
+            "affinity": "INTEGER",
+            "notNull": true
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": false,
+          "columnNames": [
+            "eventId"
+          ]
+        },
+        "indices": [
+          {
+            "name": "index_operation_log_missionId_createdAtUnixMs",
+            "unique": false,
+            "columnNames": [
+              "missionId",
+              "createdAtUnixMs"
+            ],
+            "orders": [],
+            "createSql": "CREATE INDEX IF NOT EXISTS `index_operation_log_missionId_createdAtUnixMs` ON `${TABLE_NAME}` (`missionId`, `createdAtUnixMs`)"
+          }
+        ]
+      },
+      {
+        "tableName": "recipient_keys",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`nodeId` TEXT NOT NULL, `identityId` TEXT NOT NULL, `displayName` TEXT NOT NULL, `roleCode` TEXT NOT NULL, `encryptionKeyId` TEXT NOT NULL, `encryptionPublicKeyDer` BLOB NOT NULL, `signingKeyId` TEXT NOT NULL, `signingPublicKeyDer` BLOB NOT NULL, `issuerIdentityId` TEXT NOT NULL, `credentialBytes` BLOB NOT NULL, `issuedAtUnixMs` INTEGER NOT NULL, `expiresAtUnixMs` INTEGER NOT NULL, `revokedAtUnixMs` INTEGER, `provisionedAtUnixMs` INTEGER NOT NULL, PRIMARY KEY(`nodeId`))",
+        "fields": [
+          {
+            "fieldPath": "nodeId",
+            "columnName": "nodeId",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "identityId",
+            "columnName": "identityId",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "displayName",
+            "columnName": "displayName",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "roleCode",
+            "columnName": "roleCode",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "encryptionKeyId",
+            "columnName": "encryptionKeyId",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "encryptionPublicKeyDer",
+            "columnName": "encryptionPublicKeyDer",
+            "affinity": "BLOB",
+            "notNull": true
+          },
+          {
+            "fieldPath": "signingKeyId",
+            "columnName": "signingKeyId",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "signingPublicKeyDer",
+            "columnName": "signingPublicKeyDer",
+            "affinity": "BLOB",
+            "notNull": true
+          },
+          {
+            "fieldPath": "issuerIdentityId",
+            "columnName": "issuerIdentityId",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "credentialBytes",
+            "columnName": "credentialBytes",
+            "affinity": "BLOB",
+            "notNull": true
+          },
+          {
+            "fieldPath": "issuedAtUnixMs",
+            "columnName": "issuedAtUnixMs",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "expiresAtUnixMs",
+            "columnName": "expiresAtUnixMs",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "revokedAtUnixMs",
+            "columnName": "revokedAtUnixMs",
+            "affinity": "INTEGER"
+          },
+          {
+            "fieldPath": "provisionedAtUnixMs",
+            "columnName": "provisionedAtUnixMs",
+            "affinity": "INTEGER",
+            "notNull": true
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": false,
+          "columnNames": [
+            "nodeId"
+          ]
+        },
+        "indices": [
+          {
+            "name": "index_recipient_keys_encryptionKeyId",
+            "unique": true,
+            "columnNames": [
+              "encryptionKeyId"
+            ],
+            "orders": [],
+            "createSql": "CREATE UNIQUE INDEX IF NOT EXISTS `index_recipient_keys_encryptionKeyId` ON `${TABLE_NAME}` (`encryptionKeyId`)"
+          }
+        ]
+      },
+      {
+        "tableName": "mesh_inbox",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`messageId` TEXT NOT NULL, `wireBytes` BLOB NOT NULL, `senderNodeId` TEXT NOT NULL, `recipientNodeId` TEXT NOT NULL, `expiresAtUnixMs` INTEGER NOT NULL, `hopCount` INTEGER NOT NULL, `hopLimit` INTEGER NOT NULL, `receivedAtUnixMs` INTEGER NOT NULL, PRIMARY KEY(`messageId`))",
+        "fields": [
+          {
+            "fieldPath": "messageId",
+            "columnName": "messageId",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "wireBytes",
+            "columnName": "wireBytes",
+            "affinity": "BLOB",
+            "notNull": true
+          },
+          {
+            "fieldPath": "senderNodeId",
+            "columnName": "senderNodeId",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "recipientNodeId",
+            "columnName": "recipientNodeId",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "expiresAtUnixMs",
+            "columnName": "expiresAtUnixMs",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "hopCount",
+            "columnName": "hopCount",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "hopLimit",
+            "columnName": "hopLimit",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "receivedAtUnixMs",
+            "columnName": "receivedAtUnixMs",
+            "affinity": "INTEGER",
+            "notNull": true
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": false,
+          "columnNames": [
+            "messageId"
+          ]
+        },
+        "indices": [
+          {
+            "name": "index_mesh_inbox_receivedAtUnixMs",
+            "unique": false,
+            "columnNames": [
+              "receivedAtUnixMs"
+            ],
+            "orders": [],
+            "createSql": "CREATE INDEX IF NOT EXISTS `index_mesh_inbox_receivedAtUnixMs` ON `${TABLE_NAME}` (`receivedAtUnixMs`)"
+          },
+          {
+            "name": "index_mesh_inbox_recipientNodeId",
+            "unique": false,
+            "columnNames": [
+              "recipientNodeId"
+            ],
+            "orders": [],
+            "createSql": "CREATE INDEX IF NOT EXISTS `index_mesh_inbox_recipientNodeId` ON `${TABLE_NAME}` (`recipientNodeId`)"
+          }
+        ]
+      },
+      {
+        "tableName": "seen_messages",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`messageId` TEXT NOT NULL, `expiresAtUnixMs` INTEGER NOT NULL, `firstSeenAtUnixMs` INTEGER NOT NULL, PRIMARY KEY(`messageId`))",
+        "fields": [
+          {
+            "fieldPath": "messageId",
+            "columnName": "messageId",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "expiresAtUnixMs",
+            "columnName": "expiresAtUnixMs",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "firstSeenAtUnixMs",
+            "columnName": "firstSeenAtUnixMs",
+            "affinity": "INTEGER",
+            "notNull": true
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": false,
+          "columnNames": [
+            "messageId"
+          ]
+        },
+        "indices": [
+          {
+            "name": "index_seen_messages_expiresAtUnixMs",
+            "unique": false,
+            "columnNames": [
+              "expiresAtUnixMs"
+            ],
+            "orders": [],
+            "createSql": "CREATE INDEX IF NOT EXISTS `index_seen_messages_expiresAtUnixMs` ON `${TABLE_NAME}` (`expiresAtUnixMs`)"
+          }
+        ]
+      },
+      {
+        "tableName": "mission_projections",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`missionId` TEXT NOT NULL, `fieldCode` TEXT NOT NULL, `value` TEXT NOT NULL, `vectorClockBytes` BLOB NOT NULL, `sourceEventId` TEXT NOT NULL, `updatedAtUnixMs` INTEGER NOT NULL, `convergenceHash` TEXT NOT NULL, PRIMARY KEY(`missionId`, `fieldCode`))",
+        "fields": [
+          {
+            "fieldPath": "missionId",
+            "columnName": "missionId",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "fieldCode",
+            "columnName": "fieldCode",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "value",
+            "columnName": "value",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "vectorClockBytes",
+            "columnName": "vectorClockBytes",
+            "affinity": "BLOB",
+            "notNull": true
+          },
+          {
+            "fieldPath": "sourceEventId",
+            "columnName": "sourceEventId",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "updatedAtUnixMs",
+            "columnName": "updatedAtUnixMs",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "convergenceHash",
+            "columnName": "convergenceHash",
+            "affinity": "TEXT",
+            "notNull": true
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": false,
+          "columnNames": [
+            "missionId",
+            "fieldCode"
+          ]
+        },
+        "indices": [
+          {
+            "name": "index_mission_projections_missionId",
+            "unique": false,
+            "columnNames": [
+              "missionId"
+            ],
+            "orders": [],
+            "createSql": "CREATE INDEX IF NOT EXISTS `index_mission_projections_missionId` ON `${TABLE_NAME}` (`missionId`)"
+          }
+        ]
+      },
+      {
+        "tableName": "cargo_assignments",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`missionId` TEXT NOT NULL, `cargoId` TEXT NOT NULL, `priorityCode` TEXT NOT NULL, `assignedNodeId` TEXT NOT NULL, `state` TEXT NOT NULL, `vectorClockBytes` BLOB NOT NULL, `sourceEventId` TEXT NOT NULL, `assignedByIdentityId` TEXT NOT NULL, `updatedAtUnixMs` INTEGER NOT NULL, `convergenceHash` TEXT NOT NULL, PRIMARY KEY(`missionId`, `cargoId`))",
+        "fields": [
+          {
+            "fieldPath": "missionId",
+            "columnName": "missionId",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "cargoId",
+            "columnName": "cargoId",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "priorityCode",
+            "columnName": "priorityCode",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "assignedNodeId",
+            "columnName": "assignedNodeId",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "state",
+            "columnName": "state",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "vectorClockBytes",
+            "columnName": "vectorClockBytes",
+            "affinity": "BLOB",
+            "notNull": true
+          },
+          {
+            "fieldPath": "sourceEventId",
+            "columnName": "sourceEventId",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "assignedByIdentityId",
+            "columnName": "assignedByIdentityId",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "updatedAtUnixMs",
+            "columnName": "updatedAtUnixMs",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "convergenceHash",
+            "columnName": "convergenceHash",
+            "affinity": "TEXT",
+            "notNull": true
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": false,
+          "columnNames": [
+            "missionId",
+            "cargoId"
+          ]
+        },
+        "indices": [
+          {
+            "name": "index_cargo_assignments_missionId",
+            "unique": false,
+            "columnNames": [
+              "missionId"
+            ],
+            "orders": [],
+            "createSql": "CREATE INDEX IF NOT EXISTS `index_cargo_assignments_missionId` ON `${TABLE_NAME}` (`missionId`)"
+          },
+          {
+            "name": "index_cargo_assignments_assignedNodeId_state",
+            "unique": false,
+            "columnNames": [
+              "assignedNodeId",
+              "state"
+            ],
+            "orders": [],
+            "createSql": "CREATE INDEX IF NOT EXISTS `index_cargo_assignments_assignedNodeId_state` ON `${TABLE_NAME}` (`assignedNodeId`, `state`)"
+          }
+        ]
+      },
+      {
+        "tableName": "conflicts",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`conflictId` TEXT NOT NULL, `missionId` TEXT NOT NULL, `fieldCode` TEXT NOT NULL, `leftEventId` TEXT NOT NULL, `leftValue` TEXT NOT NULL, `leftClockBytes` BLOB NOT NULL, `rightEventId` TEXT NOT NULL, `rightValue` TEXT NOT NULL, `rightClockBytes` BLOB NOT NULL, `mergedClockBytes` BLOB NOT NULL, `state` TEXT NOT NULL, `selectedValue` TEXT, `resolverIdentityId` TEXT, `reasonCode` TEXT, `createdAtUnixMs` INTEGER NOT NULL, `resolvedAtUnixMs` INTEGER, PRIMARY KEY(`conflictId`))",
+        "fields": [
+          {
+            "fieldPath": "conflictId",
+            "columnName": "conflictId",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "missionId",
+            "columnName": "missionId",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "fieldCode",
+            "columnName": "fieldCode",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "leftEventId",
+            "columnName": "leftEventId",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "leftValue",
+            "columnName": "leftValue",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "leftClockBytes",
+            "columnName": "leftClockBytes",
+            "affinity": "BLOB",
+            "notNull": true
+          },
+          {
+            "fieldPath": "rightEventId",
+            "columnName": "rightEventId",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "rightValue",
+            "columnName": "rightValue",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "rightClockBytes",
+            "columnName": "rightClockBytes",
+            "affinity": "BLOB",
+            "notNull": true
+          },
+          {
+            "fieldPath": "mergedClockBytes",
+            "columnName": "mergedClockBytes",
+            "affinity": "BLOB",
+            "notNull": true
+          },
+          {
+            "fieldPath": "state",
+            "columnName": "state",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "selectedValue",
+            "columnName": "selectedValue",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "resolverIdentityId",
+            "columnName": "resolverIdentityId",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "reasonCode",
+            "columnName": "reasonCode",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "createdAtUnixMs",
+            "columnName": "createdAtUnixMs",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "resolvedAtUnixMs",
+            "columnName": "resolvedAtUnixMs",
+            "affinity": "INTEGER"
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": false,
+          "columnNames": [
+            "conflictId"
+          ]
+        },
+        "indices": [
+          {
+            "name": "index_conflicts_missionId_state_createdAtUnixMs",
+            "unique": false,
+            "columnNames": [
+              "missionId",
+              "state",
+              "createdAtUnixMs"
+            ],
+            "orders": [],
+            "createSql": "CREATE INDEX IF NOT EXISTS `index_conflicts_missionId_state_createdAtUnixMs` ON `${TABLE_NAME}` (`missionId`, `state`, `createdAtUnixMs`)"
+          }
+        ]
+      },
+      {
+        "tableName": "inbox_applications",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`messageId` TEXT NOT NULL, `state` TEXT NOT NULL, `eventId` TEXT, `reasonCode` TEXT, `attemptCount` INTEGER NOT NULL, `updatedAtUnixMs` INTEGER NOT NULL, PRIMARY KEY(`messageId`))",
+        "fields": [
+          {
+            "fieldPath": "messageId",
+            "columnName": "messageId",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "state",
+            "columnName": "state",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "eventId",
+            "columnName": "eventId",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "reasonCode",
+            "columnName": "reasonCode",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "attemptCount",
+            "columnName": "attemptCount",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "updatedAtUnixMs",
+            "columnName": "updatedAtUnixMs",
+            "affinity": "INTEGER",
+            "notNull": true
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": false,
+          "columnNames": [
+            "messageId"
+          ]
+        },
+        "indices": [
+          {
+            "name": "index_inbox_applications_state_updatedAtUnixMs",
+            "unique": false,
+            "columnNames": [
+              "state",
+              "updatedAtUnixMs"
+            ],
+            "orders": [],
+            "createSql": "CREATE INDEX IF NOT EXISTS `index_inbox_applications_state_updatedAtUnixMs` ON `${TABLE_NAME}` (`state`, `updatedAtUnixMs`)"
+          }
+        ]
+      },
+      {
+        "tableName": "mesh_forward_receipts",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`messageId` TEXT NOT NULL, `peerId` TEXT NOT NULL, `recordedAtUnixMs` INTEGER NOT NULL, PRIMARY KEY(`messageId`, `peerId`))",
+        "fields": [
+          {
+            "fieldPath": "messageId",
+            "columnName": "messageId",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "peerId",
+            "columnName": "peerId",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "recordedAtUnixMs",
+            "columnName": "recordedAtUnixMs",
+            "affinity": "INTEGER",
+            "notNull": true
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": false,
+          "columnNames": [
+            "messageId",
+            "peerId"
+          ]
+        }
+      },
+      {
+        "tableName": "observer_publications",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`eventId` TEXT NOT NULL, `destination` TEXT NOT NULL, `status` TEXT NOT NULL, `recordedAtUnixMs` INTEGER NOT NULL, PRIMARY KEY(`eventId`, `destination`))",
+        "fields": [
+          {
+            "fieldPath": "eventId",
+            "columnName": "eventId",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "destination",
+            "columnName": "destination",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "status",
+            "columnName": "status",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "recordedAtUnixMs",
+            "columnName": "recordedAtUnixMs",
+            "affinity": "INTEGER",
+            "notNull": true
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": false,
+          "columnNames": [
+            "eventId",
+            "destination"
+          ]
+        }
+      }
+    ],
+    "setupQueries": [
+      "CREATE TABLE IF NOT EXISTS room_master_table (id INTEGER PRIMARY KEY,identity_hash TEXT)",
+      "INSERT OR REPLACE INTO room_master_table (id,identity_hash) VALUES(42, '6c2a425426ef80fae58c9ca54502f6ad')"
+    ]
+  }
+}

@@ -34,6 +34,45 @@ class MeshOutboxDispatcherTest {
     fun closeDatabase() = database.close()
 
     @Test
+    fun previousHopIsSkippedAndDirectDestinationWinsEvenWhenOriginRemainsConnected() = runTest {
+        val now = 1_800_000_000_000
+        database.outboxDao().enqueue(pendingEnvelope(now))
+        database.meshForwardDao().record(com.example.digitaldelta.data.local.MeshForwardReceipt("resume-1", "A", now))
+        val sent = mutableListOf<String>()
+        val transport = object : PeerTransport {
+            override suspend fun send(peerId: String, wireBytes: ByteArray): Acknowledgement {
+                sent += peerId
+                return AlwaysAcknowledgesTransport().send(peerId, wireBytes)
+            }
+        }
+        val dispatcher = MeshOutboxDispatcher(database, transport, ACCEPT_TEST_ACKNOWLEDGEMENT) { now }
+        dispatcher.dispatchConnected(setOf("A", "B", "C", "D"))
+        dispatcher.dispatchConnected(setOf("A", "B", "C", "D"))
+        assertEquals(listOf("C"), sent)
+        assertEquals(QueueState.ACKNOWLEDGED.name, database.outboxDao().find("resume-1")?.state)
+    }
+
+    @Test
+    fun intermediateDuplicateAndRejectionCannotRetireDestinationCopy() = runTest {
+        val now = 1_800_000_000_000
+        database.outboxDao().enqueue(pendingEnvelope(now))
+        val transport = object : PeerTransport {
+            override suspend fun send(peerId: String, wireBytes: ByteArray): Acknowledgement =
+                AlwaysAcknowledgesTransport().send(peerId, wireBytes).toBuilder()
+                    .setStatus(AcknowledgementStatus.ACKNOWLEDGEMENT_STATUS_REJECTED)
+                    .setReasonCode(if (peerId == "A") "DUPLICATE" else "UNSUPPORTED_READER_VERSION").build()
+        }
+        val dispatcher = MeshOutboxDispatcher(database, transport, ACCEPT_TEST_ACKNOWLEDGEMENT) { now }
+        dispatcher.dispatch("A")
+        dispatcher.dispatch("D")
+        assertEquals(QueueState.PENDING.name, database.outboxDao().find("resume-1")?.state)
+        assertTrue(database.meshForwardDao().hasReceipt("resume-1", "A"))
+        assertTrue(database.meshForwardDao().hasReceipt("resume-1", "D"))
+        MeshOutboxDispatcher(database, AlwaysAcknowledgesTransport(), ACCEPT_TEST_ACKNOWLEDGEMENT) { now }.dispatch("C")
+        assertEquals(QueueState.ACKNOWLEDGED.name, database.outboxDao().find("resume-1")?.state)
+    }
+
+    @Test
     fun interruptedSendIsRetriedThenAcknowledgedAfterRemoteDurableReceipt() = runTest {
         val now = 1_800_000_000_000
         database.outboxDao().enqueue(pendingEnvelope(now))

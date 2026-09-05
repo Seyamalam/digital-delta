@@ -6,6 +6,10 @@ import java.security.SecureRandom
 import java.util.Base64
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.emptyFlow
+import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.flow.merge
 import kotlinx.coroutines.withContext
 
 data class IdentityProvisioningSnapshot(
@@ -28,6 +32,7 @@ data class AcceptedRecipient(
 )
 
 interface IdentityProvisioningCoordinator {
+    val authorityChanges: Flow<Unit> get() = emptyFlow()
     suspend fun snapshot(): IdentityProvisioningSnapshot
     suspend fun selectProfile(profileCode: String): IdentityProvisioningSnapshot
     suspend fun pinTrustAnchor(code: String): IdentityProvisioningSnapshot
@@ -45,6 +50,10 @@ class DefaultIdentityProvisioningCoordinator(
     private val secureRandom: SecureRandom = SecureRandom(),
     private val revocationPropagator: CredentialRevocationPropagator = NoOpCredentialRevocationPropagator,
 ) : IdentityProvisioningCoordinator {
+    override val authorityChanges: Flow<Unit> = merge(
+        recipients.authorities.map { Unit }, deviceProfiles.profile.map { Unit },
+    )
+
     override suspend fun snapshot(): IdentityProvisioningSnapshot = withContext(Dispatchers.IO) {
         snapshotInternal()
     }

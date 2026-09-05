@@ -35,11 +35,14 @@ class AndroidEnvelopeSecurity(
     private val keys: AndroidDeviceIdentityKeyStore,
     private val directory: RecipientKeyDao,
     private val trust: TrustAnchorRepository,
+    private val nowUnixMs: () -> Long = System::currentTimeMillis,
 ) : EnvelopeSigner, EnvelopeVerifier {
     override suspend fun sign(envelope: Envelope): Envelope {
         val installed = requireNotNull(directory.findByNodeId(envelope.senderNodeId)) { "Origin credential missing" }
+        val now = nowUnixMs()
+        require(installed.revokedAtUnixMs == null && installed.issuedAtUnixMs <= now && now < installed.expiresAtUnixMs) { "Origin authority inactive" }
         val identity = keys.createOrGet(envelope.senderNodeId)
-        require(installed.signingKeyId == identity.signingKeyId) { "Origin key mismatch" }
+        require(installed.signingKeyId == identity.signingKeyId && installed.signingPublicKeyDer.contentEquals(identity.signingPublicKeyDer)) { "Origin key mismatch" }
         val unsigned = envelope.toBuilder()
             .setSenderCredential(IdentityProvisioningCredential.parseFrom(installed.credentialBytes)).build()
         return unsigned.toBuilder().setSenderSignature(Signature.newBuilder()

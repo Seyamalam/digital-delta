@@ -26,7 +26,7 @@ data class DevicePublicIdentity(
 )
 
 /** Owns non-exportable private identity keys in Android Keystore. */
-class AndroidDeviceIdentityKeyStore {
+class AndroidDeviceIdentityKeyStore(private val keyNamespace: String = "digital-delta") {
     fun createOrGet(nodeId: String): DevicePublicIdentity {
         require(nodeId.isNotBlank()) { "node id is required" }
         val encryptionAlias = alias(nodeId, "encryption")
@@ -141,7 +141,7 @@ class AndroidDeviceIdentityKeyStore {
     }
 
     private fun alias(nodeId: String, purpose: String): String =
-        "digital-delta-$purpose-${sha256(nodeId.encodeToByteArray()).toHex().take(24)}"
+        "$keyNamespace-$purpose-${sha256(nodeId.encodeToByteArray()).toHex().take(24)}"
 
     private fun keyId(publicKeyDer: ByteArray): String = "rsa-${sha256(publicKeyDer).toHex().take(24)}"
 

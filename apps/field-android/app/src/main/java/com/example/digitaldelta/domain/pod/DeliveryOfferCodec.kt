@@ -126,10 +126,20 @@ class DeliveryOfferCodec {
     }
 
     fun decodeCode(code: String): SignedDeliveryOffer {
+        require(code.length in 1..16_384) { "delivery offer is too large" }
         require(code.startsWith(CODE_PREFIX)) { "delivery offer prefix is missing" }
         return SignedDeliveryOffer.parseFrom(
             Base64.getUrlDecoder().decode(code.removePrefix(CODE_PREFIX)),
         )
+    }
+
+    /** Unverified display data only; never grants custody or selects trusted keys. */
+    fun preview(code: String): DeliveryOfferReady {
+        val signed = decodeCode(code)
+        val offer = signed.offer
+        return DeliveryOfferReady(code, offer.deliveryId, offer.senderIdentityId, offer.recipientIdentityId,
+            signed.senderSigningKeyId, offer.payloadSha256.toByteArray(), offer.nonce.toByteArray(),
+            offer.timestampUnixMs, offer.previousReceiptSha256.toByteArray(), offer.simulatedVehicle)
     }
 
     /** Deterministic fault injection for the fair demo; never used on an accepted path. */

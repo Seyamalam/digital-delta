@@ -105,6 +105,10 @@ class ProductionRequestFlowTest {
 
         composeTestRule.waitUntilAtLeastOneExists(hasTestTag("request-queued"), timeoutMillis = 4_000)
         composeTestRule.onNode(hasTestTag("request-queued")).assertExists()
+        composeTestRule.onNode(hasTestTag("nav-missions")).performClick()
+        val createdMissionId = runBlocking { entryPoint.database().operationLogDao().requests().first().missionId }
+        composeTestRule.waitUntilAtLeastOneExists(hasTestTag("mission-$createdMissionId"), timeoutMillis = 4_000)
+        composeTestRule.onNode(hasTestTag("mission-$createdMissionId")).assertExists()
         composeTestRule.onNode(hasTestTag("identity-open")).performClick()
         composeTestRule.waitUntilAtLeastOneExists(hasTestTag("authorization-audit-id"), timeoutMillis = 4_000)
         composeTestRule.onNode(hasTestTag("authorization-audit-id")).assertExists()
