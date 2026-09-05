@@ -2,6 +2,13 @@
 
 Screenshots are evidence, pitch material, and recovery assets. Capture the final build only. Do not use mockups to imply working behavior.
 
+## September 5 mission-headquarters checkpoint
+
+The [mission capture set](artifacts/screenshots/headquarters/2026-09-05-missions/README.md)
+contains Bangla/English registers at 1366×768 and 1920×1080 plus the selected-mission
+map. Source revision `6b6f174`; real local Hono/D1/SSE, explicitly simulated inputs.
+These replace neither physical-device evidence nor the final complete pitch set.
+
 ## Capture rules
 
 - Capture Bangla and English pairs for every critical field screen.

@@ -301,9 +301,9 @@ $ next build --webpack
   Finished TypeScript in 980ms ...
   Collecting page data using 10 workers ...
   Generating static pages using 10 workers (0/9) ...
-  Generating static pages using 10 workers (2/9) 
-  Generating static pages using 10 workers (4/9) 
-  Generating static pages using 10 workers (6/9) 
+  Generating static pages using 10 workers (2/9)
+  Generating static pages using 10 workers (4/9)
+  Generating static pages using 10 workers (6/9)
 ✓ Generating static pages using 10 workers (9/9) in 291ms
   Finalizing page optimization ...
   Collecting build traces ...
@@ -340,10 +340,10 @@ $ tsc --noEmit
 ────────────────────
 Total Upload: 79.18 KiB / gzip: 20.20 KiB
 Your Worker has access to the following bindings:
-Binding                                                                    Resource                  
-env.HQ_DB (digital-delta-hq)                                               D1 Database               
-env.ARCHIVE_RATE_LIMITER (60 requests/60s)                                 Rate Limit                
-env.ALLOWED_ORIGINS ("http://localhost:3000,http://127.0.0....")           Environment Variable      
+Binding                                                                    Resource
+env.HQ_DB (digital-delta-hq)                                               D1 Database
+env.ARCHIVE_RATE_LIMITER (60 requests/60s)                                 Rate Limit
+env.ALLOWED_ORIGINS ("http://localhost:3000,http://127.0.0....")           Environment Variable
 
 --dry-run: exiting now.
 Local verification passed.
