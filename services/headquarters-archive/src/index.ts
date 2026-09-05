@@ -54,19 +54,26 @@ app.get("/v1/observations", async (c) => {
   return c.json({ observations: await replay(c.env.HQ_DB, cursor) });
 });
 app.get("/observer/events", async (c) => {
-  let cursor = parseCursor(c.req.header("Last-Event-ID") ?? c.req.query("after"));
+  const lastId = c.req.header("Last-Event-ID");
+  const parts = lastId?.split(":");
+  if (parts && (parts.length > 2 || (parts.length === 2 && !/^[a-f0-9]{32}$/.test(parts[0])))) return c.json({ error: "invalid_cursor" }, 400);
+  let cursor = parseCursor(parts?.at(-1) ?? c.req.query("after"));
   if (cursor === null) return c.json({ error: "invalid_cursor" }, 400);
+  const metadata = await c.env.HQ_DB.prepare("SELECT generation FROM observer_stream WHERE singleton = 1").first<{ generation: string }>();
+  if (!metadata) return c.json({ error: "stream_metadata_missing" }, 503);
+  const reset = parts?.length === 2 && parts[0] !== metadata.generation;
+  if (reset) cursor = 0;
   const after = cursor;
   // Preflight storage before returning SSE headers so database errors have an HTTP status.
   const first = await replay(c.env.HQ_DB, after);
   return streamSSE(c, async (stream) => {
     let page = first;
     let sequence = after;
-    await stream.writeSSE({ event: "ready", data: JSON.stringify({ after }) });
+    await stream.writeSSE({ event: "ready", id: `${metadata.generation}:${after}`, data: JSON.stringify({ after, generation: metadata.generation, reset }) });
     // Bound queries per stream. EventSource reconnects with Last-Event-ID automatically.
     for (let poll = 0; poll < 25 && !stream.aborted; poll++) {
       for (const observation of page) {
-        await stream.writeSSE({ id: String(observation.sequence), event: "observation", data: JSON.stringify(observation) });
+        await stream.writeSSE({ id: `${metadata.generation}:${observation.sequence}`, event: "observation", data: JSON.stringify(observation) });
         sequence = observation.sequence;
       }
       if (page.length < 100) { await stream.writeSSE({ event: "heartbeat", data: String(sequence) }); await stream.sleep(2000); }

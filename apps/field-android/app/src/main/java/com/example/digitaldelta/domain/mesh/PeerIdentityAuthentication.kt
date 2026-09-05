@@ -20,9 +20,12 @@ import java.security.spec.PSSParameterSpec
 import java.security.spec.X509EncodedKeySpec
 import java.util.concurrent.ConcurrentHashMap
 import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.flow.map
 
 interface PeerIdentityAuthenticator {
     suspend fun isActive(nodeId: String): Boolean = true
+    suspend fun isActive(nodeId: String, expectedSigningKeyId: String?): Boolean = isActive(nodeId)
+    val authorityChanges: kotlinx.coroutines.flow.Flow<Unit> get() = kotlinx.coroutines.flow.emptyFlow()
     fun createChallenge(): PeerIdentityChallenge
     suspend fun createProof(challenge: PeerIdentityChallenge): PeerIdentityProof
     suspend fun verifyProof(
@@ -40,6 +43,9 @@ class AndroidPeerIdentityAuthenticator(
     private val nowUnixMs: () -> Long = System::currentTimeMillis,
     private val secureRandom: SecureRandom = SecureRandom(),
 ) : PeerIdentityAuthenticator {
+    override val authorityChanges = recipientKeys.observeAuthorities().map { Unit }
+    override suspend fun isActive(nodeId: String, expectedSigningKeyId: String?): Boolean =
+        isActive(nodeId) && expectedSigningKeyId != null && recipientKeys.findByNodeId(nodeId)?.signingKeyId == expectedSigningKeyId
     override suspend fun isActive(nodeId: String): Boolean {
         val record = recipientKeys.findByNodeId(nodeId) ?: return false
         val now = nowUnixMs()

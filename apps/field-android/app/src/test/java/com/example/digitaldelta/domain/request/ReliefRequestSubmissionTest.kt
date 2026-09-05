@@ -21,7 +21,7 @@ class ReliefRequestSubmissionTest {
             persistence = persistence,
             payloadProtector = ReversingPayloadProtector,
             nowUnixMs = { 1_800_000_000_000 },
-            nextId = sequenceOf("request-1", "event-1", "message-1").iterator()::next,
+            nextId = sequenceOf("request-1", "event-1", "message-1", "message-2").iterator()::next,
         )
 
         val receipt = service.submit(
@@ -42,6 +42,7 @@ class ReliefRequestSubmissionTest {
         assertEquals("request-1", receipt.requestId)
         assertEquals("message-1", receipt.messageId)
         assertEquals(1, persistence.calls)
+        assertEquals(setOf("camp-4", "hospital-1"), persistence.envelopes.map { MeshWireCodec.decode(it.wireBytes).recipientNodeId }.toSet())
 
         val operation = requireNotNull(persistence.operation)
         val event = DomainEvent.parseFrom(operation.payloadBytes)
@@ -62,6 +63,12 @@ private class RecordingRequestPersistence : RequestPersistence {
     var calls = 0
     var operation: OperationEntity? = null
     var envelope: MeshEnvelopeEntity? = null
+    var envelopes = emptyList<MeshEnvelopeEntity>()
+
+    override suspend fun persistAll(operation: OperationEntity, envelopes: List<MeshEnvelopeEntity>) {
+        this.envelopes = envelopes
+        persist(operation, envelopes.last())
+    }
 
     override suspend fun persist(operation: OperationEntity, envelope: MeshEnvelopeEntity) {
         calls += 1

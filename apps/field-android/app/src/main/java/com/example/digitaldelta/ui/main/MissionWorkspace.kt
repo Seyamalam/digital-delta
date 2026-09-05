@@ -25,6 +25,7 @@ fun MissionWorkspace(language: String, model: MissionWorkspaceViewModel = viewMo
     val missions by model.missions.collectAsStateWithLifecycle()
     val busy by model.busy.collectAsStateWithLifecycle()
     val failed by model.failed.collectAsStateWithLifecycle()
+    val selectedMission by model.selectedMission.collectAsStateWithLifecycle()
     var editing by remember { mutableStateOf<FieldMission?>(null) }
     var field by remember { mutableStateOf(MissionField.DESTINATION) }
     var value by remember { mutableStateOf("") }
@@ -48,18 +49,22 @@ fun MissionWorkspace(language: String, model: MissionWorkspaceViewModel = viewMo
                     Text("${mission.priority.name} · ${mission.origin} → ${mission.destination}", style = MaterialTheme.typography.headlineSmall, fontWeight = FontWeight.Bold)
                     Text(mission.id, style = MaterialTheme.typography.bodyMedium)
                     Text(localized.getString(if (mission.simulated) R.string.mission_simulated else R.string.mission_field_record))
+                    if (mission.delivered) Text(localized.getString(R.string.mission_delivered), style = MaterialTheme.typography.titleMedium)
+                    if (mission.custodyNeedsReconciliation) Text(localized.getString(R.string.mission_custody_reconcile), color = MaterialTheme.colorScheme.error)
                     Text("${localized.getString(R.string.mission_quantity)}: ${mission.medicalQuantity}")
                     Text(localized.getString(R.string.mission_route_assumptions), color = MaterialTheme.colorScheme.onSurfaceVariant)
                     Text(mission.route?.let { "${it.edgeIds.joinToString(" → ")} · ${it.totalMinutes} ${localized.getString(R.string.mission_minutes)}" }
                         ?: localized.getString(R.string.mission_no_route), style = MaterialTheme.typography.titleMedium)
                     mission.triage?.let { Text(localized.getString(if (it.willBreachSla) R.string.mission_sla_warning else R.string.mission_sla_within)) }
                     if (mission.hash.isNotBlank()) Text(localized.getString(R.string.mission_hash, mission.hash.take(16)), style = MaterialTheme.typography.bodySmall)
-                    OutlinedButton(onClick = { editing = mission; field = MissionField.DESTINATION; value = mission.destination }, enabled = !busy,
+                    OutlinedButton(onClick = { model.selectMission(mission.id) }, enabled = !busy && selectedMission != mission.id,
+                        modifier = Modifier.fillMaxWidth().heightIn(min = 52.dp)) { Text(localized.getString(if (selectedMission == mission.id) R.string.mission_selected_custody else R.string.mission_select_custody)) }
+                    OutlinedButton(onClick = { editing = mission; field = MissionField.DESTINATION; value = mission.destination }, enabled = !busy && mission.canEdit,
                         modifier = Modifier.fillMaxWidth().heightIn(min = 52.dp)) { Text(localized.getString(R.string.mission_edit)) }
                     mission.conflicts.forEach { conflict ->
                         Text(localized.getString(R.string.mission_conflict_help), color = MaterialTheme.colorScheme.error)
                         for ((side, selected) in listOf(ConflictSide.LEFT to conflict.leftValue, ConflictSide.RIGHT to conflict.rightValue)) {
-                            OutlinedButton(onClick = { model.resolve(conflict.conflictId, side) }, enabled = !busy,
+                            OutlinedButton(onClick = { model.resolve(conflict.conflictId, side) }, enabled = !busy && mission.canResolve,
                                 modifier = Modifier.fillMaxWidth().heightIn(min = 52.dp)) { Text("${localized.getString(R.string.mission_resolve)}: $selected") }
                         }
                     }
@@ -78,7 +83,7 @@ fun MissionWorkspace(language: String, model: MissionWorkspaceViewModel = viewMo
                 }
                 OutlinedTextField(value, { value = it }, label = { Text(label(field)) }, modifier = Modifier.fillMaxWidth())
                 Text(localized.getString(R.string.mission_edit_help))
-            } }, confirmButton = { TextButton(onClick = { model.edit(mission.id, field, value); editing = null }, enabled = value.isNotBlank() && !busy) { Text(localized.getString(R.string.mission_save)) } },
+            } }, confirmButton = { TextButton(onClick = { model.edit(mission.id, field, value); editing = null }, enabled = value.isNotBlank() && !busy && missions.any { it.id == mission.id && it.canEdit }) { Text(localized.getString(R.string.mission_save)) } },
             dismissButton = { TextButton(onClick = { editing = null }) { Text(localized.getString(android.R.string.cancel)) } })
     }
 }

@@ -309,6 +309,8 @@ interface NonceDao {
 
 @Dao
 interface OperationLogDao {
+    @Query("SELECT * FROM operation_log WHERE eventType IN ('CUSTODY_TRANSFER', 'RELIEF_REQUEST_CREATED', 'MISSION_FIELD_UPDATED', 'CONFLICT_RESOLVED') ORDER BY createdAtUnixMs, eventId")
+    fun observeMissionHistory(): kotlinx.coroutines.flow.Flow<List<OperationEntity>>
     @Query("SELECT * FROM operation_log WHERE eventType = 'RELIEF_REQUEST_CREATED' ORDER BY createdAtUnixMs DESC, eventId")
     fun observeRequests(): kotlinx.coroutines.flow.Flow<List<OperationEntity>>
 
@@ -403,6 +405,8 @@ interface CargoAssignmentDao {
 
 @Dao
 interface ConflictDao {
+    @Query("UPDATE conflicts SET state = :state WHERE conflictId = :conflictId AND state != 'RESOLVED'")
+    suspend fun reconcileState(conflictId: String, state: String)
     @Query("SELECT EXISTS(SELECT 1 FROM conflicts WHERE missionId = :missionId AND state = 'OPEN')")
     suspend fun hasOpen(missionId: String): Boolean
     @Query("SELECT * FROM conflicts WHERE state = 'OPEN' ORDER BY createdAtUnixMs, conflictId")
@@ -428,7 +432,7 @@ interface ConflictDao {
     @Query(
         "UPDATE conflicts SET state = 'RESOLVED', selectedValue = :selectedValue, " +
             "resolverIdentityId = :resolverIdentityId, reasonCode = :reasonCode, " +
-            "resolvedAtUnixMs = :resolvedAtUnixMs WHERE conflictId = :conflictId AND state = 'OPEN'",
+            "resolvedAtUnixMs = :resolvedAtUnixMs WHERE conflictId = :conflictId",
     )
     suspend fun resolve(
         conflictId: String,

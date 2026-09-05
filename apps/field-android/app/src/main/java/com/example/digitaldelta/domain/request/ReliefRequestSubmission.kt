@@ -29,6 +29,8 @@ data class ReliefRequestDraft(
     val simulated: Boolean,
     val scenarioSeed: String,
     val requesterIdentityId: String = requesterNodeId,
+    val participantNodeIds: Set<String> = emptySet(),
+    val note: String = "",
 )
 
 data class QueueReceipt(val requestId: String, val messageId: String)
@@ -39,16 +41,23 @@ interface ReliefRequestSubmission {
 
 interface RequestPersistence {
     suspend fun persist(operation: OperationEntity, envelope: MeshEnvelopeEntity)
+    suspend fun persistAll(operation: OperationEntity, envelopes: List<MeshEnvelopeEntity>) {
+        require(envelopes.size == 1) { "Persistence must support atomic fan-out" }
+        persist(operation, envelopes.single())
+    }
 }
 
 class RoomRequestPersistence(private val database: DeltaDatabase, private val applyLocalProjection: Boolean = false, private val afterCommit: () -> Unit = {}) : RequestPersistence {
     override suspend fun persist(operation: OperationEntity, envelope: MeshEnvelopeEntity) {
+        persistAll(operation, listOf(envelope))
+    }
+    override suspend fun persistAll(operation: OperationEntity, envelopes: List<MeshEnvelopeEntity>) {
         database.withTransaction {
             if (applyLocalProjection) {
-                val origin = MeshWireCodec.decode(envelope.wireBytes)
+                val origin = MeshWireCodec.decode(envelopes.first().wireBytes)
                 com.example.digitaldelta.domain.sync.ReceivedEventApplication(database).apply(DomainEvent.parseFrom(operation.payloadBytes), origin, origin.senderNodeId)
             } else database.operationLogDao().append(operation)
-            check(database.outboxDao().enqueue(envelope) > 0) { "duplicate mesh message id" }
+            envelopes.forEach { check(database.outboxDao().enqueue(it) > 0) { "duplicate mesh message id" } }
         }
         // Publication scheduling failure cannot roll back or fail a field request.
         runCatching { afterCommit() }
@@ -61,14 +70,18 @@ class DefaultReliefRequestSubmission(
     private val nowUnixMs: () -> Long = System::currentTimeMillis,
     private val nextId: () -> String = { UUID.randomUUID().toString() },
     private val envelopeSigner: com.example.digitaldelta.domain.mesh.EnvelopeSigner = com.example.digitaldelta.domain.mesh.EnvelopeSigner { it },
+    private val additionalParticipants: suspend (ReliefRequestDraft) -> Set<String> = { emptySet() },
 ) : ReliefRequestSubmission {
     override suspend fun submit(draft: ReliefRequestDraft): QueueReceipt {
         require(draft.cargo.isNotEmpty()) { "at least one cargo item is required" }
         require(draft.cargo.all { it.quantity > 0 }) { "cargo quantities must be positive" }
+        require(draft.note.length <= 1000) { "Note is too long" }
         val now = nowUnixMs()
         val requestId = nextId()
         val eventId = nextId()
         val messageId = nextId()
+        val participants = (draft.participantNodeIds + additionalParticipants(draft) + setOf(draft.requesterNodeId, draft.originNodeId, draft.destinationNodeId)).sorted()
+        require(participants.size in 2..32)
 
         val request = ReliefRequestCreated.newBuilder()
             .setRequestId(requestId)
@@ -76,6 +89,8 @@ class DefaultReliefRequestSubmission(
             .setOriginNodeId(draft.originNodeId)
             .setDestinationNodeId(draft.destinationNodeId)
             .setCreatedAtUnixMs(now)
+            .addAllParticipantNodeIds(participants)
+            .setNote(draft.note)
             .addAllCargo(
                 draft.cargo.mapIndexed { index, item ->
                     CargoItem.newBuilder()
@@ -99,13 +114,15 @@ class DefaultReliefRequestSubmission(
             .build()
         val eventBytes = event.toByteArray()
         val payloadHash = sha256(eventBytes)
-        val associatedData = "$messageId|${draft.requesterNodeId}|${draft.destinationNodeId}|$now".encodeToByteArray()
-        val protectedPayload = payloadProtector.protect(draft.destinationNodeId, eventBytes, associatedData)
         val expiresAt = now + ttlMillis(draft.priority)
+        val envelopes = (participants - draft.requesterNodeId).mapIndexed { index, recipient ->
+        val peerMessageId = if (index == 0) messageId else nextId()
+        val associatedData = "$peerMessageId|${draft.requesterNodeId}|$recipient|$now".encodeToByteArray()
+        val protectedPayload = payloadProtector.protect(recipient, eventBytes, associatedData)
         val envelope = envelopeSigner.sign(MeshWireCodec.createEnvelope(
-            messageId = messageId,
+            messageId = peerMessageId,
             senderNodeId = draft.requesterNodeId,
-            recipientNodeId = draft.destinationNodeId,
+            recipientNodeId = recipient,
             createdAtUnixMs = now,
             expiresAtUnixMs = expiresAt,
             hopLimit = 8,
@@ -115,8 +132,11 @@ class DefaultReliefRequestSubmission(
             scenarioSeed = draft.scenarioSeed,
             protectedPayload = protectedPayload,
         ))
+        MeshEnvelopeEntity(peerMessageId, MeshWireCodec.encode(envelope), draft.priority.number, expiresAt,
+            QueueState.PENDING.name, 0, now)
+        }
 
-        persistence.persist(
+        persistence.persistAll(
             operation = OperationEntity(
                 eventId = eventId,
                 missionId = requestId,
@@ -124,15 +144,7 @@ class DefaultReliefRequestSubmission(
                 payloadBytes = eventBytes,
                 createdAtUnixMs = now,
             ),
-            envelope = MeshEnvelopeEntity(
-                messageId = messageId,
-                wireBytes = MeshWireCodec.encode(envelope),
-                priority = draft.priority.number,
-                expiresAtUnixMs = expiresAt,
-                state = QueueState.PENDING.name,
-                attemptCount = 0,
-                nextAttemptAtUnixMs = now,
-            ),
+            envelopes = envelopes,
         )
         return QueueReceipt(requestId, messageId)
     }

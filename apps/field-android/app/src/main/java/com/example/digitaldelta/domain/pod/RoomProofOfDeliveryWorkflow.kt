@@ -6,6 +6,7 @@ import com.example.digitaldelta.data.local.OperationEntity
 import com.example.digitaldelta.data.local.UsedNonceEntity
 import com.example.digitaldelta.domain.identity.AndroidDeviceIdentityKeyStore
 import com.example.digitaldelta.domain.identity.InstalledIdentityCredential
+import com.example.digitaldelta.domain.identity.toAuthorizationRole
 import com.example.digitaldelta.proto.v1.CustodyTransfer
 import com.example.digitaldelta.proto.v1.DeliveryOffer
 import com.example.digitaldelta.proto.v1.DomainEvent
@@ -76,6 +77,7 @@ data class DeliveryScenario(
     val payloadDescription: String,
     val scenarioSeed: String,
     val simulatedVehicle: Boolean,
+    val missionSnapshot: ByteArray = byteArrayOf(),
 )
 
 class RoomProofOfDeliveryWorkflow(
@@ -89,6 +91,7 @@ class RoomProofOfDeliveryWorkflow(
     },
     private val eventId: () -> String = { "custody-${UUID.randomUUID()}" },
     private val senderCredentialLookup: suspend (String) -> InstalledIdentityCredential? = { null },
+    private val receiptSink: suspend (DomainEvent) -> Unit = {},
 ) : ProofOfDeliveryWorkflow {
     private val payloadHash = sha256(scenario.payloadDescription.encodeToByteArray())
 
@@ -112,6 +115,7 @@ class RoomProofOfDeliveryWorkflow(
                 timestampUnixMs = now,
                 previousReceiptSha256 = previous,
                 simulatedVehicle = scenario.simulatedVehicle,
+                missionSnapshot = scenario.missionSnapshot,
             ),
             sender,
         )
@@ -130,13 +134,17 @@ class RoomProofOfDeliveryWorkflow(
     }
 
     override suspend fun verify(code: String): DeliveryReceiptResult = withContext(Dispatchers.IO) {
-        verifyInternal(code)
+        // Serialize the head read, signature/nonce validation and append, not only the write.
+        database.withTransaction { verifyInternal(code) }
     }
 
     private suspend fun verifyInternal(code: String): DeliveryReceiptResult {
         val chainBefore = reconstructChainInternal().receipts
         val installedSender = senderCredentialLookup(scenario.senderNodeId)
             ?.takeIf { it.identityId == scenario.senderIdentityId }
+        if (installedSender != null && !com.example.digitaldelta.domain.identity.AuthorizationPolicy().isAllowed(installedSender.role.toAuthorizationRole(), com.example.digitaldelta.domain.identity.Permission.OFFER_CUSTODY)) {
+            return DeliveryReceiptResult.Rejected(DeliveryOfferRejection.UNKNOWN_SIGNING_KEY, chainBefore)
+        }
         val trustedSender = when {
             installedSender != null -> TrustedDeliveryContext(
                 deliveryId = scenario.deliveryId,
@@ -150,6 +158,7 @@ class RoomProofOfDeliveryWorkflow(
                 allowedClockSkewMs = ALLOWED_CLOCK_SKEW_MS,
                 credentialValidUntilUnixMs = installedSender.expiresAtUnixMs,
                 credentialRevokedAtUnixMs = installedSender.revokedAtUnixMs,
+                missionSnapshot = scenario.missionSnapshot,
             )
             scenario.simulatedVehicle -> {
                 val localDemoIdentity = deviceKeys.createOrGet(scenario.senderNodeId)
@@ -163,6 +172,7 @@ class RoomProofOfDeliveryWorkflow(
                     senderSigningPublicKeyDer = localDemoIdentity.signingPublicKeyDer,
                     nowUnixMs = nowUnixMs(),
                     allowedClockSkewMs = ALLOWED_CLOCK_SKEW_MS,
+                    missionSnapshot = scenario.missionSnapshot,
                 )
             }
             else -> null
@@ -218,6 +228,7 @@ class RoomProofOfDeliveryWorkflow(
                         createdAtUnixMs = now,
                     ),
                 )
+                receiptSink(event)
                 true
             }
         }
@@ -227,6 +238,40 @@ class RoomProofOfDeliveryWorkflow(
         val chain = reconstructChainInternal()
         check(chain.valid) { "custody chain became invalid after append" }
         return DeliveryReceiptResult.Verified(receipt, chain.receipts)
+    }
+
+    /** Import the dual-signed receipt, not a transport acknowledgement. */
+    suspend fun importReceipt(event: DomainEvent): Boolean = database.withTransaction {
+        val existing = database.operationLogDao().find(event.eventId)
+        if (existing != null) {
+            require(existing.payloadBytes.contentEquals(event.toByteArray()))
+            return@withTransaction true
+        }
+        val transfer = event.custodyTransfer
+        require(event.hasCustodyTransfer() && event.schemaVersion == 1 && event.eventId.isNotBlank())
+        require(transfer.missionId == scenario.missionId && transfer.deliveryId == scenario.deliveryId)
+        require(transfer.missionSnapshot.toByteArray().contentEquals(scenario.missionSnapshot))
+        require(event.actorIdentityId == scenario.recipientIdentityId && transfer.senderIdentityId == scenario.senderIdentityId && transfer.recipientIdentityId == scenario.recipientIdentityId)
+        require(event.simulated == scenario.simulatedVehicle && transfer.simulatedVehicle == scenario.simulatedVehicle && event.scenarioSeed == scenario.scenarioSeed)
+        require(MessageDigest.isEqual(transfer.payloadSha256.toByteArray(), payloadHash))
+        require(transfer.nonce.size() in 16..64 && transfer.timestampUnixMs > 0)
+        require(verifyTransferSignatures(transfer)) { "Invalid custody signatures" }
+        for ((node, permission) in listOf(scenario.senderNodeId to com.example.digitaldelta.domain.identity.Permission.OFFER_CUSTODY,
+            scenario.recipientNodeId to com.example.digitaldelta.domain.identity.Permission.ACCEPT_CUSTODY)) {
+            val credential = senderCredentialLookup(node) ?: throw com.example.digitaldelta.domain.sync.MissingEventDependency("Custody signer credential unavailable")
+            val at = transfer.timestampUnixMs
+            require(credential.issuedAtUnixMs <= at && com.example.digitaldelta.domain.identity.AuthorizationPolicy().authorize(
+                com.example.digitaldelta.domain.identity.OfflineCredential(credential.identityId, credential.role.toAuthorizationRole(), credential.expiresAtUnixMs,
+                    credential.revokedAtUnixMs?.let { it <= at } == true), permission, at).allowed) { "Custody signer was not authorized at handoff" }
+        }
+        val chain = reconstructChainInternal()
+        require(chain.valid)
+        val previous = chain.receipts.lastOrNull()?.receiptHash ?: GENESIS_HASH
+        if (!MessageDigest.isEqual(transfer.previousReceiptSha256.toByteArray(), previous))
+            throw com.example.digitaldelta.domain.sync.MissingEventDependency("Custody head is unavailable or competing")
+        require(database.nonceDao().claim(UsedNonceEntity(sha256(transfer.nonce.toByteArray()).toHex(), transfer.deliveryId, event.occurredAtUnixMs)) != -1L)
+        database.operationLogDao().append(OperationEntity(event.eventId, scenario.missionId, EVENT_TYPE, event.toByteArray(), event.occurredAtUnixMs))
+        true
     }
 
     override suspend fun reconstructChain(): CustodyChain = withContext(Dispatchers.IO) {
@@ -274,6 +319,8 @@ class RoomProofOfDeliveryWorkflow(
         now: Long,
     ): DomainEvent {
         val unsignedReceipt = CustodyTransfer.newBuilder()
+            .setMissionId(scenario.missionId)
+            .setMissionSnapshot(offer.missionSnapshot)
             .setDeliveryId(offer.deliveryId)
             .setSenderIdentityId(offer.senderIdentityId)
             .setRecipientIdentityId(offer.recipientIdentityId)
@@ -315,6 +362,7 @@ class RoomProofOfDeliveryWorkflow(
             .setTimestampUnixMs(transfer.timestampUnixMs)
             .setPreviousReceiptSha256(transfer.previousReceiptSha256)
             .setSimulatedVehicle(transfer.simulatedVehicle)
+            .setMissionSnapshot(transfer.missionSnapshot)
             .build()
         val installedSender = senderCredentialLookup(scenario.senderNodeId)
             ?.takeIf { it.identityId == scenario.senderIdentityId }

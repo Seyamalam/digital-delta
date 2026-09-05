@@ -195,6 +195,9 @@ object AppModule {
         persistence = RoomRequestPersistence(database, applyLocalProjection = true) { com.example.digitaldelta.service.ObserverPublication.schedule(context) },
         payloadProtector = payloadProtector,
         envelopeSigner = com.example.digitaldelta.domain.mesh.AndroidEnvelopeSecurity(deviceKeys, database.recipientKeyDao(), trustAnchors),
+        additionalParticipants = { database.recipientKeyDao().validAt(System.currentTimeMillis())
+            .filter { it.revokedAtUnixMs == null && it.roleCode == com.example.digitaldelta.proto.v1.IdentityRole.IDENTITY_ROLE_COORDINATOR.name }
+            .map { it.nodeId }.toSet() },
     )
 
     @Provides
@@ -231,11 +234,17 @@ object AppModule {
         deviceKeys: AndroidDeviceIdentityKeyStore,
         recipients: RecipientProvisioningRepository,
         profiles: DeviceProfileRepository,
+        protector: MeshPayloadProtector,
+        trust: TrustAnchorRepository,
+        selection: com.example.digitaldelta.domain.pod.MissionSelection,
     ): ProofOfDeliveryWorkflow = com.example.digitaldelta.domain.pod.OperationalProofOfDeliveryWorkflow(
         database,
         deviceKeys,
         recipients,
         profiles,
+        selectedMissionId = { selection.missionId.value },
+        receiptSink = com.example.digitaldelta.domain.sync.MissionEventPublisher(database, profiles, protector,
+            com.example.digitaldelta.domain.mesh.AndroidEnvelopeSecurity(deviceKeys, database.recipientKeyDao(), trust))::publishReceipt,
     )
 
     @Provides

@@ -207,7 +207,7 @@ fun DigitalDeltaApp(
     onConfigurePin: ((String) -> Unit)? = null,
     onUnlock: ((String) -> Unit)? = null,
     requestQueueState: RequestQueueUiState = RequestQueueUiState.Idle,
-    onQueueRequest: ((Int, Int, Int, String) -> Unit)? = null,
+    onQueueRequest: ((Int, Int, Int, String, String) -> Unit)? = null,
     identityState: IdentityUiState = IdentityUiState.Loading,
     authorizationState: FieldAuthorizationUiState = FieldAuthorizationUiState(
         role = Role.COORDINATOR,
@@ -562,7 +562,7 @@ private fun DeltaShell(
     useBangla: Boolean,
     onLanguageChange: ((Boolean) -> Unit)?,
     requestQueueState: RequestQueueUiState,
-    onQueueRequest: ((Int, Int, Int, String) -> Unit)?,
+    onQueueRequest: ((Int, Int, Int, String, String) -> Unit)?,
     identityState: IdentityUiState,
     authorizationState: FieldAuthorizationUiState,
     onPinAdministrator: ((String) -> Unit)?,
@@ -867,6 +867,7 @@ private fun IdentityScreen(
                         verticalArrangement = Arrangement.spacedBy(10.dp),
                     ) {
                         QrCode(
+                            language = language,
                             value = ready.enrollmentCode,
                             size = 258.dp,
                             description = text(R.string.enrollment_qr_description, language),
@@ -1507,7 +1508,7 @@ private fun RequestScreen(
     language: AppLanguage,
     authorizationState: FieldAuthorizationUiState,
     requestQueueState: RequestQueueUiState,
-    onQueueRequest: ((Int, Int, Int, String) -> Unit)?,
+    onQueueRequest: ((Int, Int, Int, String, String) -> Unit)?,
 ) {
     var medicine by rememberSaveable { mutableIntStateOf(10) }
     var ors by rememberSaveable { mutableIntStateOf(20) }
@@ -1532,7 +1533,6 @@ private fun RequestScreen(
             SectionLabel(text(R.string.location, language))
             Spacer(Modifier.height(8.dp))
             Surface(
-                onClick = {},
                 color = MaterialTheme.colorScheme.surface,
                 shape = RoundedCornerShape(16.dp),
                 border = CardDefaults.outlinedCardBorder(),
@@ -1541,10 +1541,8 @@ private fun RequestScreen(
                     Row(Modifier.fillMaxWidth().padding(14.dp), verticalAlignment = Alignment.CenterVertically) {
                         Icon(Icons.Default.LocationOn, null, tint = DeltaTeal)
                         Spacer(Modifier.width(10.dp))
-                        Text(text(R.string.select_location, language), modifier = Modifier.weight(1f))
-                        Text("›", fontSize = 26.sp)
+                        Text(text(R.string.request_supply_route, language), modifier = Modifier.weight(1f))
                     }
-                    MiniLocationMap(language)
                 }
             }
         }
@@ -1589,7 +1587,7 @@ private fun RequestScreen(
             Spacer(Modifier.height(8.dp))
             OutlinedTextField(
                 value = note,
-                onValueChange = { note = it },
+                onValueChange = { if (it.length <= 1000) note = it },
                 placeholder = { Text(text(R.string.note_hint, language)) },
                 minLines = 3,
                 shape = RoundedCornerShape(14.dp),
@@ -1607,7 +1605,7 @@ private fun RequestScreen(
                     if (onQueueRequest == null) {
                         queued = true
                     } else {
-                        onQueueRequest(medicine, ors, tarpaulin, priority)
+                        onQueueRequest(medicine, ors, tarpaulin, priority, note)
                     }
                 },
                 enabled = requestQueueState != RequestQueueUiState.Submitting &&
@@ -2682,6 +2680,7 @@ private fun HandoffScreen(
                     when {
                         offer != null -> {
                             QrCode(
+                                language = language,
                                 value = offer.qrCode,
                                 description = text(R.string.signed_delivery_qr_description, language),
                             )
@@ -3184,11 +3183,12 @@ private fun QuantityRow(
 @Composable
 private fun QrCode(
     value: String,
+    language: AppLanguage,
     size: Dp = 220.dp,
     description: String,
 ) {
     val image = remember(value) {
-        val matrix = QRCodeWriter().encode(value, BarcodeFormat.QR_CODE, 520, 520)
+        val matrix = com.example.digitaldelta.domain.pod.boundedQrMatrix(value) ?: return@remember null
         val pixels = IntArray(matrix.width * matrix.height) { index ->
             val x = index % matrix.width
             val y = index / matrix.width
@@ -3197,6 +3197,16 @@ private fun QrCode(
         Bitmap.createBitmap(matrix.width, matrix.height, Bitmap.Config.ARGB_8888).apply {
             setPixels(pixels, 0, matrix.width, 0, 0, matrix.width, matrix.height)
         }.asImageBitmap()
+    }
+    if (image == null) {
+        val clipboard = LocalClipboardManager.current
+        Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+            Text(text(R.string.qr_manual_fallback, language), style = MaterialTheme.typography.bodyLarge)
+            OutlinedButton(onClick = { clipboard.setText(androidx.compose.ui.text.AnnotatedString(value)) }, modifier = Modifier.fillMaxWidth().heightIn(min = 52.dp)) {
+                Text(text(R.string.qr_copy_signed_code, language))
+            }
+        }
+        return
     }
     androidx.compose.foundation.Image(
         bitmap = image,

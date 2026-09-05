@@ -18,9 +18,18 @@ class MissionEventPublisher(
     private val security: AndroidEnvelopeSecurity,
     private val afterCommit: () -> Unit = {},
 ) {
+    suspend fun publishReceipt(event: DomainEvent) = database.withTransaction {
+        require(event.hasCustodyTransfer())
+        val profile = profiles.profile.first()
+        require(event.actorIdentityId == profile.identityId)
+        publish(event, creation(event.custodyTransfer.missionId), profile)
+    }
+
     suspend fun edit(missionId: String, field: MissionField, value: String): String = database.withTransaction {
         val profile = profiles.profile.first()
         val creation = creation(missionId)
+        require(!database.conflictDao().hasOpen(missionId)) { "Resolve open conflicts before editing" }
+        require(database.operationLogDao().forMission(missionId).none { it.eventType == "CUSTODY_TRANSFER" }) { "Delivered mission is immutable; create a follow-up request" }
         val clock = clock(missionId).increment(profile.nodeId)
         val event = event(profile, creation).setMissionFieldUpdated(MissionFieldUpdated.newBuilder()
             .setMissionId(missionId).setFieldCode(field.name).setValue(ByteString.copyFromUtf8(value)).setVectorClock(clock.toProto())).build()
@@ -35,6 +44,7 @@ class MissionEventPublisher(
         val creation = creation(conflict.missionId)
         val event = event(profile, creation).setConflictResolved(ConflictResolved.newBuilder()
             .setConflictId(conflictId).setMissionId(conflict.missionId)
+            .setFieldCode(conflict.fieldCode)
             .setSelectedValue(ByteString.copyFromUtf8(if (side == ConflictSide.LEFT) conflict.leftValue else conflict.rightValue))
             .setResolverIdentityId(profile.identityId).setReasonCode("HUMAN_SAFETY_SELECTION")
             .setVectorClock(clock(conflict.missionId).increment(profile.nodeId).toProto())).build()
@@ -44,7 +54,7 @@ class MissionEventPublisher(
 
     private suspend fun publish(event: DomainEvent, creation: DomainEvent, profile: LocalDeviceProfile) {
         val request = creation.reliefRequestCreated
-        val recipients = setOf(request.requesterNodeId, request.destinationNodeId) - profile.nodeId
+        val recipients = (request.participantNodeIdsList.toSet() + setOf(request.requesterNodeId, request.originNodeId, request.destinationNodeId)) - profile.nodeId
         require(recipients.isNotEmpty()) { "Mission needs an independent peer" }
         val bytes = event.toByteArray()
         var signedOrigin: Envelope? = null
@@ -66,11 +76,9 @@ class MissionEventPublisher(
         .firstOrNull { it.eventType == "RELIEF_REQUEST_CREATED" }?.let { DomainEvent.parseFrom(it.payloadBytes) }
         ?: throw MissingEventDependency("Mission creation missing")
     private suspend fun clock(missionId: String) = database.missionProjectionDao().forMission(missionId)
-        .map { row -> VectorClock(com.example.digitaldelta.proto.v1.VectorClock.parseFrom(row.vectorClockBytes).entriesList.associate { it.replicaId to it.counter }) }
+        .map { row -> com.example.digitaldelta.proto.v1.VectorClock.parseFrom(row.vectorClockBytes).toDomainClock() }
         .fold(VectorClock(emptyMap())) { result, next -> result.merge(next) }
     private fun event(profile: LocalDeviceProfile, creation: DomainEvent) = DomainEvent.newBuilder()
         .setEventId(UUID.randomUUID().toString()).setSchemaVersion(1).setActorIdentityId(profile.identityId)
         .setOccurredAtUnixMs(System.currentTimeMillis()).setSimulated(creation.simulated).setScenarioSeed(creation.scenarioSeed)
-    private fun VectorClock.toProto() = com.example.digitaldelta.proto.v1.VectorClock.newBuilder().addAllEntries(
-        counters.toSortedMap().map { (id, counter) -> VectorClockEntry.newBuilder().setReplicaId(id).setCounter(counter).build() }).build()
 }

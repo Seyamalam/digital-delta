@@ -10,6 +10,9 @@ import com.example.digitaldelta.domain.identity.InstalledIdentityCredential
 import com.example.digitaldelta.proto.v1.IdentityRole
 import com.example.digitaldelta.proto.v1.DomainEvent
 import kotlinx.coroutines.test.runTest
+import kotlinx.coroutines.async
+import kotlinx.coroutines.awaitAll
+import kotlinx.coroutines.Dispatchers
 import org.junit.After
 import org.junit.Assert.assertArrayEquals
 import org.junit.Assert.assertEquals
@@ -34,6 +37,17 @@ class RoomProofOfDeliveryWorkflowTest {
 
     @After
     fun close() = database.close()
+
+    @Test
+    fun competingDifferentNonceOffersCannotCommitTwoHeads() = runTest {
+        val workflow = workflow()
+        val offers = listOf(workflow.prepare(), workflow.prepare())
+        val results = offers.map { async(Dispatchers.IO) { workflow.verify(it.qrCode) } }.awaitAll()
+        assertEquals(1, results.count { it is DeliveryReceiptResult.Verified })
+        assertEquals(1, results.count { it is DeliveryReceiptResult.Rejected && it.reason == DeliveryOfferRejection.PREVIOUS_RECEIPT_MISMATCH })
+        assertTrue(workflow.reconstructChain().valid)
+        assertEquals(1, workflow.reconstructChain().receipts.size)
+    }
 
     @Test
     fun validOfferIsRecordedOnceAndReplayCannotChangeCustody() = runTest {

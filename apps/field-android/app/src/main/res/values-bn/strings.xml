@@ -1,4 +1,11 @@
 <resources>
+    <string name="qr_manual_fallback">স্বাক্ষরিত ইতিহাসটি নির্ভরযোগ্যভাবে স্ক্যান করার মতো QR-এ ধরছে না। সম্পূর্ণ কোড কপি করে স্থানীয়ভাবে পাঠান, তারপর প্রাপকের ম্যানুয়াল যাচাই ঘরে পেস্ট করুন। ইন্টারনেট লাগবে না।</string>
+    <string name="qr_copy_signed_code">সম্পূর্ণ স্বাক্ষরিত কোড কপি করুন</string>
+    <string name="mission_delivered">স্বাক্ষরিত ডেলিভারি রসিদ এসেছে · মিশন সম্পাদনা বন্ধ</string>
+    <string name="mission_custody_reconcile">ডেলিভারি চলার সময় মিশন পরিবর্তিত হয়েছে। রসিদে হস্তান্তরের সময়কার সংস্করণ অক্ষত আছে। পার্থক্য পর্যালোচনা করে নতুন অনুরোধ তৈরির জন্য সমন্বয়কারীর সাহায্য নিন।</string>
+    <string name="request_supply_route">সরবরাহের উৎস: সিলেট সিটি হাব (N1)\nগন্তব্য: হবিগঞ্জ মেডিকেল (N6)\nমিশনের অংশগ্রহণকারী ও নিবন্ধিত সমন্বয়কারীরা এনক্রিপ্ট করা কপি পাবেন।</string>
+    <string name="mission_select_custody">হস্তান্তরের জন্য বেছে নিন</string>
+    <string name="mission_selected_custody">নির্বাচিত · চালিয়ে যেতে হস্তান্তর খুলুন</string>
     <string name="app_name">ডিজিটাল ডেল্টা</string>
     <string name="choose_language_bangla_title">ভাষা নির্বাচন করুন</string>
     <string name="choose_language_english_title">Choose your field language</string>

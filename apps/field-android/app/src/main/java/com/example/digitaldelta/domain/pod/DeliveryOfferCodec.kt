@@ -26,6 +26,7 @@ data class DeliveryOfferDraft(
     val timestampUnixMs: Long,
     val previousReceiptSha256: ByteArray,
     val simulatedVehicle: Boolean,
+    val missionSnapshot: ByteArray = byteArrayOf(),
 )
 
 data class TrustedDeliveryContext(
@@ -40,6 +41,7 @@ data class TrustedDeliveryContext(
     val allowedClockSkewMs: Long,
     val credentialValidUntilUnixMs: Long = Long.MAX_VALUE,
     val credentialRevokedAtUnixMs: Long? = null,
+    val missionSnapshot: ByteArray = byteArrayOf(),
 )
 
 interface DeliverySigningKey {
@@ -110,6 +112,7 @@ class DeliveryOfferCodec {
             .setTimestampUnixMs(draft.timestampUnixMs)
             .setPreviousReceiptSha256(ByteString.copyFrom(draft.previousReceiptSha256))
             .setSimulatedVehicle(draft.simulatedVehicle)
+            .setMissionSnapshot(ByteString.copyFrom(draft.missionSnapshot))
             .build()
         val signature = ProtoSignature.newBuilder()
             .setKeyId(signer.keyId)
@@ -200,6 +203,7 @@ class DeliveryOfferCodec {
         if (!MessageDigest.isEqual(offer.payloadSha256.toByteArray(), trusted.payloadSha256)) {
             return rejected(DeliveryOfferRejection.PAYLOAD_HASH_MISMATCH)
         }
+        if (!MessageDigest.isEqual(offer.missionSnapshot.toByteArray(), trusted.missionSnapshot)) return rejected(DeliveryOfferRejection.PAYLOAD_HASH_MISMATCH)
         if (offer.timestampUnixMs < 0) {
             return rejected(DeliveryOfferRejection.CLOCK_SKEW)
         }

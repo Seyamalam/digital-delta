@@ -24,6 +24,9 @@ message ReliefRequestCreated {
   string destination_node_id = 4;
   repeated CargoItem cargo = 5;
   int64 created_at_unix_ms = 6;
+  // Frozen, provisioned mission readers. Transport relays are not readers.
+  repeated string participant_node_ids = 7;
+  string note = 8;
 }
 
 message EdgeStatusChanged {
@@ -79,6 +82,7 @@ message ConflictResolved {
   string reason_code = 4;
   string mission_id = 5;
   VectorClock vector_clock = 6;
+  string field_code = 7;
 }
 
 message SlaBreachPredicted {
@@ -111,6 +115,12 @@ message DeliveryOffer {
   int64 timestamp_unix_ms = 7;
   bytes previous_receipt_sha256 = 8;
   bool simulated_vehicle = 9;
+  bytes mission_snapshot = 10;
+}
+
+// Canonical sorted IDs of the immutable accepted mission events at handoff.
+message MissionCustodySnapshot {
+  repeated string event_ids = 1;
 }
 
 message SignedDeliveryOffer {
@@ -131,6 +141,8 @@ message CustodyTransfer {
   Signature sender_signature = 8;
   Signature recipient_signature = 9;
   bool simulated_vehicle = 10;
+  string mission_id = 11;
+  bytes mission_snapshot = 12;
 }
 
 message VehicleStateChanged {

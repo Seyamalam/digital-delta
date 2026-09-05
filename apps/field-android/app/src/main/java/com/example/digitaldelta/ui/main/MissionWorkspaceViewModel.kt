@@ -16,6 +16,7 @@ import javax.inject.Inject
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.delay
 
 data class FieldMission(
     val id: String,
@@ -28,6 +29,10 @@ data class FieldMission(
     val route: PlannedRoute?,
     val triage: TriageDecision?,
     val conflicts: List<ConflictEntity>,
+    val canEdit: Boolean,
+    val canResolve: Boolean,
+    val delivered: Boolean,
+    val custodyNeedsReconciliation: Boolean,
 )
 
 @HiltViewModel
@@ -38,16 +43,32 @@ class MissionWorkspaceViewModel @Inject constructor(
     protector: MeshPayloadProtector,
     keys: AndroidDeviceIdentityKeyStore,
     trust: TrustAnchorRepository,
+    private val selection: com.example.digitaldelta.domain.pod.MissionSelection,
 ) : ViewModel() {
     private val publisher = MissionEventPublisher(database, profiles, protector,
         AndroidEnvelopeSecurity(keys, database.recipientKeyDao(), trust)) { com.example.digitaldelta.service.ObserverPublication.schedule(context) }
     private val graph by lazy { SylhetMapParser().parse(context.assets.open("sylhet_map.json").bufferedReader().use { it.readText() }).graph }
     val busy = MutableStateFlow(false)
     val failed = MutableStateFlow(false)
-    val missions = combine(database.operationLogDao().observeRequests(), database.missionProjectionDao().observeAll(), database.conflictDao().observeOpen()) { requests, projections, conflicts ->
+    val selectedMission = selection.missionId
+    fun selectMission(id: String) = selection.select(id)
+    private val ticks = flow { while (true) { emit(System.currentTimeMillis()); delay(1_000) } }
+    private val authority = combine(profiles.profile, database.recipientKeyDao().observeAuthorities(), database.operationLogDao().observeMissionHistory()) { profile, authorities, history ->
+        val credential = authorities.firstOrNull { it.nodeId == profile.nodeId }
+        Triple(profile, credential, history)
+    }
+    val missions = combine(database.operationLogDao().observeRequests(), database.missionProjectionDao().observeAll(), database.conflictDao().observeOpen(), authority, ticks) { requests, projections, conflicts, authority, now ->
+        val (profile, credential, history) = authority
+        val public = keys.createOrGet(profile.nodeId)
+        val active = credential != null && credential.identityId == profile.identityId && credential.revokedAtUnixMs == null && credential.issuedAtUnixMs <= now && credential.expiresAtUnixMs > now &&
+            credential.signingKeyId == public.signingKeyId && credential.signingPublicKeyDer.contentEquals(public.signingPublicKeyDer)
+        val coordinator = active && credential?.roleCode == com.example.digitaldelta.proto.v1.IdentityRole.IDENTITY_ROLE_COORDINATOR.name
         requests.map { operation ->
             val event = DomainEvent.parseFrom(operation.payloadBytes)
             val request = event.reliefRequestCreated
+            val missionHistory = history.filter { it.missionId == operation.missionId }
+            val receipt = missionHistory.firstOrNull { it.eventType == "CUSTODY_TRANSFER" }?.let { DomainEvent.parseFrom(it.payloadBytes).custodyTransfer }
+            val pinnedIds = receipt?.let { runCatching { com.example.digitaldelta.proto.v1.MissionCustodySnapshot.parseFrom(it.missionSnapshot).eventIdsList.toSet() }.getOrDefault(emptySet()) }
             val fields = projections.filter { it.missionId == operation.missionId }.associateBy { it.fieldCode }
             val destination = fields["DESTINATION"]?.value ?: request.destinationNodeId
             val priority = CargoPriority.entries[((fields["PRIORITY"]?.value?.toIntOrNull() ?: request.cargoList.minOf { it.priorityValue }) - 1).coerceIn(0, 3)]
@@ -56,8 +77,12 @@ class MissionWorkspaceViewModel @Inject constructor(
             }.minByOrNull { it.totalMinutes }
             FieldMission(operation.missionId, request.originNodeId, destination, priority,
                 fields["MEDICAL_QUANTITY"]?.value ?: "—", fields.values.firstOrNull()?.convergenceHash.orEmpty(), event.simulated, route,
-                route?.let { TriageEngine().evaluate(priority, ((System.currentTimeMillis() - request.createdAtUnixMs).coerceAtLeast(0) / 60_000).coerceAtMost(Int.MAX_VALUE.toLong()).toInt(), it.totalMinutes) },
-                conflicts.filter { it.missionId == operation.missionId })
+                route?.let { TriageEngine().evaluate(priority, ((now - request.createdAtUnixMs).coerceAtLeast(0) / 60_000).coerceAtMost(Int.MAX_VALUE.toLong()).toInt(), it.totalMinutes) },
+                conflicts.filter { it.missionId == operation.missionId },
+                canEdit = receipt == null && active && (coordinator || event.actorIdentityId == profile.identityId || (profile.role == com.example.digitaldelta.proto.v1.IdentityRole.IDENTITY_ROLE_HOSPITAL && request.destinationNodeId == profile.nodeId)) && conflicts.none { it.missionId == operation.missionId },
+                canResolve = coordinator,
+                delivered = receipt != null,
+                custodyNeedsReconciliation = pinnedIds != null && missionHistory.any { it.eventType != "CUSTODY_TRANSFER" && it.eventId !in pinnedIds })
         }
     }.flowOn(Dispatchers.IO).stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyList())
 

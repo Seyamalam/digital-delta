@@ -1,4 +1,11 @@
 <resources>
+    <string name="qr_manual_fallback">This signed history is too large for a reliably scannable QR. Copy the complete code and transfer it locally, then paste it into the recipient’s manual verification field. Internet is not required.</string>
+    <string name="qr_copy_signed_code">Copy complete signed code</string>
+    <string name="mission_delivered">Signed delivery received · mission editing locked</string>
+    <string name="mission_custody_reconcile">A mission edit crossed the delivery in transit. The receipt preserves the delivered version. Ask a coordinator to review the difference and create a follow-up request.</string>
+    <string name="request_supply_route">Supply origin: Sylhet City Hub (N1)\nDelivery: Habiganj Medical (N6)\nEncrypted copies go to the mission participants and provisioned coordinators.</string>
+    <string name="mission_select_custody">Select for handoff</string>
+    <string name="mission_selected_custody">Selected · open Handoff to continue</string>
     <string name="app_name">Digital Delta</string>
     <string name="choose_language_bangla_title">ভাষা নির্বাচন করুন</string>
     <string name="choose_language_english_title">Choose your field language</string>

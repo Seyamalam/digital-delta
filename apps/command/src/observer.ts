@@ -25,9 +25,8 @@ export type ObserverConnectOptions = {
   writeCursor?: (value: string) => void;
   onStatus: (status: ObserverStatus) => void;
   onObservation: (event: PresentationObservation) => void;
+  onReset?: () => void;
 };
-
-const cursorKey = "digital-delta-observer-sequence";
 
 export function connectObserver(options: ObserverConnectOptions): () => void {
   // The dashboard is a disposable projection. Rebuild it from the durable observer
@@ -41,8 +40,21 @@ export function connectObserver(options: ObserverConnectOptions): () => void {
 
   options.onStatus("connecting");
   const source = createSource(streamUrl);
+  let generation: string | undefined;
   source.onopen = () => options.onStatus("live");
   source.onerror = () => options.onStatus("reconnecting");
+  source.addEventListener("ready", (message) => {
+    try {
+      const ready = JSON.parse(message.data) as { generation?: unknown; reset?: unknown };
+      if (typeof ready.generation !== "string" || !/^[a-f0-9]{32}$/.test(ready.generation)) return;
+      if (ready.reset === true || (generation !== undefined && generation !== ready.generation)) {
+        cursor = 0;
+        writeCursor("0");
+        options.onReset?.();
+      }
+      generation = ready.generation;
+    } catch { /* Invalid metadata cannot reset accepted state. */ }
+  });
   source.addEventListener("observation", (message) => {
     const observation = parseObservation(message.data);
     if (!observation || observation.sequence <= cursor) return;

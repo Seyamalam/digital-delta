@@ -12,11 +12,30 @@ async function publish(body: unknown = observation, extraHeaders: Record<string,
   return SELF.fetch("http://observer/v1/observations", { method: "POST", headers: { ...headers, ...extraHeaders }, body: JSON.stringify(body) });
 }
 beforeEach(async () => {
+  await env.HQ_DB.prepare("CREATE TABLE IF NOT EXISTS observer_stream (singleton INTEGER PRIMARY KEY, generation TEXT NOT NULL)").run();
+  await env.HQ_DB.prepare("INSERT OR REPLACE INTO observer_stream VALUES (1, 'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa')").run();
   await env.HQ_DB.prepare("CREATE TABLE IF NOT EXISTS observer_events (sequence INTEGER PRIMARY KEY AUTOINCREMENT, event_id TEXT NOT NULL UNIQUE, source_node_id TEXT NOT NULL, event_json TEXT NOT NULL, received_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP)").run();
   await env.HQ_DB.prepare("DELETE FROM observer_events").run();
 });
 
 describe("Hono observer with real local D1", () => {
+  it("replays a new generation even when the reconnect cursor is from a larger old log", async () => {
+    await publish();
+    const response = await SELF.fetch("http://observer/observer/events", { headers: { "Last-Event-ID": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb:9999" } });
+    const reader = response.body!.getReader();
+    let text = "";
+    while (!text.includes("route-one")) {
+      const chunk = await reader.read(); if (chunk.done) break; text += new TextDecoder().decode(chunk.value);
+    }
+    await reader.cancel();
+    expect(text).toContain('"reset":true');
+    expect(text).toContain('"after":0');
+    expect(text).toContain("id: aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa:");
+    expect(text).toContain("route-one");
+  });
+  it("publishes an explicit no-route state with no invented edges", async () => {
+    expect((await publish({ ...observation, presentation: { ...observation.presentation, edgeIds: [], etaMinutes: 0, explanationCode: "NO_REACHABLE_ROUTE" } })).status).toBe(201);
+  });
   it("refuses anonymous and cross-source publications", async () => {
     expect((await publish(observation, { Authorization: "" })).status).toBe(401);
     expect((await publish(observation, { Authorization: headers.Authorization.slice(7) })).status).toBe(401);

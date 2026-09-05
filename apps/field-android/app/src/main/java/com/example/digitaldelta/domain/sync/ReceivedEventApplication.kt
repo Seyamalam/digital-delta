@@ -36,7 +36,9 @@ class ReceivedEventApplication(private val database: DeltaDatabase) {
                 val request = event.reliefRequestCreated
                 val receiver = database.recipientKeyDao().findByNodeId(localNodeId)
                 require(request.requesterNodeId == envelope.senderNodeId)
-                require(localNodeId in setOf(request.requesterNodeId, request.destinationNodeId) || receiver?.roleCode == IdentityRole.IDENTITY_ROLE_COORDINATOR.name)
+                require(request.participantNodeIdsCount <= 32)
+                require(request.note.length <= 1000)
+                require(localNodeId in request.participantNodeIdsList || localNodeId in setOf(request.requesterNodeId, request.originNodeId, request.destinationNodeId) || receiver?.roleCode == IdentityRole.IDENTITY_ROLE_COORDINATOR.name)
                 require(request.cargoCount in 1..100 && request.cargoList.all { it.quantity in 1..100000 && it.priorityValue in 1..4 && it.itemCode.isNotBlank() })
                 require(database.operationLogDao().forMission(missionId).none { it.eventType == "RELIEF_REQUEST_CREATED" }) { "Request ID reused" }
                 val clock = VectorClock(mapOf(envelope.senderNodeId to 1))
@@ -52,6 +54,7 @@ class ReceivedEventApplication(private val database: DeltaDatabase) {
                 }
                 val update = if (resolution != null && conflict != null) {
                     require(conflict.missionId == missionId && resolution.selectedValue.isValidUtf8 && resolution.reasonCode.isNotBlank())
+                    require(resolution.fieldCode.isEmpty() || resolution.fieldCode == conflict.fieldCode)
                     require(resolution.selectedValue.toStringUtf8() in setOf(conflict.leftValue, conflict.rightValue))
                     require(decode(resolution.vectorClock.toByteArray()).compare(decode(conflict.mergedClockBytes)) == ClockRelation.AFTER)
                     com.example.digitaldelta.proto.v1.MissionFieldUpdated.newBuilder().setMissionId(missionId)
@@ -80,26 +83,44 @@ class ReceivedEventApplication(private val database: DeltaDatabase) {
                     MissionField.DESCRIPTION -> require(value.isNotBlank())
                 }
                 val incoming = FieldRevision(event.eventId, missionId, field, value, clock, event.occurredAtUnixMs)
-                val existing = database.missionProjectionDao().find(missionId, field.name)?.let { row ->
-                    FieldRevision(row.sourceEventId, row.missionId, field, row.value, decode(row.vectorClockBytes), row.updatedAtUnixMs)
+                val history = database.operationLogDao().forMission(missionId).map { DomainEvent.parseFrom(it.payloadBytes) }
+                val original = creation.reliefRequestCreated
+                val initialValue = when (field) {
+                    MissionField.DESTINATION -> original.destinationNodeId
+                    MissionField.PRIORITY -> original.cargoList.minOf { it.priorityValue }.toString()
+                    MissionField.MEDICAL_QUANTITY -> original.cargoList.filter { it.itemCode in setOf("medicine", "ors", "blood") }.sumOf { it.quantity.toLong() }.toString()
+                    MissionField.DESCRIPTION -> null
                 }
-                when (val merged = MissionMergeEngine().merge(existing, incoming)) {
-                    is MergeDecision.Applied -> store(merged.revision)
-                    is MergeDecision.NeedsReview -> {
-                        val id = "conflict-" + digest("${merged.left.eventId}|${merged.right.eventId}".toByteArray())
-                        if (database.conflictDao().find(id) == null) database.conflictDao().insert(ConflictEntity(
-                            id, missionId, field.name, merged.left.eventId, merged.left.value, encode(merged.left.clock),
-                            merged.right.eventId, merged.right.value, encode(merged.right.clock), encode(merged.mergedClock),
-                            "OPEN", null, null, null, maxOf(merged.left.occurredAtUnixMs, merged.right.occurredAtUnixMs), null,
-                        ))
-                        // Both replicas retain the same provisional value, with an explicit unresolved conflict.
-                        store(merged.left.copy(clock = merged.mergedClock))
+                val revisions = mutableListOf(incoming)
+                if (initialValue != null) revisions += FieldRevision(creation.eventId, missionId, field, initialValue, VectorClock(mapOf(original.requesterNodeId to 1)), creation.occurredAtUnixMs)
+                for (past in history) {
+                    if (past.hasMissionFieldUpdated() && past.missionFieldUpdated.fieldCode == field.name) {
+                        val value = past.missionFieldUpdated
+                        revisions += FieldRevision(past.eventId, missionId, field, value.value.toStringUtf8(), value.vectorClock.toDomainClock(), past.occurredAtUnixMs)
+                    } else if (past.hasConflictResolved() && database.conflictDao().find(past.conflictResolved.conflictId)?.fieldCode == field.name) {
+                        val value = past.conflictResolved
+                        revisions += FieldRevision(past.eventId, missionId, field, value.selectedValue.toStringUtf8(), value.vectorClock.toDomainClock(), past.occurredAtUnixMs)
                     }
                 }
-                if (conflict != null) database.conflictDao().resolve(
-                    conflict.conflictId, resolution.selectedValue.toStringUtf8(), event.actorIdentityId,
-                    resolution.reasonCode, event.occurredAtUnixMs,
-                )
+                val projected = projectRevisions(revisions)
+                for (pair in projected.conflicts) {
+                        val id = "conflict-" + digest("${pair.left.eventId}|${pair.right.eventId}".toByteArray())
+                        val mergedClock = pair.left.clock.merge(pair.right.clock)
+                        if (database.conflictDao().find(id) == null) database.conflictDao().insert(ConflictEntity(
+                            id, missionId, field.name, pair.left.eventId, pair.left.value, encode(pair.left.clock),
+                            pair.right.eventId, pair.right.value, encode(pair.right.clock), encode(mergedClock),
+                            "OPEN", null, null, null, maxOf(pair.left.occurredAtUnixMs, pair.right.occurredAtUnixMs), null,
+                        ))
+                        database.conflictDao().reconcileState(id, if (pair.active) "OPEN" else "SUPERSEDED")
+                }
+                store(projected.revision)
+                // Concurrent human resolutions retain one deterministic audit annotation;
+                // their competing values remain separate revisions requiring a new review.
+                for ((id, choices) in (history + event).filter { it.hasConflictResolved() }.groupBy { it.conflictResolved.conflictId }) {
+                    val choice = choices.minBy { it.eventId }
+                    database.conflictDao().resolve(id, choice.conflictResolved.selectedValue.toStringUtf8(), choice.actorIdentityId,
+                        choice.conflictResolved.reasonCode, choice.occurredAtUnixMs)
+                }
             }
             database.operationLogDao().append(OperationEntity(event.eventId, missionId, event.bodyCase.name, event.toByteArray(), event.occurredAtUnixMs))
             val canonical = database.missionProjectionDao().forMission(missionId).joinToString("\n") { "${it.fieldCode}:${it.value}:${decode(it.vectorClockBytes).convergenceHash()}" }
@@ -111,9 +132,7 @@ class ReceivedEventApplication(private val database: DeltaDatabase) {
     private suspend fun store(value: FieldRevision) = database.missionProjectionDao().upsert(MissionProjectionEntity(
         value.missionId, value.field.name, value.value, encode(value.clock), value.eventId, value.occurredAtUnixMs, "",
     ))
-    private fun decode(bytes: ByteArray) = VectorClock(com.example.digitaldelta.proto.v1.VectorClock.parseFrom(bytes).entriesList.associate { it.replicaId to it.counter })
-    private fun encode(clock: VectorClock): ByteArray = com.example.digitaldelta.proto.v1.VectorClock.newBuilder().addAllEntries(
-        clock.counters.toSortedMap().map { (id, counter) -> com.example.digitaldelta.proto.v1.VectorClockEntry.newBuilder().setReplicaId(id).setCounter(counter).build() },
-    ).build().toByteArray()
+    private fun decode(bytes: ByteArray) = com.example.digitaldelta.proto.v1.VectorClock.parseFrom(bytes).toDomainClock()
+    private fun encode(clock: VectorClock): ByteArray = clock.toProto().toByteArray()
     private fun digest(bytes: ByteArray): String = MessageDigest.getInstance("SHA-256").digest(bytes).joinToString("") { "%02x".format(it) }
 }

@@ -210,6 +210,15 @@ class NearbyConnectionsPeerTransport(
     override fun start() {
         if (mutableState.value.running) return
         mutableState.value = NearbyMeshState(running = true)
+        scope.launch {
+            identityAuthenticator.authorityChanges.collect { invalidateInactivePeers() }
+        }
+        scope.launch {
+            while (mutableState.value.running) {
+                invalidateInactivePeers()
+                kotlinx.coroutines.delay(1_000) // Expiry does not emit a database change.
+            }
+        }
         val strategy = Strategy.P2P_CLUSTER
         client.startAdvertising(
             localNodeId,
@@ -313,7 +322,13 @@ class NearbyConnectionsPeerTransport(
 
     private suspend fun isAuthenticated(endpointId: String): Boolean {
         val nodeId = endpointNodeIds[endpointId] ?: return false
-        return connectedEndpoints[nodeId] == endpointId && identityAuthenticator.isActive(nodeId) && identityAuthenticator.isActive(localNodeId)
+        return connectedEndpoints[nodeId] == endpointId && identityAuthenticator.isActive(nodeId, authenticatedPeerKeyIds[nodeId]) && identityAuthenticator.isActive(localNodeId)
+    }
+
+    private suspend fun invalidateInactivePeers() {
+        for (endpoint in connectedEndpoints.values.toList()) {
+            if (!runCatching { isAuthenticated(endpoint) }.getOrDefault(false)) rejectAuthentication(endpoint, "PEER_AUTHORITY_EXPIRED_OR_REVOKED")
+        }
     }
 
     private fun rejectAuthentication(endpointId: String, reason: String) {

@@ -11,7 +11,8 @@ export type OperationsOptions = {
 };
 
 export const emptyFeed = () => ({ projection: projectObservations([]), recent: [] as PresentationObservation[] });
-export function receiveObservation(current: ReturnType<typeof emptyFeed>, observation: PresentationObservation) {
+export function receiveObservation(current: ReturnType<typeof emptyFeed>, observation: PresentationObservation | null) {
+  if (observation === null) return emptyFeed();
   if (observation.sequence <= current.projection.latestSequence) return current;
   return {
     projection: projectObservations([observation], current.projection),
@@ -34,7 +35,7 @@ function useOperationsState({ observerConnect, observerUrl = process.env.NEXT_PU
   const connector = observerConnect ?? connectObserver;
   useEffect(() => {
     if (!state.observerConnected || (!observerConnect && typeof EventSource === "undefined")) return;
-    return connector({ url: observerUrl, onStatus: setObserverStatus, onObservation: (event) => {
+    return connector({ url: observerUrl, onStatus: setObserverStatus, onReset: () => { receive(null); setMode("field"); }, onObservation: (event) => {
       receive(event);
       setMode("field");
       setIsReplaying(false);

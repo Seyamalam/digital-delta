@@ -49,7 +49,7 @@ export function parsePublicObservation(value: unknown): PublicObservation | null
 
 function validate(rule: Rule, value: unknown): boolean {
   if (rule === "id") return validIdentifier(value);
-  if (rule === "ids") return Array.isArray(value) && value.length > 0 && value.length <= 200 && value.every(validIdentifier);
+  if (rule === "ids") return Array.isArray(value) && value.length <= 200 && value.every(validIdentifier);
   if (rule === "bool") return typeof value === "boolean";
   if (rule === "mode") return ["TRANSPORT_MODE_ROAD", "TRANSPORT_MODE_WATERWAY", "TRANSPORT_MODE_AIRWAY"].includes(String(value));
   if (rule === "priority") return /^PRIORITY_CLASS_P[0-3]$/.test(String(value));

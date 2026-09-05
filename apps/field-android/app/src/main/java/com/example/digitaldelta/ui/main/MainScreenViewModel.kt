@@ -168,7 +168,7 @@ class MainScreenViewModel @Inject constructor(
         }
     }
 
-    fun queueRequest(medicine: Int, ors: Int, tarpaulin: Int, priorityCode: String) {
+    fun queueRequest(medicine: Int, ors: Int, tarpaulin: Int, priorityCode: String, note: String = "") {
         viewModelScope.launch {
             if (mutableRequestQueueState.value == RequestQueueUiState.Submitting) return@launch
             val localIdentity = authorize(Permission.CREATE_REQUEST) ?: return@launch
@@ -180,7 +180,7 @@ class MainScreenViewModel @Inject constructor(
                         ReliefRequestDraft(
                             requesterNodeId = localIdentity.localNodeId,
                             requesterIdentityId = localIdentity.localIdentityId,
-                            originNodeId = localIdentity.localNodeId,
+                            originNodeId = "N1",
                             destinationNodeId = "N6",
                             cargo = listOf(
                                 CargoDraft("medicine", medicine, "pack"),
@@ -190,6 +190,7 @@ class MainScreenViewModel @Inject constructor(
                             priority = priorityCode.toPriority(),
                             simulated = false,
                             scenarioSeed = "",
+                            note = note,
                         ),
                     )
                 }.onSuccess { receipt ->

@@ -60,8 +60,8 @@ class IndependentFieldWorkflowTest {
         }
     }
 
-    private suspend fun setupPhones(): List<Phone> {
-        val nodes = listOf(DeviceProfiles.require(DeviceProfiles.COORDINATOR), DeviceProfiles.require(DeviceProfiles.RELAY), DeviceProfiles.require(DeviceProfiles.HOSPITAL))
+    private suspend fun setupPhones(codes: List<String> = listOf(DeviceProfiles.COORDINATOR, DeviceProfiles.RELAY, DeviceProfiles.HOSPITAL)): List<Phone> {
+        val nodes = codes.map(DeviceProfiles::require)
         val created = nodes.map { Phone(it).also(phones::add) }
         val now = System.currentTimeMillis()
         for (phone in created) {
@@ -165,5 +165,92 @@ class IndependentFieldWorkflowTest {
             assertTrue(matching.single().getBoolean("simulated"))
             android.util.Log.i("DeltaObserverEvidence", "HTTP_HONO_MATCH eventId=${published.single()} requestId=${receipt.requestId}")
         }
+    }
+
+    @Test fun knownRevocationRejectsCryptographicallyValidFreshPeerProof() = runTest {
+        val (a, _, b) = setupPhones()
+        val verifier = AndroidPeerIdentityAuthenticator(a.profile.nodeId, a.keys, a.db.recipientKeyDao(), trust)
+        val prover = AndroidPeerIdentityAuthenticator(b.profile.nodeId, b.keys, b.db.recipientKeyDao(), trust)
+        val record = a.db.recipientKeyDao().findByNodeId(b.profile.nodeId)!!
+        a.db.recipientKeyDao().upsert(record.copy(revokedAtUnixMs = System.currentTimeMillis()))
+        val challenge = verifier.createChallenge()
+        val proof = prover.createProof(challenge) // B has not learned its revocation.
+        assertTrue(PeerIdentityAuthentication.verifyProof(proof, challenge, b.profile.nodeId, issuer.public.encoded, System.currentTimeMillis()))
+        assertFalse(verifier.verifyProof(proof, challenge, b.profile.nodeId))
+        assertFalse(verifier.isActive(b.profile.nodeId))
+        assertNotNull(a.db.recipientKeyDao().findByNodeId(b.profile.nodeId)!!.revokedAtUnixMs)
+    }
+
+    @Test fun dualSignaturesDoNotGrantAClinicPermissionToAcceptCustody() = runTest {
+        val (hub, clinic) = setupPhones(listOf(DeviceProfiles.COORDINATOR, DeviceProfiles.CLINIC))
+        val scenario = DeliveryScenario("role-test", "delivery-role-test", "N1", "N4", hub.profile.identityId, clinic.profile.identityId, "medicine:5", "", false)
+        val workflow = RoomProofOfDeliveryWorkflow(hub.db, hub.keys, scenario, senderCredentialLookup = hub.recipients::installedIdentity)
+        val signed = DeliveryOfferCodec().decodeCode(workflow.prepare().qrCode)
+        val offer = signed.offer
+        val unsigned = CustodyTransfer.newBuilder().setMissionId(scenario.missionId).setDeliveryId(offer.deliveryId)
+            .setSenderIdentityId(offer.senderIdentityId).setRecipientIdentityId(offer.recipientIdentityId)
+            .setPayloadSha256(offer.payloadSha256).setNonce(offer.nonce).setTimestampUnixMs(offer.timestampUnixMs)
+            .setPreviousReceiptSha256(offer.previousReceiptSha256).setSenderSignature(signed.senderSignature).build()
+        val transfer = unsigned.toBuilder().setRecipientSignature(com.example.digitaldelta.proto.v1.Signature.newBuilder()
+            .setKeyId(clinic.keys.createOrGet("N4").signingKeyId).setAlgorithm(DeliveryOfferCodec.SIGNATURE_ALGORITHM)
+            .setRsa2048PssSha256(ByteString.copyFrom(clinic.keys.sign("N4", unsigned.toByteArray())))).build()
+        val event = DomainEvent.newBuilder().setSchemaVersion(1).setEventId("unauthorized-clinic-receipt")
+            .setActorIdentityId(clinic.profile.identityId).setOccurredAtUnixMs(offer.timestampUnixMs).setCustodyTransfer(transfer).build()
+        val error = runCatching { workflow.importReceipt(event) }.exceptionOrNull()
+        assertEquals("Custody signer was not authorized at handoff", error?.message)
+        assertTrue(hub.db.operationLogDao().forMission(scenario.missionId).isEmpty())
+    }
+
+    @Test fun clinicRequestReachesCoordinatorThreeWritersConvergeAndSignedReceiptReturnsToOrigin() = runTest {
+        val (clinic, hub, hospital) = setupPhones(listOf(DeviceProfiles.CLINIC, DeviceProfiles.COORDINATOR, DeviceProfiles.HOSPITAL))
+        val receipt = DefaultReliefRequestSubmission(RoomRequestPersistence(clinic.db, applyLocalProjection = true), clinic.protector,
+            envelopeSigner = clinic.security).submit(ReliefRequestDraft(clinic.profile.nodeId, hub.profile.nodeId, hospital.profile.nodeId,
+            listOf(CargoDraft("medicine", 5, "pack")), PriorityClass.PRIORITY_CLASS_P0, false, "", clinic.profile.identityId))
+        clinic.sendTo(hub, hospital)
+        assertEquals(1, hub.apply().applied)
+        assertEquals(1, hospital.apply().applied)
+        clinic.publisher.edit(receipt.requestId, MissionField.PRIORITY, "2")
+        hub.publisher.edit(receipt.requestId, MissionField.PRIORITY, "3")
+        hospital.publisher.edit(receipt.requestId, MissionField.PRIORITY, "4")
+        // Each replica receives its concurrent revisions in a different order.
+        hospital.sendTo(clinic, hub); clinic.apply(); hub.apply()
+        clinic.sendTo(hub, hospital); hub.apply(); hospital.apply()
+        hub.sendTo(hospital, clinic); hospital.apply(); clinic.apply()
+        val hashes = listOf(clinic, hub, hospital).map { it.db.missionProjectionDao().find(receipt.requestId, "PRIORITY")!!.convergenceHash }
+        assertEquals(1, hashes.toSet().size)
+        listOf(clinic, hub, hospital).forEach { assertEquals(3, it.db.conflictDao().countForMission(receipt.requestId)) }
+        hub.publisher.resolve(hub.db.conflictDao().latestForMission(receipt.requestId)!!.conflictId, ConflictSide.LEFT)
+        hub.sendTo(hospital); hospital.apply() // Clinic has not received the resolution yet.
+        listOf(hub, hospital).forEach { assertFalse(it.db.conflictDao().hasOpen(receipt.requestId)) }
+        assertEquals(hub.db.missionProjectionDao().find(receipt.requestId, "PRIORITY")!!.convergenceHash,
+            hospital.db.missionProjectionDao().find(receipt.requestId, "PRIORITY")!!.convergenceHash)
+
+        val sender = OperationalProofOfDeliveryWorkflow(hub.db, hub.keys, hub.recipients, hub.profiles)
+        val receiver = OperationalProofOfDeliveryWorkflow(hospital.db, hospital.keys, hospital.recipients, hospital.profiles,
+            receiptSink = hospital.publisher::publishReceipt)
+        val offer = sender.prepare()
+        assertEquals(hub.profile.identityId, offer.senderIdentityId)
+        val accepted = receiver.verify(offer.qrCode) as DeliveryReceiptResult.Verified
+        // Origin is still offline from acceptance and makes a later request revision.
+        hub.publisher.edit(receipt.requestId, MissionField.MEDICAL_QUANTITY, "6")
+        hospital.restart() // Receipt and encrypted return copies survive independently.
+        val earlyReceipt = hospital.db.outboxDao().pending(System.currentTimeMillis(), 100).single {
+            val envelope = MeshWireCodec.decode(it.wireBytes)
+            envelope.senderNodeId == hospital.profile.nodeId && envelope.recipientNodeId == clinic.profile.nodeId
+        }
+        clinic.receive(earlyReceipt.wireBytes, hospital.profile.nodeId)
+        assertEquals(1, clinic.apply().retry) // Pinned resolution dependency, never terminal rejection.
+        hospital.sendTo(hub)
+        assertEquals(1, hub.apply().applied)
+        hub.sendTo(clinic)
+        clinic.apply(); clinic.apply()
+        assertFalse(clinic.db.conflictDao().hasOpen(receipt.requestId))
+        assertEquals(1, clinic.db.operationLogDao().forMission(receipt.requestId).count { it.eventType == "CUSTODY_TRANSFER" })
+        val reconstructed = sender.reconstructChain()
+        assertTrue(reconstructed.valid)
+        assertArrayEquals(accepted.receipt.receiptHash, reconstructed.receipts.single().receiptHash)
+        assertTrue(runCatching { sender.prepare() }.isFailure) // Delivered stock cannot be offered again.
+        assertTrue(runCatching { hub.publisher.edit(receipt.requestId, MissionField.DESTINATION, "N4") }.isFailure)
+        assertEquals(1, hub.db.operationLogDao().forMission(receipt.requestId).count { it.eventType == "CUSTODY_TRANSFER" })
     }
 }

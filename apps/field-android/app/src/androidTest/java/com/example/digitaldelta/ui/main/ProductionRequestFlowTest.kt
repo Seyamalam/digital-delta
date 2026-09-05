@@ -79,7 +79,12 @@ class ProductionRequestFlowTest {
                 .setExpiresAtUnixMs(now + 86_400_000)
                 .setIssuerIdentityId("test-admin")
                 .build()
-            listOf(localClaims, recipientClaims).forEach { claims ->
+            val hub = rsaKeyPair()
+            val hubClaims = recipientClaims.toBuilder().setCredentialId("credential-production-n1")
+                .setIdentityId("coordinator-sylhet-01").setNodeId("N1").setRole(IdentityRole.IDENTITY_ROLE_COORDINATOR)
+                .setEncryptionKeyId("n1-production-key").setRsa2048EncryptionPublicKeyDer(ByteString.copyFrom(hub.public.encoded))
+                .setSigningKeyId("n1-production-signing-key").setRsa2048SigningPublicKeyDer(ByteString.copyFrom(hub.public.encoded)).build()
+            listOf(localClaims, recipientClaims, hubClaims).forEach { claims ->
                 entryPoint.recipientProvisioningRepository().accept(
                     credentialBytes = ProvisioningCredentialService().issue(
                         claims = claims,

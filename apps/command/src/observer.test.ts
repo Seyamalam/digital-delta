@@ -17,6 +17,20 @@ class FakeSource implements ObserverSource {
 }
 
 describe("observer connection", () => {
+  it("clears the old projection and accepts low sequences after a generation reset", () => {
+    const source = new FakeSource();
+    const resets = vi.fn();
+    const observed = vi.fn();
+    const disconnect = connectObserver({ url: "/events", createSource: () => source, onStatus: vi.fn(), onObservation: observed, onReset: resets });
+    const event = { sequence: 150, sourceNodeId: "N4", eventId: "old", kind: "edgeStatusChanged", occurredAtUnixMs: 1, simulated: false };
+    source.emit("ready", { generation: "a".repeat(32) });
+    source.emit("observation", event);
+    source.emit("ready", { generation: "b".repeat(32), reset: true });
+    source.emit("observation", { ...event, eventId: "new", sequence: 1 });
+    expect(resets).toHaveBeenCalledOnce();
+    expect(observed.mock.calls.map(([event]) => event.sequence)).toEqual([150, 1]);
+    disconnect();
+  });
   it("resumes from the saved sequence, reports state, and ignores duplicates", () => {
     const source = new FakeSource();
     const factory = vi.fn(() => source);

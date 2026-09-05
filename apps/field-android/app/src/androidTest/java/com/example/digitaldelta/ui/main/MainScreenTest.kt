@@ -11,6 +11,7 @@ import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performScrollTo
 import androidx.compose.ui.test.performScrollToNode
+import androidx.compose.ui.test.hasText
 import androidx.compose.ui.test.performTouchInput
 import androidx.compose.ui.test.swipeUp
 import androidx.compose.runtime.MutableState
@@ -327,6 +328,7 @@ class MainScreenTest {
         composeTestRule.onNodeWithText("পাঠানোর আগে গন্তব্যের পরিচয় নিবন্ধন করুন।").assertIsDisplayed()
 
         composeTestRule.onNodeWithText("English").performClick()
+        composeTestRule.onNode(hasScrollAction()).performScrollToNode(hasText("Provision the destination identity before sending."))
         composeTestRule.onNodeWithText("Provision the destination identity before sending.").assertIsDisplayed()
     }
 

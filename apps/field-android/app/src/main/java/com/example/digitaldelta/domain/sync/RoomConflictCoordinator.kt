@@ -304,15 +304,6 @@ private suspend fun ConflictEntity.toSnapshot(database: DeltaDatabase): MissionC
         )
     }
 
-private fun VectorClock.toProto(): com.example.digitaldelta.proto.v1.VectorClock =
-    com.example.digitaldelta.proto.v1.VectorClock.newBuilder()
-        .addAllEntries(
-            counters.toSortedMap().map { (replicaId, counter) ->
-                VectorClockEntry.newBuilder().setReplicaId(replicaId).setCounter(counter).build()
-            },
-        )
-        .build()
-
 private fun decodeClock(bytes: ByteArray): VectorClock =
     com.example.digitaldelta.proto.v1.VectorClock.parseFrom(bytes).entriesList
         .associate { it.replicaId to it.counter }
