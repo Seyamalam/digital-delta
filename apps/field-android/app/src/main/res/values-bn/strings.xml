@@ -1,4 +1,20 @@
 <resources>
+    <string name="mission_dispatch_preempted_by">এই জরুরি মিশনের জন্য স্থগিত: %1$s</string>
+    <string name="mission_dispatch">পরিবহন বরাদ্দ</string>
+    <string name="mission_dispatch_summary">%1$s · %2$s · %3$s</string>
+    <string name="mission_dispatch_ready">বরাদ্দ হয়েছে, হস্তান্তর নয়</string>
+    <string name="mission_dispatch_hold">পুনর্বণ্টনের জন্য সংগ্রহস্থলে স্থগিত</string>
+    <string name="mission_dispatch_collision">একই চালকের একাধিক বরাদ্দ আছে। সংগ্রহের আগে অন্য মিশনের দ্বন্দ্ব মেটান বা সেটি স্থগিত করুন।</string>
+    <string name="mission_dispatch_action">চালকের পরিবহন পরিকল্পনা</string>
+    <string name="mission_dispatch_hold_action">সংগ্রহস্থলে মালামাল স্থগিত রাখুন</string>
+    <string name="mission_dispatch_help">নিবন্ধিত চালক ও ঘোষিত যানবাহন বরাদ্দ করুন। যাত্রার সময় সিমুলেটেড মানচিত্রের তথ্য ব্যবহার করে। দুই পক্ষের স্বাক্ষরিত হস্তান্তর না হওয়া পর্যন্ত মালামাল বর্তমান হেফাজতেই থাকে।</string>
+    <string name="mission_dispatch_no_operator">এই মিশনের নির্ধারিত পাঠকদের মধ্যে সক্রিয় চালক নেই। নতুন অনুরোধ তৈরির আগে চালক নিবন্ধন করুন।</string>
+    <string name="mission_dispatch_truck">ট্রাক</string>
+    <string name="mission_dispatch_boat">নৌযান</string>
+    <string name="mission_dispatch_preempt_help">জরুরি পথের SLA ভঙ্গ হলে একই সংগ্রহস্থলের P2/P3 বরাদ্দ স্থগিত করতে বেছে নিন। পুনর্বণ্টন না হওয়া পর্যন্ত মালামাল সেখানেই থাকবে।</string>
+    <string name="mission_dispatch_checked">চালক ও যানবাহন প্রস্তুত এবং সংশ্লিষ্ট মালামাল এখনো হস্তান্তর হয়নি বলে যাচাই করেছি।</string>
+    <string name="mission_dispatch_confirm">পরিকল্পনা নিশ্চিত করুন</string>
+    <string name="mission_dispatch_hold_help">এতে প্রথম হস্তান্তর বন্ধ হবে এবং বরাদ্দ মুক্ত হবে। মালামাল সংগ্রহস্থলেই থাকবে; স্বাক্ষরিত হেফাজতের রেকর্ড বদলাবে না। পরে নতুন পরিবহন পরিকল্পনায় পুনর্বণ্টন করা যাবে।</string>
     <string name="request_origin">মালামাল সংগ্রহের নোড</string>
     <string name="request_cancel_location">বাতিল</string>
     <string name="request_location_help">অ্যাপে সংরক্ষিত অফলাইন স্থান। পাঠানোর আগে প্রাপকদের পরিচয় নিবন্ধন করুন। অনুরোধ তৈরি হলে পথ বা যানবাহন পাওয়া নিশ্চিত নয়।</string>

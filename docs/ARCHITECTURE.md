@@ -450,3 +450,20 @@ Go's engineering workload is registered only as `ReducedMeshLoadHarnessService`,
 with separate request/response types and literal loopback binding. It does not
 implement the secured `NodeMeshService` contract. Its performance reports must
 remain labelled reduced-workload measurements.
+
+### Accepted-mission dispatch reservations
+
+The Missions workspace now reserves a provisioned driver and declared truck/boat
+for accepted requests. `DISPATCH` is a coordinator-only, human-conflict field in
+the signed/encrypted `MissionFieldUpdated` Protobuf contract. A single revision
+defines the operator and its origin → driver → destination itinerary. Frozen
+readers, active driver authority, known graph route and reviewed event IDs are
+checked before a local confirmation. No commercial network is involved.
+
+Preemption holds a same-origin P2/P3 request at pickup and reserves its operator
+for a breaching P0/P1 request. Both mission changes and all encrypted peer copies
+commit together. It does not record a physical deposit or claim minutes saved.
+Conflicting reservations from disconnected coordinators remain visible and block
+the first handoff when known. This is not a globally synchronized fleet lock.
+After pickup, the first signed receipt pins the reservation until its chain is
+complete. The [triage runbook](TRIAGE.md) specifies the guards and limitations.

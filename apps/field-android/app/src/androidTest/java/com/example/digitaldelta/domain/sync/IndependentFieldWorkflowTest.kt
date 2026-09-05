@@ -10,6 +10,9 @@ import com.example.digitaldelta.domain.mesh.*
 import com.example.digitaldelta.domain.request.*
 import com.example.digitaldelta.domain.observer.*
 import com.example.digitaldelta.domain.pod.*
+import com.example.digitaldelta.domain.fleet.*
+import com.example.digitaldelta.domain.routing.SylhetMapParser
+import com.example.digitaldelta.domain.routing.VehicleType
 import com.example.digitaldelta.proto.v1.*
 import com.google.protobuf.ByteString
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -81,6 +84,106 @@ class IndependentFieldWorkflowTest {
         phones.forEach { it.db.close(); context.deleteDatabase(it.file) }
         val store = KeyStore.getInstance("AndroidKeyStore").apply { load(null) }
         store.aliases().toList().filter { it.startsWith("$namespace-") }.forEach(store::deleteEntry)
+    }
+
+    @Test fun operationalPreemptionHoldsCargoWithoutInventingCustodyAndReleasesDriverAfterDelivery() = runTest {
+        val (hub, driver, hospital) = setupPhones()
+        val graph = SylhetMapParser().parse(context.assets.open("sylhet_map.json").bufferedReader().use { it.readText() }).graph
+        fun planner(phone: Phone) = OperationalDispatchPlanner(phone.db, phone.publisher, graph)
+        suspend fun request(priority: PriorityClass) = DefaultReliefRequestSubmission(RoomRequestPersistence(hub.db, true), hub.protector,
+            envelopeSigner = hub.security).submit(ReliefRequestDraft("N1", "N1", "N6", listOf(CargoDraft("medicine", 5, "pack")),
+            priority, false, "", hub.profile.identityId, setOf("RLY-01"))).requestId
+        val lower = request(PriorityClass.PRIORITY_CLASS_P2)
+        val urgent = request(PriorityClass.PRIORITY_CLASS_P0)
+        suspend fun command(phone: Phone, id: String, held: String? = null) = DispatchCommand(id, "RLY-01", VehicleType.TRUCK,
+            dispatchReviewIds(phone.db.operationLogDao().forMission(id)), held,
+            held?.let { dispatchReviewIds(phone.db.operationLogDao().forMission(it)) }.orEmpty())
+        planner(hub).confirm(command(hub, lower))
+        val lowerBefore = dispatchReviewIds(hub.db.operationLogDao().forMission(lower))
+        assertTrue(runCatching { planner(hub).confirm(command(hub, urgent)) }.isFailure)
+        assertEquals(lowerBefore, dispatchReviewIds(hub.db.operationLogDao().forMission(lower)))
+        assertTrue(runCatching { planner(hub).confirm(command(hub, urgent, lower).copy(vehicle = VehicleType.BOAT)) }.isFailure)
+        val stale = command(hub, urgent, lower)
+        hub.publisher.edit(urgent, MissionField.MEDICAL_QUANTITY, "7")
+        assertTrue(runCatching { planner(hub).confirm(stale) }.isFailure)
+        hub.publisher.edit(urgent, MissionField.PRIORITY, "3")
+        assertTrue(runCatching { planner(hub).confirm(command(hub, urgent, lower)) }.isFailure)
+        hub.publisher.edit(urgent, MissionField.PRIORITY, "1")
+        val beforeFailure = listOf(lower, urgent).associateWith { dispatchReviewIds(hub.db.operationLogDao().forMission(it)) }
+        val outboxBeforeFailure = hub.db.outboxDao().activeQueueDepth(System.currentTimeMillis())
+        val failedProtector = object : MeshPayloadProtector {
+            override suspend fun protect(recipientNodeId: String, plaintext: ByteArray, associatedData: ByteArray): ProtectedPayload {
+                // Let the lower mission's hold commit inside the enclosing transaction,
+                // then fail the urgent fan-out. Neither revision may escape rollback.
+                val event = DomainEvent.parseFrom(plaintext)
+                if (event.hasMissionFieldUpdated() && event.missionFieldUpdated.missionId == urgent) error("Injected encryption failure")
+                return hub.protector.protect(recipientNodeId, plaintext, associatedData)
+            }
+        }
+        val failedPublisher = MissionEventPublisher(hub.db, hub.profiles, failedProtector, hub.security)
+        assertTrue(runCatching { OperationalDispatchPlanner(hub.db, failedPublisher, graph).confirm(command(hub, urgent, lower)) }.isFailure)
+        assertEquals(outboxBeforeFailure, hub.db.outboxDao().activeQueueDepth(System.currentTimeMillis()))
+        for ((id, expected) in beforeFailure) assertEquals(expected, dispatchReviewIds(hub.db.operationLogDao().forMission(id)))
+        hub.sendTo(driver, hospital); driver.apply(); hospital.apply()
+        // P1 planning envelopes can overtake the P2 creation; the next inbox
+        // application pass retries those causal dependencies without resending.
+        driver.apply(); hospital.apply()
+        assertTrue(runCatching { planner(driver).confirm(command(driver, urgent, lower)) }.isFailure)
+        assertEquals(DispatchReservation.READY, DispatchReservation.decode(dispatchVersion(driver.db.operationLogDao().forMission(lower)).getValue(MissionField.DISPATCH)).state)
+        planner(hub).confirm(command(hub, urgent, lower))
+        hub.sendTo(driver, hospital); driver.restart(); driver.apply(); hospital.apply()
+        for (phone in listOf(hub, driver, hospital)) {
+            val history = phone.db.operationLogDao().forMission(lower)
+            assertEquals(DispatchReservation.HOLD, DispatchReservation.decode(dispatchVersion(history).getValue(MissionField.DISPATCH)).state)
+            assertEquals(urgent, DispatchReservation.decode(dispatchVersion(history).getValue(MissionField.DISPATCH)).preemptedByMissionId)
+            assertTrue(history.none { it.eventType == "CUSTODY_TRANSFER" || it.eventType == "PREEMPTION_CONFIRMED" })
+            assertTrue(reservedDispatchOperators(history).isEmpty())
+            assertEquals(setOf("RLY-01"), reservedDispatchOperators(phone.db.operationLogDao().forMission(urgent)))
+        }
+        fun custody(phone: Phone, id: String) = OperationalProofOfDeliveryWorkflow(phone.db, phone.keys, phone.recipients, phone.profiles,
+            selectedMissionId = { id }, receiptSink = phone.publisher::publishReceipt)
+        assertTrue(runCatching { custody(hub, lower).prepare() }.isFailure)
+        val offer = custody(hub, urgent).prepare()
+        assertTrue(custody(driver, urgent).verify(offer.qrCode) is DeliveryReceiptResult.Verified)
+        driver.sendTo(hub, hospital); hub.apply(); hospital.apply()
+        assertTrue(runCatching { planner(hub).hold(urgent, dispatchReviewIds(hub.db.operationLogDao().forMission(urgent))) }.isFailure)
+        assertTrue(runCatching { planner(hub).confirm(command(hub, lower)) }.isFailure)
+        val delivery = custody(driver, urgent).prepare()
+        assertTrue(custody(hospital, urgent).verify(delivery.qrCode) is DeliveryReceiptResult.Verified)
+        hospital.sendTo(hub, driver); hub.apply(); driver.apply()
+        assertTrue(reservedDispatchOperators(hub.db.operationLogDao().forMission(urgent)).isEmpty())
+        planner(hub).confirm(command(hub, lower))
+        hub.sendTo(driver, hospital); driver.apply(); hospital.apply()
+        assertEquals(driver.profile.identityId, custody(hub, lower).prepare().recipientIdentityId)
+        assertTrue(custody(hospital, urgent).reconstructChain().valid)
+    }
+
+    @Test fun disconnectedCoordinatorsKeepDoubleBookingsVisibleUntilAnExplicitHold() = runTest {
+        val (hub, airport, driver, hospital) = setupPhones(listOf(DeviceProfiles.COORDINATOR, DeviceProfiles.AIRPORT, DeviceProfiles.RELAY, DeviceProfiles.HOSPITAL))
+        val graph = SylhetMapParser().parse(context.assets.open("sylhet_map.json").bufferedReader().use { it.readText() }).graph
+        suspend fun request(priority: PriorityClass) = DefaultReliefRequestSubmission(RoomRequestPersistence(hub.db, true), hub.protector,
+            envelopeSigner = hub.security).submit(ReliefRequestDraft("N1", "N1", "N6", listOf(CargoDraft("medicine", 5, "pack")),
+            priority, false, "", hub.profile.identityId, setOf("RLY-01", "N2"))).requestId
+        val lower = request(PriorityClass.PRIORITY_CLASS_P2)
+        val urgent = request(PriorityClass.PRIORITY_CLASS_P0)
+        hub.sendTo(airport, driver, hospital); airport.apply(); driver.apply(); hospital.apply()
+        suspend fun plan(phone: Phone, id: String) = OperationalDispatchPlanner(phone.db, phone.publisher, graph).confirm(
+            DispatchCommand(id, "RLY-01", VehicleType.TRUCK, dispatchReviewIds(phone.db.operationLogDao().forMission(id))))
+        plan(hub, lower); plan(airport, urgent)
+        hub.sendTo(airport, driver, hospital); airport.sendTo(hub, driver, hospital)
+        listOf(hub, airport, driver, hospital).forEach { it.apply() }
+        for (phone in listOf(hub, airport, driver, hospital)) {
+            assertEquals(setOf("RLY-01"), reservedDispatchOperators(phone.db.operationLogDao().forMission(lower)))
+            assertEquals(setOf("RLY-01"), reservedDispatchOperators(phone.db.operationLogDao().forMission(urgent)))
+            assertTrue(runCatching { requireDispatchReady(phone.db, lower) }.isFailure)
+            assertTrue(runCatching { requireDispatchReady(phone.db, urgent) }.isFailure)
+        }
+        OperationalDispatchPlanner(hub.db, hub.publisher, graph).hold(lower, dispatchReviewIds(hub.db.operationLogDao().forMission(lower)))
+        hub.sendTo(airport, driver, hospital); airport.apply(); driver.apply(); hospital.apply()
+        for (phone in listOf(hub, airport, driver, hospital)) {
+            requireDispatchReady(phone.db, urgent)
+            assertTrue(runCatching { requireDispatchReady(phone.db, lower) }.isFailure)
+        }
     }
 
     @Test fun assignedDriverSignsAnIntermediateHandoffAndCrossingEditsRequireCoordinatorReconciliation() = runTest {

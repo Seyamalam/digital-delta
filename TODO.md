@@ -18,8 +18,9 @@ not a certified release. The current evidence and finding matrix are in
 - [x] Separate observer and exercise state; retain projections and reset across stream generations.
 - [x] Bound QR generation with a bilingual full-code fallback.
 - [x] Implement signed pre-handoff driver paths and retained-cargo reconciliation, with independent-replica tests.
-- [ ] Verify the coordinator assignment/reconciliation dialogs live in both languages and support post-handoff reassignment recovery.
-- [ ] Connect received missions to operational fleet/preemption confirmation, not only local exercises.
+- [x] Verify the coordinator assignment/reconciliation dialogs live in both languages with the production Compose presentation and independent-replica authority tests.
+- [ ] Support post-handoff reassignment recovery without rewriting signed custody.
+- [x] Connect received missions to signed operational driver reservations and same-pickup preemption; test stale review, encrypted rollback, offline double-booking and release after delivery.
 - [x] Add graph-backed origin/destination selection with bundled bilingual labels, authenticated endpoint profiles, lower-layer validation and encrypted production-journey coverage. See the [request-location checkpoint](artifacts/reports/code-review/2026-09-05-request-locations-checkpoint.md).
 - [x] Add mission-indexed routes/SLA evaluations and persistent headquarters selection, with regression tests and local D1/SSE browser checks in both languages. See the [mission checkpoint](artifacts/reports/code-review/2026-09-05-mission-headquarters-checkpoint.md). This is read-only planning, not fleet dispatch acceptance.
 - [x] Verify retained public-key history against existing multi-leg receipts after credential rotation in independent-replica tests.

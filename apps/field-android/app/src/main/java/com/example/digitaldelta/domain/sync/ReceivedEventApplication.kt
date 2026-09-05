@@ -96,6 +96,14 @@ class ReceivedEventApplication(private val database: DeltaDatabase) {
                     MissionField.MEDICAL_QUANTITY -> require(value.toLongOrNull()?.let { it in 0..10_000_000 } == true)
                     MissionField.DESTINATION -> require(value.matches(Regex("[A-Za-z0-9_-]{1,128}")))
                     MissionField.DESCRIPTION -> require(value.isNotBlank())
+                    MissionField.DISPATCH -> {
+                        require(role == IdentityRole.IDENTITY_ROLE_COORDINATOR)
+                        val reservation = com.example.digitaldelta.domain.fleet.DispatchReservation.decode(value)
+                        require(reservation.operatorNodeId in creation.reliefRequestCreated.participantNodeIdsList)
+                        val operator = database.recipientKeyDao().findByNodeId(reservation.operatorNodeId)
+                            ?: throw MissingEventDependency("Operator credential unavailable")
+                        require(operator.roleCode == IdentityRole.IDENTITY_ROLE_DRIVER.name)
+                    }
                     MissionField.CUSTODY_PATH -> {
                         require(role == IdentityRole.IDENTITY_ROLE_COORDINATOR)
                         val path = value.split(">")
@@ -118,6 +126,7 @@ class ReceivedEventApplication(private val database: DeltaDatabase) {
                     MissionField.MEDICAL_QUANTITY -> original.cargoList.filter { it.itemCode in setOf("medicine", "ors", "blood") }.sumOf { it.quantity.toLong() }.toString()
                     MissionField.DESCRIPTION -> null
                     MissionField.CUSTODY_PATH -> null
+                    MissionField.DISPATCH -> null
                 }
                 val revisions = mutableListOf(incoming)
                 if (initialValue != null) revisions += FieldRevision(creation.eventId, missionId, field, initialValue, VectorClock(mapOf(original.requesterNodeId to 1)), creation.occurredAtUnixMs)

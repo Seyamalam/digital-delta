@@ -176,8 +176,7 @@ They exercise separate replicas on one emulator, not three physical radios.
 Remaining release gates include:
 
 - Physical three-phone request/edit/custody propagation and relay recovery with laptop off.
-- Live bilingual checks of the implemented driver-path/reconciliation dialogs, plus generalized post-handoff reassignment recovery.
-- Accepted-mission integration of fleet/preemption controls beyond the labelled exercises.
+- Generalized post-handoff reassignment recovery without rewriting signed receipts.
 - Target-phone memory/latency measurements and real camera checks.
 - Fresh UI evidence, human accessibility review and three unchanged offline passes.
 - Review of hosted deployment configuration and public claims after migration.
@@ -201,3 +200,11 @@ route-bound SLA result for breach, within-SLA and no-route cases; old or unrelat
 evaluations cannot clear the selected route's warning. Estimates older than five
 minutes require replanning. See the [mission checkpoint](artifacts/reports/code-review/2026-09-05-mission-headquarters-checkpoint.md)
 for local evidence and remaining fleet work.
+
+Accepted missions also have coordinator-confirmed driver/vehicle reservations and
+same-pickup priority preemption. These signed, encrypted revisions hold lower-priority
+cargo at origin; they do not invent physical deposits. Independent-replica tests
+cover rollback, double-booking and reservation release after signed delivery.
+The production dialogs have bilingual connected UI coverage. See [the dispatch
+runbook](docs/TRIAGE.md#accepted-mission-dispatch); physical radio and camera gates
+remain open.

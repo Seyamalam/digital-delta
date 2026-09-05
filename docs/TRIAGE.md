@@ -18,7 +18,7 @@ The current fair scenario has 35 elapsed minutes:
 - Initial truck route: 65-minute ETA, 100-minute baseline arrival, 120-minute stressed arrival. P0 remains protected.
 - Confirmed simulated `E3` failure: the M4 engine selects a 200-minute boat route, producing a 235-minute baseline arrival and 295-minute stressed arrival. P0 is predicted to breach its 120-minute SLA.
 
-## Preemption proposal
+## Labelled exercise preemption
 
 For the breach case, the engine permits only P0/P1 cargo to preempt P2/P3 cargo; equal-priority and inverted transitions are rejected. It proposes depositing `cargo-tarpaulin-p2` at the safest eligible waypoint so `cargo-medicine-p0` can continue. Unsafe candidates are excluded, then the remaining candidates are ordered by handling time and node ID. The deterministic result is `N3`, Sunamganj Sadar Camp, with an estimated 25 minutes gained.
 
@@ -62,7 +62,48 @@ Run all local evidence with:
 scripts/verify-local.sh --connected
 ```
 
-## Remaining M6 hardening
+## Accepted-mission dispatch
 
-- signed operational-event envelopes for preemption decisions;
-- target-phone performance and full rehearsal evidence.
+The **Missions** workspace has a separate operational path. A provisioned coordinator
+can reserve an active driver who is already a frozen reader of the request and
+declare truck or boat transport. A fresh route on the bundled graph is required.
+This is a human-declared reservation, not vehicle telemetry. The route inputs remain
+labelled simulated; the reservation does not move cargo or fabricate a deposit.
+
+`DISPATCH` is a human-review field carried by the existing signed, recipient-encrypted
+Protobuf `MissionFieldUpdated` event. One revision defines the driver, vehicle and
+complete origin → driver → destination itinerary. It cannot arrive as half a plan.
+`READY` reserves the driver; `HOLD_AT_ORIGIN` blocks the first handoff and releases
+that reservation. The latter optionally links the urgent mission that caused it.
+Generic path editing is available only before a dispatch reservation exists.
+
+A P0/P1 request whose 30-percent-slowdown arrival breaches its SLA may preempt a
+READY P2/P3 reservation with the same origin, vehicle, driver, simulation provenance
+and frozen-reader set. Both requests must still be awaiting their first receipt.
+The coordinator confirms that the operator is available and affected cargo remains
+at pickup. The lower-priority hold and urgent reservation, encrypted fan-out and
+projections commit in one Room transaction. Revision-ID checks reject stale dialogs;
+encryption failure rolls back both missions. No estimated saving is asserted.
+
+Offline coordinators can still double-book a driver before exchanging records.
+Once either phone knows of competing reservations, both first handoffs are blocked
+until an explicit hold or conflict resolution clears the collision. This is
+conflict detection after synchronization, not a global lock without communication.
+On partially delivered preemption updates, an urgent reservation arriving before
+the lower hold remains blocked by the known lower reservation.
+
+After pickup, the first dual-signed receipt pins the reservation and cargo version.
+A later or crossing hold cannot release a driver carrying signed custody. The
+reservation ends at completion of that pinned chain; held cargo can then be
+assigned again. Post-handoff changes require the separate custody recovery policy.
+
+`IndependentFieldWorkflowTest` covers real independent Room/Keystore replicas,
+wrong-role and stale-plan rejection, preemption rollback, conflicting offline
+coordinators, encrypted replication, two signed handoffs, reservation release and
+reassignment. `MissionWorkspaceTest` exercises the production presentation with a
+clearly labelled fixture, including Bangla/English dialogs and exact review IDs.
+
+## Remaining M6 acceptance
+
+- physical-phone radio, custody, performance and full rehearsal evidence;
+- human confirmation of actual operator/vehicle availability and pickup conditions.

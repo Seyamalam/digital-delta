@@ -17,6 +17,23 @@ camera and target-phone performance acceptance remain unverified.
 
 ## Custody checkpoint gate — 2026-09-05
 
+### Later accepted-mission dispatch gate
+
+The full local gate passed **106 JVM tests, 83 connected Android tests, 27 dashboard
+tests and 12 Worker tests**, with debug/minified release and the Go, schema, map,
+model and web build gates. See the [dispatch checkpoint](../artifacts/reports/code-review/2026-09-05-dispatch-checkpoint.md)
+and [log](../artifacts/reports/verification/2026-09-05-dispatch-local.log).
+Independent replicas prove stale-review and wrong-role rejection, atomic encrypted
+rollback, offline double-booking, signed delivery and reservation release.
+
+`MissionWorkspaceTest` uses the exact production Compose presentation with explicit
+UI fixture data. `captureMissionEvidence=true` enables settled screenshots;
+`qaDarkMode=true` and `qaFontScale=1.5` select dark/large-text variants. For native
+dialog-window evidence also set the emulator's system font scale to 1.5 before
+the run and restore its original value afterwards; a Compose override alone did
+not enlarge those windows on the tested Android version. These tests do not replace physical radio,
+camera, target-phone memory or human screen-reader evidence.
+
 ### Later request-location gate
 
 The full local connected gate passed **104 JVM tests, 79 connected Android tests,

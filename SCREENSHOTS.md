@@ -11,6 +11,13 @@ These replace neither physical-device evidence nor the final complete pitch set.
 
 ## Capture rules
 
+The [accepted-mission dialog set](artifacts/screenshots/field/2026-09-05-dispatch/README.md)
+adds paired native dispatch, assignment and reconciliation views. It is captured
+from the production Compose presentation with visibly simulated UI fixtures;
+independent Room/Keystore tests supply separate authorization/persistence evidence.
+The [request-location set](artifacts/screenshots/field/2026-09-05-request-locations/README.md)
+records bundled graph pickers and selected endpoints.
+
 - Capture Bangla and English pairs for every critical field screen.
 - Keep device time, scenario seed, map state, and sample IDs consistent.
 - Do not show real phone numbers, identity documents, private keys, or unredacted personal data.

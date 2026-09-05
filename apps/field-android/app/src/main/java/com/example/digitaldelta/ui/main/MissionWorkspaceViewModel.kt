@@ -9,6 +9,7 @@ import com.example.digitaldelta.domain.mesh.*
 import com.example.digitaldelta.domain.sync.*
 import com.example.digitaldelta.domain.routing.*
 import com.example.digitaldelta.domain.triage.*
+import com.example.digitaldelta.domain.fleet.*
 import com.example.digitaldelta.proto.v1.DomainEvent
 import dagger.hilt.android.lifecycle.HiltViewModel
 import dagger.hilt.android.qualifiers.ApplicationContext
@@ -39,6 +40,11 @@ data class FieldMission(
     val canAssign: Boolean,
     val pendingCustodyChanges: List<Pair<MissionField, String>>,
     val pendingCustodyChangeIds: Set<String>,
+    val dispatch: DispatchReservation? = null,
+    val dispatchReviewIds: Set<String> = emptySet(),
+    val eligibleOperators: List<String> = emptyList(),
+    val dispatchCollision: Boolean = false,
+    val readerNodes: Set<String> = emptySet(),
 )
 
 @HiltViewModel
@@ -55,6 +61,7 @@ class MissionWorkspaceViewModel @Inject constructor(
         AndroidEnvelopeSecurity(keys, database.recipientKeyDao(), trust)) { com.example.digitaldelta.service.ObserverPublication.schedule(context) }
     private val graph by lazy { SylhetMapParser().parse(context.assets.open("sylhet_map.json").bufferedReader().use { it.readText() }).graph }
     private val planRecorder by lazy { MissionPlanRecorder(database, profiles, keys, graph) { com.example.digitaldelta.service.ObserverPublication.schedule(context) } }
+    private val dispatchPlanner by lazy { OperationalDispatchPlanner(database, publisher, graph) }
     val recordedPlan = MutableStateFlow<String?>(null)
     val busy = MutableStateFlow(false)
     val failed = MutableStateFlow(false)
@@ -62,11 +69,12 @@ class MissionWorkspaceViewModel @Inject constructor(
     fun selectMission(id: String) = selection.select(id)
     private val ticks = flow { while (true) { emit(System.currentTimeMillis()); delay(1_000) } }
     private val authority = combine(profiles.profile, database.recipientKeyDao().observeAuthorities(), database.operationLogDao().observeMissionHistory()) { profile, authorities, history ->
-        val credential = authorities.firstOrNull { it.nodeId == profile.nodeId }
-        Triple(profile, credential, history)
+        Triple(profile, authorities, history)
     }
     val missions = combine(database.operationLogDao().observeRequests(), database.missionProjectionDao().observeAll(), database.conflictDao().observeOpen(), authority, ticks) { requests, projections, conflicts, authority, now ->
-        val (profile, credential, history) = authority
+        val (profile, authorities, history) = authority
+        val credential = authorities.firstOrNull { it.nodeId == profile.nodeId }
+        val reserved = history.groupBy { it.missionId }.mapValues { reservedDispatchOperators(it.value) }
         val public = keys.createOrGet(profile.nodeId)
         val active = credential != null && credential.identityId == profile.identityId && credential.revokedAtUnixMs == null && credential.issuedAtUnixMs <= now && credential.expiresAtUnixMs > now &&
             credential.signingKeyId == public.signingKeyId && credential.signingPublicKeyDer.contentEquals(public.signingPublicKeyDer)
@@ -81,7 +89,7 @@ class MissionWorkspaceViewModel @Inject constructor(
             val fields = projections.filter { it.missionId == operation.missionId }.associateBy { it.fieldCode }
             val values = if (pinnedIds == null) fields.mapValues { it.value.value } else projectMissionVersion(missionHistory.filter { it.eventId in pinnedIds }.map { DomainEvent.parseFrom(it.payloadBytes) }).mapKeys { it.key.name }
             val destination = values["DESTINATION"] ?: request.destinationNodeId
-            val path = values["CUSTODY_PATH"]?.split(">") ?: listOf(request.originNodeId, destination)
+            val path = dispatchCustodyPath(request.originNodeId, destination, values["CUSTODY_PATH"], values["DISPATCH"])
             val priority = CargoPriority.entries[((values["PRIORITY"]?.toIntOrNull() ?: request.cargoList.minOf { it.priorityValue }) - 1).coerceIn(0, 3)]
             val route = listOf(VehicleType.TRUCK, VehicleType.BOAT).mapNotNull { vehicle ->
                 runCatching { RoutePlanner().findRoute(graph, request.originNodeId, destination, vehicle) }.getOrNull()
@@ -98,6 +106,13 @@ class MissionWorkspaceViewModel @Inject constructor(
                     (profile.nodeId in request.participantNodeIdsList || profile.nodeId in setOf(request.requesterNodeId, request.originNodeId, request.destinationNodeId)),
                 custodyPath = path, custodian = path[receipts.size.coerceAtMost(path.lastIndex)],
                 canAssign = coordinator && receipt == null && conflicts.none { it.missionId == operation.missionId },
+                dispatch = values["DISPATCH"]?.let(DispatchReservation::decode),
+                readerNodes = request.participantNodeIdsList.toSet(),
+                dispatchReviewIds = dispatchReviewIds(missionHistory),
+                eligibleOperators = authorities.filter { it.nodeId in request.participantNodeIdsList && it.nodeId !in setOf(request.originNodeId, destination) &&
+                    it.roleCode == com.example.digitaldelta.proto.v1.IdentityRole.IDENTITY_ROLE_DRIVER.name && it.revokedAtUnixMs == null && it.issuedAtUnixMs <= now && it.expiresAtUnixMs > now }
+                    .map { it.nodeId }.sorted(),
+                dispatchCollision = reserved[operation.missionId].orEmpty().any { operator -> reserved.any { (id, operators) -> id != operation.missionId && operator in operators } },
                 pendingCustodyChangeIds = com.example.digitaldelta.domain.pod.unreconciledCustodyChanges(missionHistory).map { it.eventId }.toSet(),
                 pendingCustodyChanges = com.example.digitaldelta.domain.pod.unreconciledCustodyChanges(missionHistory).mapNotNull { change ->
                     when {
@@ -116,6 +131,8 @@ class MissionWorkspaceViewModel @Inject constructor(
     fun resolve(id: String, side: ConflictSide) = act { publisher.resolve(id, side) }
     fun recordPlan(id: String) = act { planRecorder.record(id); recordedPlan.value = id }
     fun reconcile(id: String, reason: String, expectedChanges: Set<String>) = act { publisher.reconcile(id, reason, expectedChanges) }
+    fun dispatch(command: DispatchCommand) = act { dispatchPlanner.confirm(command) }
+    fun hold(mission: FieldMission) = act { dispatchPlanner.hold(mission.id, mission.dispatchReviewIds) }
     private fun act(action: suspend () -> Unit) {
         if (busy.value) return
         busy.value = true; failed.value = false

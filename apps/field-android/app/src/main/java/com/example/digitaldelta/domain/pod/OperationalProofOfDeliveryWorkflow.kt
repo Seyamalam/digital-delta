@@ -26,6 +26,7 @@ class OperationalProofOfDeliveryWorkflow(
             DomainEvent.parseFrom(it.payloadBytes).reliefRequestCreated.originNodeId == profile.nodeId
         }?.missionId ?: error("Select an accepted mission whose custodian is this phone")
         require(!custodyNeedsReconciliation(database.operationLogDao().forMission(mission))) { "Reconcile crossing revisions first" }
+        com.example.digitaldelta.domain.fleet.requireDispatchReady(database, mission)
         val receipts = orderedCustodyEvents(database.operationLogDao().forMission(mission))
         val scenario = scenario(mission, receipts.firstOrNull()?.custodyTransfer?.missionSnapshot?.toByteArray(), receipts.size)
         require(scenario.senderNodeId == profile.nodeId && scenario.senderIdentityId == profile.identityId)
@@ -41,6 +42,8 @@ class OperationalProofOfDeliveryWorkflow(
         if (database.nonceDao().count(sha256(offer.nonce.toByteArray()).joinToString("") { "%02x".format(it) }) > 0)
             return@withTransaction DeliveryReceiptResult.Rejected(DeliveryOfferRejection.REPLAY_REJECTED, reconstructChain().receipts)
         if (custodyNeedsReconciliation(database.operationLogDao().forMission(offer.missionId)))
+            return@withTransaction DeliveryReceiptResult.Rejected(DeliveryOfferRejection.WRONG_MISSION, emptyList())
+        if (runCatching { com.example.digitaldelta.domain.fleet.requireDispatchReady(database, offer.missionId) }.isFailure)
             return@withTransaction DeliveryReceiptResult.Rejected(DeliveryOfferRejection.WRONG_MISSION, emptyList())
         val scenario = runCatching { scenario(offer.missionId, receipts.firstOrNull()?.custodyTransfer?.missionSnapshot?.toByteArray(), receipts.size) }.getOrNull()
             ?: return@withTransaction DeliveryReceiptResult.Rejected(DeliveryOfferRejection.WRONG_MISSION, emptyList())
@@ -99,8 +102,12 @@ class OperationalProofOfDeliveryWorkflow(
         }
         val projection = projectMissionVersion(normalized)
         val destination = projection.getValue(MissionField.DESTINATION)
-        val path = projection[MissionField.CUSTODY_PATH]?.split(">") ?: listOf(request.originNodeId, destination)
-        require(path.first() == request.originNodeId && path.last() == destination && leg < path.lastIndex) { "Custody path complete or destination changed; review assignment" }
+        val path = com.example.digitaldelta.domain.fleet.dispatchCustodyPath(request.originNodeId, destination, projection[MissionField.CUSTODY_PATH], projection[MissionField.DISPATCH])
+        projection[MissionField.DISPATCH]?.let { value ->
+            val dispatch = com.example.digitaldelta.domain.fleet.DispatchReservation.decode(value)
+            require(dispatch.state == com.example.digitaldelta.domain.fleet.DispatchReservation.READY && path.getOrNull(1) == dispatch.operatorNodeId)
+        }
+        require(path.distinct().size == path.size && path.first() == request.originNodeId && path.last() == destination && leg < path.lastIndex) { "Custody path complete or destination changed; review assignment" }
         val sender = requireNotNull(recipients.installedIdentity(path[leg]))
         val recipient = requireNotNull(recipients.installedIdentity(path[leg + 1]))
         // Signed immutable event IDs pin the exact cargo/destination revision even

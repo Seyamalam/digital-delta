@@ -1,4 +1,20 @@
 <resources>
+    <string name="mission_dispatch_preempted_by">Held for urgent mission: %1$s</string>
+    <string name="mission_dispatch">Dispatch reservation</string>
+    <string name="mission_dispatch_summary">%1$s · %2$s · %3$s</string>
+    <string name="mission_dispatch_ready">Reserved, not a handoff</string>
+    <string name="mission_dispatch_hold">Held at pickup for reassignment</string>
+    <string name="mission_dispatch_collision">Operator has competing reservations. Resolve or hold the other mission before pickup.</string>
+    <string name="mission_dispatch_action">Plan operator dispatch</string>
+    <string name="mission_dispatch_hold_action">Hold cargo at pickup</string>
+    <string name="mission_dispatch_help">Reserve a provisioned operator and a declared vehicle. Travel times use simulated map inputs. Cargo stays with its current custodian until both parties sign a handoff.</string>
+    <string name="mission_dispatch_no_operator">No active driver is a frozen reader of this mission. Provision the driver before creating a follow-up request.</string>
+    <string name="mission_dispatch_truck">Truck</string>
+    <string name="mission_dispatch_boat">Boat</string>
+    <string name="mission_dispatch_preempt_help">If the urgent route breaches its SLA, select a P2/P3 reservation to hold at the same pickup. Its cargo stays there until reassigned.</string>
+    <string name="mission_dispatch_checked">I checked the operator and vehicle are available and the affected cargo has not been handed over.</string>
+    <string name="mission_dispatch_confirm">Confirm plan</string>
+    <string name="mission_dispatch_hold_help">This stops the first handoff and releases the reservation. Cargo remains at its pickup; no signed custody record is changed. A later dispatch plan can reassign it.</string>
     <string name="request_origin">Cargo pickup node</string>
     <string name="request_cancel_location">Cancel</string>
     <string name="request_location_help">Bundled offline locations. Provision recipient identities before sending. A request does not guarantee an available route or vehicle.</string>
