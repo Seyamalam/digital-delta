@@ -132,7 +132,7 @@ class TriageEngine {
         require(maxEstimateAgeMs >= 0)
         require(slowdownFactor >= 1.0)
         val ageMs = (nowUnixMs - estimate.observedAtUnixMs).coerceAtLeast(0)
-        if (ageMs > maxEstimateAgeMs) {
+        if (estimate.observedAtUnixMs > nowUnixMs || ageMs >= maxEstimateAgeMs) {
             require(elapsedMinutes >= 0)
             val slowedEta = (estimate.etaMinutes * slowdownFactor).roundToInt()
             return TriageDecision(

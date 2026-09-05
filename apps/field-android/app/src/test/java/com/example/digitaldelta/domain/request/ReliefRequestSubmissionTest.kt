@@ -15,6 +15,25 @@ import org.junit.Test
 
 class ReliefRequestSubmissionTest {
     @Test
+    fun `offline location validation rejects unknown endpoints before persistence`() = runTest {
+        val persistence = RecordingRequestPersistence()
+        val service = DefaultReliefRequestSubmission(persistence, ReversingPayloadProtector,
+            allowedLocationIds = setOf("N1", "N4", "N6"))
+        val draft = ReliefRequestDraft("N4", "N4", "N1",
+            listOf(CargoDraft("medicine", 1, "pack")), PriorityClass.PRIORITY_CLASS_P1, false, "")
+        listOf(draft.copy(originNodeId = "unknown"), draft.copy(destinationNodeId = "unknown")).forEach {
+            val result = runCatching { service.submit(it) }
+            assertTrue(result.exceptionOrNull() is InvalidRequestLocationException)
+            assertEquals(0, persistence.calls)
+        }
+        service.submit(draft)
+        val request = DomainEvent.parseFrom(persistence.operation!!.payloadBytes).reliefRequestCreated
+        assertEquals("N4", request.originNodeId)
+        assertEquals("N1", request.destinationNodeId)
+        assertEquals(setOf("N1", "N4"), request.participantNodeIdsList.toSet())
+    }
+
+    @Test
     fun `submit persists a domain event and encrypted protobuf envelope atomically`() = runTest {
         val persistence = RecordingRequestPersistence()
         val service = DefaultReliefRequestSubmission(

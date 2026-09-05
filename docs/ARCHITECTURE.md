@@ -390,6 +390,14 @@ Record decisions and evidence in [DECISIONS.md](DECISIONS.md).
 ## September 5 remediation checkpoint
 
 The native Missions workspace reads accepted requests and projections from Room.
+Request creation offers every node in the bundled offline graph as pickup or
+destination. Production submission validates both against that same asset before
+encryption or persistence. All seven map nodes have distinct selectable device
+profiles, alongside the separate relay profile; selecting one never grants
+authority without a matching administrator-signed credential. Every endpoint and
+frozen reader still requires a provisioned encryption key. A request may have no
+feasible truck/boat route, which planning reports explicitly rather than promising
+dispatch. The selected pickup, not a fixed hub or the requester, owns initial custody.
 Local request creation writes that projection atomically with its encrypted outbox.
 Signed mission edits and coordinator resolutions use independent recipient encryption
 and the inbox application path. Missing dependencies remain retryable; retry ordering

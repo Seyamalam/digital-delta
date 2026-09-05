@@ -1,4 +1,12 @@
 <resources>
+    <string name="request_origin">Cargo pickup node</string>
+    <string name="request_cancel_location">Cancel</string>
+    <string name="request_location_help">Bundled offline locations. Provision recipient identities before sending. A request does not guarantee an available route or vehicle.</string>
+    <string name="request_invalid_location">Choose pickup and destination nodes from the bundled offline map.</string>
+    <string name="request_location_n1">Sylhet City Hub</string>
+    <string name="request_location_n2">Osmani Airport Node</string>
+    <string name="request_location_n4">Companyganj Outpost</string>
+    <string name="request_location_n5">Kanaighat Point</string>
     <string name="qr_manual_fallback">This signed history is too large for a reliably scannable QR. Copy the complete code and transfer it locally, then paste it into the recipient’s manual verification field. Internet is not required.</string>
     <string name="qr_copy_signed_code">Copy complete signed code</string>
     <string name="mission_delivered">Signed delivery received · mission editing locked</string>

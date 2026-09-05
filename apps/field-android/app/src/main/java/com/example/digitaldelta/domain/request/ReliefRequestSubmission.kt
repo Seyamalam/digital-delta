@@ -35,6 +35,8 @@ data class ReliefRequestDraft(
 
 data class QueueReceipt(val requestId: String, val messageId: String)
 
+class InvalidRequestLocationException : IllegalArgumentException("Request endpoint is not in the offline graph")
+
 interface ReliefRequestSubmission {
     suspend fun submit(draft: ReliefRequestDraft): QueueReceipt
 }
@@ -71,8 +73,13 @@ class DefaultReliefRequestSubmission(
     private val nextId: () -> String = { UUID.randomUUID().toString() },
     private val envelopeSigner: com.example.digitaldelta.domain.mesh.EnvelopeSigner = com.example.digitaldelta.domain.mesh.EnvelopeSigner { it },
     private val additionalParticipants: suspend (ReliefRequestDraft) -> Set<String> = { emptySet() },
+    private val allowedLocationIds: Set<String>? = null,
 ) : ReliefRequestSubmission {
     override suspend fun submit(draft: ReliefRequestDraft): QueueReceipt {
+        if (allowedLocationIds != null &&
+            (draft.originNodeId !in allowedLocationIds || draft.destinationNodeId !in allowedLocationIds)) {
+            throw InvalidRequestLocationException()
+        }
         require(draft.cargo.isNotEmpty()) { "at least one cargo item is required" }
         require(draft.cargo.all { it.quantity > 0 }) { "cargo quantities must be positive" }
         require(draft.note.length <= 1000) { "Note is too long" }

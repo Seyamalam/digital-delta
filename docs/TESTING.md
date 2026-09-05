@@ -17,6 +17,23 @@ camera and target-phone performance acceptance remain unverified.
 
 ## Custody checkpoint gate — 2026-09-05
 
+### Later request-location gate
+
+The full local connected gate passed **104 JVM tests, 79 connected Android tests,
+27 dashboard tests and 12 Worker tests**, plus debug/minified release, Go,
+Protobuf/localization/map/model and web build checks. The Android target was
+Pixel_10_Pro_XL / Android 16. Regression tests cover non-default pickup in the
+encrypted production request, graph membership validation before persistence,
+bilingual picker selection retention, all map-node profile identities/roles, and
+future/exactly-expired triage estimates. See the [request-location checkpoint](../artifacts/reports/code-review/2026-09-05-request-locations-checkpoint.md)
+and [local gate log](../artifacts/reports/verification/2026-09-05-request-locations-local.log).
+
+`MainScreenTest#requestLocationPickersKeepSelectionsWhenLanguageChanges` accepts
+`captureRequestEvidence=true` and optional `qaDarkMode=true`. This opt-in path
+saves settled screenshots of its coordinator UI fixture under the test target's
+external files directory. It does not provision production authority or certify
+physical phones. Normal local verification leaves screenshot capture disabled.
+
 ### Later mission-headquarters gate
 
 After the custody checkpoint, the full local connected gate passed **102 JVM tests,

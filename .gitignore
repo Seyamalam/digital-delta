@@ -1,4 +1,5 @@
 .DS_Store
+.argent/recordings/
 **/.dev.vars
 **/.dev.vars.*
 **/.env.local

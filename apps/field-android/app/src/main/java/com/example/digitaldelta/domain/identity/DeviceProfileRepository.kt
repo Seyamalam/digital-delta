@@ -19,12 +19,20 @@ object DeviceProfiles {
     const val CLINIC = "CLINIC_N4"
     const val HOSPITAL = "HOSPITAL_N6"
     const val RELAY = "RELAY_R1"
+    const val AIRPORT = "COORDINATOR_N2"
+    const val CAMP = "CLINIC_N3"
+    const val WAYPOINT = "DRIVER_N5"
+    const val ISOLATED_CLINIC = "CLINIC_N7"
 
     val all: List<LocalDeviceProfile> = listOf(
         LocalDeviceProfile(COORDINATOR, "N1", "coordinator-sylhet-01", "Sylhet City Hub", IdentityRole.IDENTITY_ROLE_COORDINATOR),
         LocalDeviceProfile(CLINIC, "N4", "clinic-sylhet-01", "Companyganj Outpost", IdentityRole.IDENTITY_ROLE_CLINIC),
         LocalDeviceProfile(HOSPITAL, "N6", "hospital-habiganj-01", "Habiganj Medical", IdentityRole.IDENTITY_ROLE_HOSPITAL),
         LocalDeviceProfile(RELAY, "RLY-01", "driver-relay-01", "Sunamganj Relay", IdentityRole.IDENTITY_ROLE_DRIVER),
+        LocalDeviceProfile(AIRPORT, "N2", "coordinator-airport-02", "Osmani Airport Node", IdentityRole.IDENTITY_ROLE_COORDINATOR),
+        LocalDeviceProfile(CAMP, "N3", "clinic-sunamganj-03", "Sunamganj Sadar Camp", IdentityRole.IDENTITY_ROLE_CLINIC),
+        LocalDeviceProfile(WAYPOINT, "N5", "driver-kanaighat-05", "Kanaighat Point", IdentityRole.IDENTITY_ROLE_DRIVER),
+        LocalDeviceProfile(ISOLATED_CLINIC, "N7", "clinic-tanguar-07", "Tanguar Haor Clinic", IdentityRole.IDENTITY_ROLE_CLINIC),
     )
 
     fun require(code: String): LocalDeviceProfile = all.firstOrNull { it.code == code }

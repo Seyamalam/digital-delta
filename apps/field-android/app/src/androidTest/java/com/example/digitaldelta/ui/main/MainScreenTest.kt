@@ -87,7 +87,7 @@ class MainScreenTest {
         )
         relayStartRequested = false
         composeTestRule.setContent {
-            DigitalDeltaTheme(darkTheme = false) {
+            DigitalDeltaTheme(darkTheme = androidx.test.platform.app.InstrumentationRegistry.getArguments().getString("qaDarkMode") == "true") {
                 DigitalDeltaApp(
                     showBootSequence = false,
                     authorizationState = authorizationState.value,
@@ -319,12 +319,47 @@ class MainScreenTest {
     }
 
     @Test
+    fun requestLocationPickersKeepSelectionsWhenLanguageChanges() {
+        composeTestRule.onNodeWithText("অনুরোধ").performClick()
+        composeTestRule.onNode(hasTestTag("request-origin")).performClick()
+        captureRequestEvidence("bn-picker")
+        composeTestRule.onNode(hasTestTag("request-location-N4")).performScrollTo().performClick()
+        composeTestRule.onNode(hasTestTag("request-destination")).performClick()
+        composeTestRule.onNode(hasTestTag("request-location-N3")).performScrollTo().performClick()
+        composeTestRule.onNodeWithText("N4 · কোম্পানীগঞ্জ আউটপোস্ট").assertIsDisplayed()
+        captureRequestEvidence("bn-selected")
+        composeTestRule.onNodeWithText("English").performClick()
+        composeTestRule.onNodeWithText("N4 · Companyganj Outpost").assertIsDisplayed()
+        composeTestRule.onNodeWithText("N3 · Sunamganj Sadar Camp").assertIsDisplayed()
+        captureRequestEvidence("en-selected")
+        composeTestRule.onNode(hasTestTag("request-origin")).performClick()
+        captureRequestEvidence("en-picker")
+        composeTestRule.onNodeWithText("Cancel").performClick()
+        composeTestRule.onNodeWithText("N4 · Companyganj Outpost").assertIsDisplayed()
+    }
+
+    /** Opt-in screenshots of this test fixture, never production credentials or user records. */
+    private fun captureRequestEvidence(name: String) {
+        val args = androidx.test.platform.app.InstrumentationRegistry.getArguments()
+        if (args.getString("captureRequestEvidence") != "true") return
+        composeTestRule.waitForIdle()
+        val started = android.os.SystemClock.uptimeMillis()
+        composeTestRule.waitUntil(timeoutMillis = 2_000) { android.os.SystemClock.uptimeMillis() - started >= 400 }
+        val instrumentation = androidx.test.platform.app.InstrumentationRegistry.getInstrumentation()
+        val theme = if (args.getString("qaDarkMode") == "true") "dark" else "light"
+        val output = java.io.File(instrumentation.targetContext.getExternalFilesDir(null), "request-$theme-$name.png")
+        output.outputStream().use { stream ->
+            check(instrumentation.uiAutomation.takeScreenshot().compress(android.graphics.Bitmap.CompressFormat.PNG, 100, stream))
+        }
+    }
+
+    @Test
     fun missingRecipientKey_hasActionableBanglaAndEnglishMessage() {
         composeTestRule.onNodeWithText("অনুরোধ").performClick()
-        composeTestRule.onNode(hasScrollAction()).performTouchInput { swipeUp() }
         composeTestRule.runOnIdle {
             requestState.value = RequestQueueUiState.Failed(RequestFailure.RECIPIENT_NOT_PROVISIONED)
         }
+        composeTestRule.onNode(hasScrollAction()).performScrollToNode(hasText("পাঠানোর আগে গন্তব্যের পরিচয় নিবন্ধন করুন।"))
         composeTestRule.onNodeWithText("পাঠানোর আগে গন্তব্যের পরিচয় নিবন্ধন করুন।").assertIsDisplayed()
 
         composeTestRule.onNodeWithText("English").performClick()

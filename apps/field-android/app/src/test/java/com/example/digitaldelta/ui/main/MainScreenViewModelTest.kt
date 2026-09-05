@@ -109,10 +109,12 @@ class MainScreenViewModelTest {
         )
         advanceUntilIdle()
 
-        viewModel.queueRequest(medicine = 11, ors = 20, tarpaulin = 5, priorityCode = "P0")
+        viewModel.queueRequest(medicine = 11, ors = 20, tarpaulin = 5, priorityCode = "P0", originNodeId = "N4", destinationNodeId = "N3")
         advanceUntilIdle()
 
         assertEquals(11, submission.received?.cargo?.first { it.itemCode == "medicine" }?.quantity)
+        assertEquals("N4", submission.received?.originNodeId)
+        assertEquals("N3", submission.received?.destinationNodeId)
         assertEquals(RequestQueueUiState.Queued("request-9", "message-9"), viewModel.requestQueueState.value)
     }
 

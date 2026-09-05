@@ -207,7 +207,7 @@ fun DigitalDeltaApp(
     onConfigurePin: ((String) -> Unit)? = null,
     onUnlock: ((String) -> Unit)? = null,
     requestQueueState: RequestQueueUiState = RequestQueueUiState.Idle,
-    onQueueRequest: ((Int, Int, Int, String, String) -> Unit)? = null,
+    onQueueRequest: ((Int, Int, Int, String, String, String, String) -> Unit)? = null,
     identityState: IdentityUiState = IdentityUiState.Loading,
     authorizationState: FieldAuthorizationUiState = FieldAuthorizationUiState(
         role = Role.COORDINATOR,
@@ -562,7 +562,7 @@ private fun DeltaShell(
     useBangla: Boolean,
     onLanguageChange: ((Boolean) -> Unit)?,
     requestQueueState: RequestQueueUiState,
-    onQueueRequest: ((Int, Int, Int, String, String) -> Unit)?,
+    onQueueRequest: ((Int, Int, Int, String, String, String, String) -> Unit)?,
     identityState: IdentityUiState,
     authorizationState: FieldAuthorizationUiState,
     onPinAdministrator: ((String) -> Unit)?,
@@ -630,9 +630,9 @@ private fun DeltaShell(
                             )
                         },
                         colors = NavigationBarItemDefaults.colors(
-                            selectedIconColor = DeltaTeal,
-                            selectedTextColor = DeltaTeal,
-                            indicatorColor = DeltaTeal.copy(alpha = .12f),
+                            selectedIconColor = MaterialTheme.colorScheme.primary,
+                            selectedTextColor = MaterialTheme.colorScheme.primary,
+                            indicatorColor = MaterialTheme.colorScheme.primary.copy(alpha = .12f),
                         ),
                     )
                 }
@@ -845,7 +845,8 @@ private fun IdentityScreen(
                                 DeviceProfiles.COORDINATOR -> text(R.string.profile_coordinator, language)
                                 DeviceProfiles.HOSPITAL -> text(R.string.profile_hospital, language)
                                 DeviceProfiles.RELAY -> text(R.string.profile_relay, language)
-                                else -> text(R.string.profile_clinic, language)
+                                DeviceProfiles.CLINIC -> text(R.string.profile_clinic, language)
+                                else -> requestLocationName(profile.nodeId, language)
                             } + " • ${profile.nodeId}",
                         )
                     }
@@ -1508,7 +1509,7 @@ private fun RequestScreen(
     language: AppLanguage,
     authorizationState: FieldAuthorizationUiState,
     requestQueueState: RequestQueueUiState,
-    onQueueRequest: ((Int, Int, Int, String, String) -> Unit)?,
+    onQueueRequest: ((Int, Int, Int, String, String, String, String) -> Unit)?,
 ) {
     var medicine by rememberSaveable { mutableIntStateOf(10) }
     var ors by rememberSaveable { mutableIntStateOf(20) }
@@ -1516,6 +1517,39 @@ private fun RequestScreen(
     var priority by rememberSaveable { mutableStateOf("P0") }
     var note by rememberSaveable { mutableStateOf("") }
     var queued by rememberSaveable { mutableStateOf(false) }
+    var origin by rememberSaveable { mutableStateOf("N1") }
+    var destination by rememberSaveable { mutableStateOf("N6") }
+    var choosingOrigin by rememberSaveable { mutableStateOf<Boolean?>(null) }
+    val context = LocalContext.current
+    val locations = remember(context) {
+        context.assets.open("sylhet_map.json").bufferedReader().use {
+            com.example.digitaldelta.domain.routing.SylhetMapParser().parse(it.readText()).graph.nodes.map { node -> node.id }
+        }
+    }
+    choosingOrigin?.let { isOrigin ->
+        androidx.compose.material3.AlertDialog(
+            onDismissRequest = { choosingOrigin = null },
+            title = { Text(text(if (isOrigin) R.string.request_origin else R.string.mission_destination, language)) },
+            text = {
+                Column(Modifier.verticalScroll(rememberScrollState())) {
+                    locations.forEach { id ->
+                        OutlinedButton(
+                            onClick = {
+                                if (isOrigin) origin = id else destination = id
+                                choosingOrigin = null
+                                queued = false
+                            },
+                            modifier = Modifier.fillMaxWidth().heightIn(min = 52.dp).testTag("request-location-$id"),
+                        ) { Text("$id · ${requestLocationName(id, language)}") }
+                    }
+                }
+            },
+            confirmButton = {},
+            dismissButton = {
+                TextButton(onClick = { choosingOrigin = null }) { Text(text(R.string.request_cancel_location, language)) }
+            },
+        )
+    }
 
     LazyColumn(
         modifier = Modifier.fillMaxSize(),
@@ -1538,10 +1572,20 @@ private fun RequestScreen(
                 border = CardDefaults.outlinedCardBorder(),
             ) {
                 Column {
-                    Row(Modifier.fillMaxWidth().padding(14.dp), verticalAlignment = Alignment.CenterVertically) {
-                        Icon(Icons.Default.LocationOn, null, tint = DeltaTeal)
-                        Spacer(Modifier.width(10.dp))
-                        Text(text(R.string.request_supply_route, language), modifier = Modifier.weight(1f))
+                    Column(Modifier.fillMaxWidth().padding(14.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                        Text(text(R.string.request_origin, language), style = MaterialTheme.typography.labelLarge)
+                        OutlinedButton(onClick = { choosingOrigin = true },
+                            enabled = requestQueueState != RequestQueueUiState.Submitting,
+                            modifier = Modifier.fillMaxWidth().heightIn(min = 52.dp).testTag("request-origin")) {
+                            Text("$origin · ${requestLocationName(origin, language)}")
+                        }
+                        Text(text(R.string.mission_destination, language), style = MaterialTheme.typography.labelLarge)
+                        OutlinedButton(onClick = { choosingOrigin = false },
+                            enabled = requestQueueState != RequestQueueUiState.Submitting,
+                            modifier = Modifier.fillMaxWidth().heightIn(min = 52.dp).testTag("request-destination")) {
+                            Text("$destination · ${requestLocationName(destination, language)}")
+                        }
+                        Text(text(R.string.request_location_help, language), style = MaterialTheme.typography.bodySmall)
                     }
                 }
             }
@@ -1605,7 +1649,7 @@ private fun RequestScreen(
                     if (onQueueRequest == null) {
                         queued = true
                     } else {
-                        onQueueRequest(medicine, ors, tarpaulin, priority, note)
+                        onQueueRequest(medicine, ors, tarpaulin, priority, note, origin, destination)
                     }
                 },
                 enabled = requestQueueState != RequestQueueUiState.Submitting &&
@@ -1654,10 +1698,10 @@ private fun RequestScreen(
                     Spacer(Modifier.width(8.dp))
                     Text(
                         text(
-                            if ((requestQueueState as? RequestQueueUiState.Failed)?.reason == RequestFailure.RECIPIENT_NOT_PROVISIONED) {
-                                R.string.request_recipient_not_provisioned
-                            } else {
-                                R.string.request_queue_failed
+                            when ((requestQueueState as? RequestQueueUiState.Failed)?.reason) {
+                                RequestFailure.RECIPIENT_NOT_PROVISIONED -> R.string.request_recipient_not_provisioned
+                                RequestFailure.INVALID_LOCATION -> R.string.request_invalid_location
+                                else -> R.string.request_queue_failed
                             },
                             language,
                         ),
@@ -1667,6 +1711,18 @@ private fun RequestScreen(
             }
         }
     }
+}
+
+@Composable
+private fun requestLocationName(nodeId: String, language: AppLanguage): String = when (nodeId) {
+    "N1" -> text(R.string.request_location_n1, language)
+    "N2" -> text(R.string.request_location_n2, language)
+    "N3" -> text(R.string.sunamganj_camp, language)
+    "N4" -> text(R.string.request_location_n4, language)
+    "N5" -> text(R.string.request_location_n5, language)
+    "N6" -> text(R.string.habiganj_medical, language)
+    "N7" -> text(R.string.hybrid_destination_name, language)
+    else -> nodeId
 }
 
 @Composable
@@ -3161,7 +3217,7 @@ private fun QuantityRow(
         Modifier.fillMaxWidth().padding(horizontal = 12.dp, vertical = 8.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
-        Icon(icon, null, tint = DeltaTeal)
+        Icon(icon, null, tint = MaterialTheme.colorScheme.primary)
         Spacer(Modifier.width(10.dp))
         Text(label, modifier = Modifier.weight(1f))
         IconButton(onClick = { onValueChange((value - 1).coerceAtLeast(0)) }, modifier = Modifier.size(48.dp)) {

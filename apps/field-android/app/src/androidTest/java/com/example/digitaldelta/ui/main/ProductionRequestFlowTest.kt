@@ -107,7 +107,9 @@ class ProductionRequestFlowTest {
         chooseBanglaIfRequired("nav-request")
         composeTestRule.waitUntilAtLeastOneExists(hasTestTag("nav-request"), timeoutMillis = 10_000)
         composeTestRule.onNode(hasTestTag("nav-request")).performClick()
-        composeTestRule.onNode(hasScrollAction()).performTouchInput { swipeUp() }
+        composeTestRule.onNode(hasTestTag("request-origin")).performClick()
+        composeTestRule.onNode(hasTestTag("request-location-N4")).performClick()
+        composeTestRule.onNode(hasScrollAction()).performScrollToNode(hasTestTag("send-request"))
         composeTestRule.onNode(hasTestTag("send-request")).assertIsEnabled().performClick()
 
         composeTestRule.waitUntilAtLeastOneExists(hasTestTag("request-queued"), timeoutMillis = 4_000)
@@ -155,6 +157,7 @@ class ProductionRequestFlowTest {
             associatedData = associatedData,
         )
         val event = DomainEvent.parseFrom(plaintext)
+        assertEquals("N4", event.reliefRequestCreated.originNodeId)
         assertEquals("N6", event.reliefRequestCreated.destinationNodeId)
         assertTrue(encrypted.wrappedAes256Key.size() >= 256)
 

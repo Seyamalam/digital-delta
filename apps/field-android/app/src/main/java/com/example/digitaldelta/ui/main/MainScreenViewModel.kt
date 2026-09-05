@@ -168,7 +168,7 @@ class MainScreenViewModel @Inject constructor(
         }
     }
 
-    fun queueRequest(medicine: Int, ors: Int, tarpaulin: Int, priorityCode: String, note: String = "") {
+    fun queueRequest(medicine: Int, ors: Int, tarpaulin: Int, priorityCode: String, note: String = "", originNodeId: String = "N1", destinationNodeId: String = "N6") {
         viewModelScope.launch {
             if (mutableRequestQueueState.value == RequestQueueUiState.Submitting) return@launch
             val localIdentity = authorize(Permission.CREATE_REQUEST) ?: return@launch
@@ -180,8 +180,8 @@ class MainScreenViewModel @Inject constructor(
                         ReliefRequestDraft(
                             requesterNodeId = localIdentity.localNodeId,
                             requesterIdentityId = localIdentity.localIdentityId,
-                            originNodeId = "N1",
-                            destinationNodeId = "N6",
+                            originNodeId = originNodeId,
+                            destinationNodeId = destinationNodeId,
                             cargo = listOf(
                                 CargoDraft("medicine", medicine, "pack"),
                                 CargoDraft("ors", ors, "sachet"),
@@ -197,10 +197,10 @@ class MainScreenViewModel @Inject constructor(
                     mutableRequestQueueState.value = RequestQueueUiState.Queued(receipt.requestId, receipt.messageId)
                 }.onFailure { error ->
                     mutableRequestQueueState.value = RequestQueueUiState.Failed(
-                        if (error is RecipientKeyUnavailableException) {
-                            RequestFailure.RECIPIENT_NOT_PROVISIONED
-                        } else {
-                            RequestFailure.STORAGE_OR_CRYPTO
+                        when (error) {
+                            is RecipientKeyUnavailableException -> RequestFailure.RECIPIENT_NOT_PROVISIONED
+                            is com.example.digitaldelta.domain.request.InvalidRequestLocationException -> RequestFailure.INVALID_LOCATION
+                            else -> RequestFailure.STORAGE_OR_CRYPTO
                         },
                     )
                 }
@@ -691,7 +691,7 @@ sealed interface OfflineUnlockUiState {
     data object Unlocked : OfflineUnlockUiState
 }
 
-enum class RequestFailure { RECIPIENT_NOT_PROVISIONED, STORAGE_OR_CRYPTO }
+enum class RequestFailure { RECIPIENT_NOT_PROVISIONED, INVALID_LOCATION, STORAGE_OR_CRYPTO }
 
 enum class IdentityFailure { KEYSTORE, INVALID_TRUST, INVALID_CREDENTIAL, INVALID_REVOCATION }
 

@@ -193,6 +193,9 @@ object AppModule {
         deviceKeys: AndroidDeviceIdentityKeyStore,
         trustAnchors: TrustAnchorRepository,
     ): ReliefRequestSubmission = DefaultReliefRequestSubmission(
+        allowedLocationIds = context.assets.open("sylhet_map.json").bufferedReader().use {
+            SylhetMapParser().parse(it.readText()).graph.nodes.map { node -> node.id }.toSet()
+        },
         persistence = RoomRequestPersistence(database, applyLocalProjection = true) { com.example.digitaldelta.service.ObserverPublication.schedule(context) },
         payloadProtector = payloadProtector,
         envelopeSigner = com.example.digitaldelta.domain.mesh.AndroidEnvelopeSecurity(deviceKeys, database.recipientKeyDao(), trustAnchors),

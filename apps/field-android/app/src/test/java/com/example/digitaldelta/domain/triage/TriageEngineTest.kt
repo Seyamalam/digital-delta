@@ -80,6 +80,22 @@ class TriageEngineTest {
     }
 
     @Test
+    fun `future and exactly expired estimates cannot authorize preemption`() {
+        val now = TriageEngine.MAX_ROUTE_ETA_AGE_MS + 1_000
+        listOf(now + 1, now - TriageEngine.MAX_ROUTE_ETA_AGE_MS).forEach { observed ->
+            val result = engine.evaluate(CargoPriority.P0, 35,
+                RouteEtaEstimate(200, observed), now)
+            assertTrue(result.routeEstimateStale)
+            assertFalse(result.willBreachSla)
+            assertEquals(TriageAction.REFRESH_ROUTE_ESTIMATE, result.action)
+        }
+        val fresh = engine.evaluate(CargoPriority.P0, 35, RouteEtaEstimate(200, 1_001),
+            1_000 + TriageEngine.MAX_ROUTE_ETA_AGE_MS)
+        assertFalse(fresh.routeEstimateStale)
+        assertTrue(fresh.willBreachSla)
+    }
+
+    @Test
     fun `stale route estimate requests refresh and cannot authorize preemption`() {
         val result = engine.evaluate(
             priority = CargoPriority.P0,

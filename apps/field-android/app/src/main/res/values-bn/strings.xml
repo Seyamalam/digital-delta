@@ -1,4 +1,12 @@
 <resources>
+    <string name="request_origin">মালামাল সংগ্রহের নোড</string>
+    <string name="request_cancel_location">বাতিল</string>
+    <string name="request_location_help">অ্যাপে সংরক্ষিত অফলাইন স্থান। পাঠানোর আগে প্রাপকদের পরিচয় নিবন্ধন করুন। অনুরোধ তৈরি হলে পথ বা যানবাহন পাওয়া নিশ্চিত নয়।</string>
+    <string name="request_invalid_location">অফলাইন মানচিত্র থেকে সংগ্রহ ও গন্তব্যের নোড বেছে নিন।</string>
+    <string name="request_location_n1">সিলেট সিটি হাব</string>
+    <string name="request_location_n2">ওসমানী বিমানবন্দর নোড</string>
+    <string name="request_location_n4">কোম্পানীগঞ্জ আউটপোস্ট</string>
+    <string name="request_location_n5">কানাইঘাট পয়েন্ট</string>
     <string name="qr_manual_fallback">স্বাক্ষরিত ইতিহাসটি নির্ভরযোগ্যভাবে স্ক্যান করার মতো QR-এ ধরছে না। সম্পূর্ণ কোড কপি করে স্থানীয়ভাবে পাঠান, তারপর প্রাপকের ম্যানুয়াল যাচাই ঘরে পেস্ট করুন। ইন্টারনেট লাগবে না।</string>
     <string name="qr_copy_signed_code">সম্পূর্ণ স্বাক্ষরিত কোড কপি করুন</string>
     <string name="mission_delivered">স্বাক্ষরিত ডেলিভারি রসিদ এসেছে · মিশন সম্পাদনা বন্ধ</string>
