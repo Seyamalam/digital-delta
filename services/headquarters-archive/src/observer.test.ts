@@ -19,6 +19,21 @@ beforeEach(async () => {
 });
 
 describe("Hono observer with real local D1", () => {
+  it("persists and replays complete route-bound SLA evaluations, rejecting inconsistent or private fields", async () => {
+    const sla = { ...observation, eventId: "sla-one", kind: "slaEvaluated", presentation: {
+      missionId: "M1", routeEventId: "route-one", priority: "PRIORITY_CLASS_P0", stateCode: "BREACH",
+      baselineArrivalMinutes: 120, slowedArrivalMinutes: 156, slaMinutes: 120, policyVersion: "triage-v1-packaged-estimate",
+    } };
+    expect((await publish(sla)).status).toBe(201);
+    const replay = await SELF.fetch("http://observer/v1/observations?after=0");
+    expect((await replay.json<{ observations: { presentation: unknown }[] }>()).observations[0].presentation).toEqual(sla.presentation);
+    for (const changes of [
+      { stateCode: "WITHIN_SLA" }, { routeEventId: "" }, { stateCode: "NO_ROUTE" },
+      { priority: "PRIORITY_CLASS_P3" }, { baselineArrivalMinutes: 200 }, { privateNote: "not public" },
+    ]) expect(parsePublicObservation({ ...sla, presentation: { ...sla.presentation, ...changes } })).toBeNull();
+    expect(parsePublicObservation({ ...sla, presentation: { ...sla.presentation, stateCode: "WITHIN_SLA", slowedArrivalMinutes: 120 } })).not.toBeNull();
+    expect(parsePublicObservation({ ...sla, presentation: { ...sla.presentation, stateCode: "NO_ROUTE", baselineArrivalMinutes: 0, slowedArrivalMinutes: 0 } })).not.toBeNull();
+  });
   it("replays a new generation even when the reconnect cursor is from a larger old log", async () => {
     await publish();
     const response = await SELF.fetch("http://observer/observer/events", { headers: { "Last-Event-ID": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb:9999" } });

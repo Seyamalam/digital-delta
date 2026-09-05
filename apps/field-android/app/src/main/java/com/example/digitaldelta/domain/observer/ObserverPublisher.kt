@@ -49,6 +49,14 @@ object PublicObservationAdapter {
                     .put("riskAdjusted", route.riskAdjusted).put("explanationCode", route.explanationCode)
                 "routePlanned"
             }
+            event.hasSlaEvaluated() -> {
+                val sla = event.slaEvaluated
+                fields.put("missionId", sla.missionId).put("routeEventId", sla.routeEventId).put("priority", sla.priority.name)
+                    .put("stateCode", sla.stateCode).put("baselineArrivalMinutes", sla.baselineArrivalMinutes)
+                    .put("slowedArrivalMinutes", sla.slowedArrivalMinutes).put("slaMinutes", sla.slaMinutes)
+                    .put("policyVersion", sla.policyVersion)
+                "slaEvaluated"
+            }
             event.hasSlaBreachPredicted() -> {
                 val sla = event.slaBreachPredicted
                 fields.put("missionId", sla.missionId).put("priority", sla.priority.name)

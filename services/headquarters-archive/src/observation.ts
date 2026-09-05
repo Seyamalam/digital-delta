@@ -4,6 +4,7 @@ export const allowedEventKinds = [
   "edgeStatusChanged",
   "routePlanned",
   "slaBreachPredicted",
+  "slaEvaluated",
   "rendezvousPlanned",
   "vehicleStateChanged",
 ] as const;

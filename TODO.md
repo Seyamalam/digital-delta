@@ -21,7 +21,7 @@ not a certified release. The current evidence and finding matrix are in
 - [ ] Verify the coordinator assignment/reconciliation dialogs live in both languages and support post-handoff reassignment recovery.
 - [ ] Connect received missions to operational fleet/preemption confirmation, not only local exercises.
 - [ ] Add general origin/destination selection, validated against the offline graph.
-- [ ] Add per-mission live routes/SLA state and mission selection to headquarters; its map currently shows the latest route observation.
+- [x] Add mission-indexed routes/SLA evaluations and persistent headquarters selection, with regression tests and local D1/SSE browser checks in both languages. See the [mission checkpoint](artifacts/reports/code-review/2026-09-05-mission-headquarters-checkpoint.md). This is read-only planning, not fleet dispatch acceptance.
 - [x] Verify retained public-key history against existing multi-leg receipts after credential rotation in independent-replica tests.
 - [ ] Verify physical device replacement and encrypted backlog recovery; old private keys are not recoverable from the public archive.
 - [ ] Reconcile final pitch/report claims and screenshots with the newly integrated build.

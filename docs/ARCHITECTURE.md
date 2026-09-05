@@ -12,6 +12,18 @@
 
 ## System context
 
+Headquarters projects routes and rendezvous by mission ID, not as one shared map
+state. A selected mission persists across client-side navigation. `SlaEvaluated`
+references the exact `RoutePlanned` event ID and must match its publisher, mission
+and simulation provenance. Complete evaluations include `WITHIN_SLA`, `BREACH`
+and `NO_ROUTE`; legacy breach-only events remain in history but do not establish
+current safety. Route estimates expire after five minutes. Future timestamps are
+flagged, while a same-origin/destination plan explicitly means zero travel, not a
+verified handoff. The browser's connection state is separate from data freshness.
+
+This projection is read-only. Android's optional publication does not replace
+encrypted mesh replication or authorize a vehicle assignment.
+
 ```mermaid
 flowchart LR
     A[Clinic phone\nBangla or English] <-->|Nearby encrypted messages| B[Relay and boat phone\nBangla or English]

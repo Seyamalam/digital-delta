@@ -1,12 +1,28 @@
 import type { PresentationObservation } from "./observer";
 
 export type ProjectedRoute = {
+  eventId: string;
+  sourceNodeId: string;
+  occurredAtUnixMs: number;
+  explanationCode?: string;
   vehicleId?: string;
   mode?: string;
   edgeIds: string[];
   etaMinutes?: number;
   simulated: boolean;
 };
+
+export type ProjectedMission = {
+  request?: PresentationObservation;
+  route?: ProjectedRoute;
+  rendezvous?: ProjectedRendezvous;
+};
+
+export type MissionSlaState = "WITHIN_SLA" | "BREACH" | "NO_ROUTE" | "STALE" | "CLOCK_SKEW" | "UNKNOWN";
+
+export function hasFeasibleRoute(route: ProjectedRoute | undefined): boolean {
+  return !!route && (route.edgeIds.length > 0 || (route.explanationCode === "ALREADY_AT_DESTINATION" && route.etaMinutes === 0));
+}
 
 export type ProjectedRendezvous = {
   candidateId?: string;
@@ -25,6 +41,9 @@ export type ObserverProjection = {
   rendezvous?: ProjectedRendezvous;
   requests: Map<string, PresentationObservation>;
   sources: Map<string, number>;
+  missions: Map<string, ProjectedMission>;
+  // Route IDs bind evaluations even when publication order differs from creation order.
+  evaluations: Map<string, PresentationObservation>;
 };
 
 export function projectObservations(observations: PresentationObservation[], previous?: ObserverProjection): ObserverProjection {
@@ -38,6 +57,8 @@ export function projectObservations(observations: PresentationObservation[], pre
     delayedVehicleIds: new Set(previous?.delayedVehicleIds),
     requests: new Map(previous?.requests),
     sources: new Map(previous?.sources),
+    missions: new Map(previous?.missions),
+    evaluations: new Map(previous?.evaluations),
   };
   const ordered = [...observations].sort((left, right) => left.sequence - right.sequence);
   for (const observation of ordered) {
@@ -49,6 +70,7 @@ export function projectObservations(observations: PresentationObservation[], pre
     if (observation.kind === "reliefRequestCreated") {
       const requestId = asString(value.requestId) ?? observation.eventId;
       projection.requests.set(requestId, observation);
+      projection.missions.set(requestId, { ...projection.missions.get(requestId), request: observation });
     }
     if (observation.kind === "edgeStatusChanged") {
       const edgeId = asString(value.edgeId);
@@ -68,12 +90,22 @@ export function projectObservations(observations: PresentationObservation[], pre
     }
     if (observation.kind === "routePlanned") {
       projection.route = {
+        eventId: observation.eventId,
+        sourceNodeId: observation.sourceNodeId,
+        occurredAtUnixMs: observation.occurredAtUnixMs,
+        explanationCode: asString(value.explanationCode),
         vehicleId: asString(value.vehicleId),
         mode: asString(value.mode),
         edgeIds: asStrings(value.edgeIds),
         etaMinutes: asNumber(value.etaMinutes),
         simulated: observation.simulated,
       };
+      const missionId = asString(value.missionId);
+      if (missionId) projection.missions.set(missionId, { ...projection.missions.get(missionId), route: projection.route });
+    }
+    if (observation.kind === "slaEvaluated") {
+      const routeEventId = asString(value.routeEventId);
+      if (routeEventId) projection.evaluations.set(evaluationKey(observation.sourceNodeId, routeEventId), observation);
     }
     if (observation.kind === "rendezvousPlanned") {
       projection.rendezvous = {
@@ -81,6 +113,8 @@ export function projectObservations(observations: PresentationObservation[], pre
         latitudeDegrees: asNumber(value.latitudeDegrees),
         longitudeDegrees: asNumber(value.longitudeDegrees),
       };
+      const missionId = asString(value.missionId);
+      if (missionId) projection.missions.set(missionId, { ...projection.missions.get(missionId), rendezvous: projection.rendezvous });
     }
     if (observation.kind === "vehicleStateChanged") {
       const vehicleId = asString(value.vehicleId);
@@ -92,6 +126,33 @@ export function projectObservations(observations: PresentationObservation[], pre
     }
   }
   return projection;
+}
+
+function evaluationKey(source: string, routeEventId: string) { return JSON.stringify([source, routeEventId]); }
+
+export function missionEvaluation(projection: ObserverProjection, missionId: string | undefined): PresentationObservation | undefined {
+  const route = missionId ? projection.missions.get(missionId)?.route : undefined;
+  const evaluation = route && projection.evaluations.get(evaluationKey(route.sourceNodeId, route.eventId));
+  return evaluation && evaluation.presentation?.missionId === missionId && evaluation.simulated === route?.simulated ? evaluation : undefined;
+}
+
+/** A connection is not proof that a route estimate is current. Retain history without asserting safety. */
+export function missionSlaState(projection: ObserverProjection, missionId: string | undefined, now: number): MissionSlaState {
+  const route = missionId ? projection.missions.get(missionId)?.route : undefined;
+  if (!route) return "UNKNOWN";
+  if (route.occurredAtUnixMs > now) return "CLOCK_SKEW";
+  if (now - route.occurredAtUnixMs >= 300_000) return "STALE";
+  const evaluation = missionEvaluation(projection, missionId);
+  if (!evaluation) return "UNKNOWN";
+  if (evaluation.occurredAtUnixMs > now) return "CLOCK_SKEW";
+  if (evaluation.occurredAtUnixMs < route.occurredAtUnixMs) return "UNKNOWN";
+  const value = evaluation.presentation ?? {};
+  if (value.stateCode === "NO_ROUTE") return !hasFeasibleRoute(route) ? "NO_ROUTE" : "UNKNOWN";
+  const baseline = asNumber(value.baselineArrivalMinutes), slowed = asNumber(value.slowedArrivalMinutes), sla = asNumber(value.slaMinutes);
+  if (!hasFeasibleRoute(route) || baseline === undefined || slowed === undefined || sla === undefined || baseline < 0 || slowed < baseline || sla <= 0) return "UNKNOWN";
+  if (value.stateCode === "BREACH" && slowed > sla) return "BREACH";
+  if (value.stateCode === "WITHIN_SLA" && slowed <= sla) return "WITHIN_SLA";
+  return "UNKNOWN";
 }
 
 /** Two-hour forecast horizon; stale/future evidence stays in history, not active warnings. */

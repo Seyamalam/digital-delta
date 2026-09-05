@@ -50,16 +50,16 @@ class MissionPlanRecorder(
             .setMode(if (plan?.first == VehicleType.BOAT) TransportMode.TRANSPORT_MODE_WATERWAY else TransportMode.TRANSPORT_MODE_ROAD)
             .addAllEdgeIds(plan?.second?.edgeIds.orEmpty()).setEtaMinutes(plan?.second?.totalMinutes ?: 0)
             .setRiskAdjusted(plan?.second?.riskAdjusted ?: false)
-            .setExplanationCode(if (plan == null) "NO_FEASIBLE_GROUND_ROUTE" else "PACKAGED_NETWORK_ESTIMATE")).build()
-        val events = mutableListOf(route)
-        if (plan != null) {
-            val elapsed = ((now - request.createdAtUnixMs).coerceAtLeast(0) / 60_000).coerceAtMost(500_000).toInt()
-            val decision = TriageEngine().evaluate(priority, elapsed, plan.second.totalMinutes)
-            if (decision.willBreachSla) events += base().setSlaBreachPredicted(SlaBreachPredicted.newBuilder().setMissionId(missionId)
-                .setPriority(PriorityClass.forNumber(priorityValue)).setBaselineEtaMinutes(decision.baselineArrivalMinutes)
-                .setSlowedEtaMinutes(decision.slowedArrivalMinutes).setSlaMinutes(priority.slaMinutes)
-                .setPolicyVersion("triage-v1-packaged-estimate")).build()
-        }
+            .setExplanationCode(when { plan == null -> "NO_FEASIBLE_GROUND_ROUTE"; plan.second.edgeIds.isEmpty() -> "ALREADY_AT_DESTINATION"; else -> "PACKAGED_NETWORK_ESTIMATE" })).build()
+        val elapsed = ((now - request.createdAtUnixMs).coerceAtLeast(0) / 60_000).coerceAtMost(500_000).toInt()
+        val decision = plan?.let { TriageEngine().evaluate(priority, elapsed, it.second.totalMinutes) }
+        val evaluation = base().setSlaEvaluated(SlaEvaluated.newBuilder().setMissionId(missionId)
+            .setRouteEventId(route.eventId).setPriority(PriorityClass.forNumber(priorityValue))
+            .setStateCode(when { decision == null -> "NO_ROUTE"; decision.willBreachSla -> "BREACH"; else -> "WITHIN_SLA" })
+            .setBaselineArrivalMinutes(decision?.baselineArrivalMinutes ?: 0)
+            .setSlowedArrivalMinutes(decision?.slowedArrivalMinutes ?: 0).setSlaMinutes(priority.slaMinutes)
+            .setPolicyVersion("triage-v1-packaged-estimate")).build()
+        val events = listOf(route, evaluation)
         for (event in events) database.operationLogDao().append(OperationEntity(event.eventId, missionId,
             event.bodyCase.name, event.toByteArray(), now))
         events

@@ -13,9 +13,14 @@ operational fleet/custody integration, target-phone measurements and three uncha
 full demos remain open. No milestone is promoted to Verified or Hardened solely
 because its engines compile. See [the follow-up review](artifacts/reports/code-review/2026-09-05-remediation-review.md).
 
+The mission-headquarters checkpoint adds mission-specific route/SLA projection,
+selection across sidebar routes, and explicit warning recovery. Local D1/SSE UI
+checks cover both languages at both projector sizes. Fleet/preemption confirmation
+for accepted missions remains open; this checkpoint does not promote that gate.
+
 ## Status vocabulary
 
-The next software checkpoint adds signed pre-handoff driver paths, multi-leg
+The custody software checkpoint added signed pre-handoff driver paths, multi-leg
 receipts, retained-cargo reconciliation and historical public credential storage.
 These are not generalized post-handoff reassignment or physical recovery evidence.
 The fair phones are confirmed as standard 4 GB RAM devices; models and OS versions

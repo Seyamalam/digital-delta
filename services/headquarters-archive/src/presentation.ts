@@ -10,17 +10,19 @@ export type PublicObservation = {
   presentation: Record<string, string | number | boolean | string[]>;
 };
 
-type Rule = "id" | "ids" | "bool" | "probability" | "percent" | "latitude" | "longitude" | "minutes" | "mode" | "priority" | "count";
+type Rule = "id" | "ids" | "bool" | "probability" | "percent" | "latitude" | "longitude" | "minutes" | "mode" | "priority" | "count" | "slaState";
 const fields: Record<PublicObservation["kind"], Record<string, Rule>> = {
   reliefRequestCreated: { requestId: "id", requesterNodeId: "id", originNodeId: "id", destinationNodeId: "id", cargoCount: "count" },
   routePlanned: { missionId: "id", vehicleId: "id", mode: "mode", edgeIds: "ids", etaMinutes: "minutes", riskAdjusted: "bool", explanationCode: "id" },
   edgeStatusChanged: { edgeId: "id", failed: "bool", reasonCode: "id", simulated: "bool" },
   edgeRiskPredicted: { edgeId: "id", probability: "probability", threshold: "probability", modelVersion: "id", simulatedInputs: "bool" },
   slaBreachPredicted: { missionId: "id", priority: "priority", baselineEtaMinutes: "minutes", slowedEtaMinutes: "minutes", slaMinutes: "minutes", policyVersion: "id" },
+  slaEvaluated: { missionId: "id", routeEventId: "id", priority: "priority", stateCode: "slaState", baselineArrivalMinutes: "minutes", slowedArrivalMinutes: "minutes", slaMinutes: "minutes", policyVersion: "id" },
   rendezvousPlanned: { missionId: "id", boatVehicleId: "id", droneVehicleId: "id", candidateId: "id", latitudeDegrees: "latitude", longitudeDegrees: "longitude", boatEtaMinutes: "minutes", droneEtaMinutes: "minutes", deliveryEtaMinutes: "minutes", projectedDroneBatteryPercent: "percent", reserveBatteryPercent: "percent", objectiveCode: "id", simulated: "bool" },
   vehicleStateChanged: { vehicleId: "id", mode: "mode", stateCode: "id", nodeId: "id", latitudeDegrees: "latitude", longitudeDegrees: "longitude", batteryPercent: "percent", simulated: "bool" },
 };
 const required: Record<PublicObservation["kind"], string[]> = {
+  slaEvaluated: Object.keys(fields.slaEvaluated),
   reliefRequestCreated: ["requestId", "destinationNodeId"], routePlanned: ["vehicleId", "mode", "edgeIds", "etaMinutes"], edgeStatusChanged: ["edgeId", "failed"], edgeRiskPredicted: ["edgeId", "probability"], slaBreachPredicted: ["missionId", "slowedEtaMinutes", "slaMinutes"], rendezvousPlanned: ["candidateId", "latitudeDegrees", "longitudeDegrees"], vehicleStateChanged: ["vehicleId", "stateCode"],
 };
 export const validIdentifier = (value: unknown): value is string => typeof value === "string" && /^[A-Za-z0-9][A-Za-z0-9._:-]{0,95}$/.test(value);
@@ -44,6 +46,15 @@ export function parsePublicObservation(value: unknown): PublicObservation | null
     if (!validate(rule, item)) return null;
     presentation[key] = item as string | number | boolean | string[];
   }
+  if (kind === "slaEvaluated") {
+    const { stateCode, priority, slaMinutes, baselineArrivalMinutes, slowedArrivalMinutes } = presentation;
+    const limits: Record<string, number> = { PRIORITY_CLASS_P0: 120, PRIORITY_CLASS_P1: 360, PRIORITY_CLASS_P2: 1440, PRIORITY_CLASS_P3: 4320 };
+    if (slaMinutes !== limits[String(priority)]) return null;
+    if (stateCode === "NO_ROUTE") {
+      if (baselineArrivalMinutes !== 0 || slowedArrivalMinutes !== 0) return null;
+    } else if (Number(slowedArrivalMinutes) < Number(baselineArrivalMinutes) ||
+      (stateCode === "BREACH") !== (Number(slowedArrivalMinutes) > Number(slaMinutes))) return null;
+  }
   return { eventId: value.eventId, sourceNodeId: value.sourceNodeId, kind, occurredAtUnixMs: value.occurredAtUnixMs as number, simulated: value.simulated, ...(value.scenarioSeed ? { scenarioSeed: value.scenarioSeed as string } : {}), presentation };
 }
 
@@ -53,6 +64,7 @@ function validate(rule: Rule, value: unknown): boolean {
   if (rule === "bool") return typeof value === "boolean";
   if (rule === "mode") return ["TRANSPORT_MODE_ROAD", "TRANSPORT_MODE_WATERWAY", "TRANSPORT_MODE_AIRWAY"].includes(String(value));
   if (rule === "priority") return /^PRIORITY_CLASS_P[0-3]$/.test(String(value));
+  if (rule === "slaState") return ["WITHIN_SLA", "BREACH", "NO_ROUTE"].includes(String(value));
   if (typeof value !== "number" || !Number.isFinite(value)) return false;
   if (rule === "probability") return value >= 0 && value <= 1;
   if (rule === "percent") return value >= 0 && value <= 100;

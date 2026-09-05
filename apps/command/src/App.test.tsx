@@ -21,6 +21,22 @@ function english() { fireEvent.click(screen.getByRole("button", { name: "English
 function workspace(page: React.ReactNode, connect: (options: ObserverConnectOptions) => () => void = idle) { return <OperationsProvider observerConnect={connect}><OperationsShell>{page}</OperationsShell></OperationsProvider>; }
 
 describe("routed headquarters", () => {
+  it("uses reception time for a live no-route update between display clock ticks", () => {
+    vi.useFakeTimers();
+    try {
+      let receive: ObserverConnectOptions | undefined;
+      const connector = (options: ObserverConnectOptions) => { receive = options; return () => undefined; };
+      render(workspace(<MissionsPage />, connector)); english();
+      act(() => vi.advanceTimersByTime(10_000));
+      act(() => {
+        receive?.onObservation({ ...event(1, "routePlanned", { missionId: "M1", edgeIds: [], etaMinutes: 0 }), occurredAtUnixMs: Date.now() });
+        receive?.onObservation({ ...event(2, "slaEvaluated", { missionId: "M1", routeEventId: "event-1", stateCode: "NO_ROUTE" }), occurredAtUnixMs: Date.now() });
+      });
+      expect(screen.getAllByText("No feasible ground route")).toHaveLength(2);
+      expect(screen.queryByText("Check device clock")).not.toBeInTheDocument();
+      expect(screen.queryByText(/Arrival with 30% route slowdown/)).not.toBeInTheDocument();
+    } finally { vi.useRealTimers(); }
+  });
   it("offers actual sidebar URLs and keeps the overview focused", () => {
     render(workspace(<OverviewPage />));
     expect(document.documentElement.lang).toBe("bn");
@@ -68,7 +84,7 @@ describe("routed headquarters", () => {
   });
 
   it("separates live observations from exercise state and labels airway correctly", () => {
-    const connector = (options: ObserverConnectOptions) => { options.onStatus("live"); options.onObservation(event(1, "routePlanned", { mode: "TRANSPORT_MODE_AIRWAY", edgeIds: ["A2"], etaMinutes: 8 })); return () => undefined; };
+    const connector = (options: ObserverConnectOptions) => { options.onStatus("live"); options.onObservation(event(1, "routePlanned", { missionId: "M1", mode: "TRANSPORT_MODE_AIRWAY", edgeIds: ["A2"], etaMinutes: 8 })); return () => undefined; };
     render(workspace(<OverviewPage />, connector)); english();
     expect(screen.getAllByText("Drone • A2")).toHaveLength(2);
     expect(screen.queryByText("P0 · SIMULATED")).not.toBeInTheDocument();
@@ -78,8 +94,8 @@ describe("routed headquarters", () => {
 
   it("searches missions and activity independently", () => {
     const view = render(workspace(<MissionsPage />)); english();
-    fireEvent.change(screen.getByRole("textbox", { name: "Find a request" }), { target: { value: "missing" } });
-    expect(screen.getByText("No matching requests")).toBeVisible();
+    fireEvent.change(screen.getByRole("textbox", { name: "Find a mission" }), { target: { value: "missing" } });
+    expect(screen.getByText("No matching missions")).toBeVisible();
     view.rerender(workspace(<ActivityPage />));
     fireEvent.change(screen.getByRole("textbox", { name: "Search events" }), { target: { value: "exercise-route" } });
     expect(screen.getByText("Route plan received")).toBeVisible();
@@ -111,5 +127,25 @@ describe("routed headquarters", () => {
 
   it("resets scenario effects without changing the connection choice", () => {
     expect(scenarioReducer({ ...initialScenario, observerConnected: false, failedRoad: true }, { type: "RESET" })).toEqual({ ...initialScenario, observerConnected: false });
+  });
+
+  it("keeps the selected mission through new observations and navigation, then resets on a new stream", () => {
+    let receive: ObserverConnectOptions | undefined;
+    const connector = (options: ObserverConnectOptions) => { receive = options; return () => undefined; };
+    const view = render(workspace(<MissionsPage />, connector)); english();
+    act(() => {
+      receive?.onObservation(event(1, "routePlanned", { missionId: "M1", mode: "TRANSPORT_MODE_ROAD", edgeIds: ["E5"], etaMinutes: 120 }));
+      receive?.onObservation(event(2, "routePlanned", { missionId: "M2", mode: "TRANSPORT_MODE_WATERWAY", edgeIds: ["E6"], etaMinutes: 150 }));
+    });
+    fireEvent.click(screen.getByRole("button", { name: "Select mission M2" }));
+    act(() => receive?.onObservation(event(3, "routePlanned", { missionId: "M1", mode: "TRANSPORT_MODE_ROAD", edgeIds: ["E1"], etaMinutes: 20 })));
+    expect(screen.getByRole("button", { name: "Select mission M2" })).toHaveAttribute("aria-pressed", "true");
+    expect(screen.getByText("Boat • E6")).toBeVisible();
+    view.rerender(workspace(<OverviewPage />, connector));
+    expect(screen.getAllByText("Boat • E6")).toHaveLength(2);
+    expect(screen.queryByText("Truck • E1")).not.toBeInTheDocument();
+    act(() => receive?.onReset?.());
+    expect(screen.getByText("No mission received")).toBeVisible();
+    expect(screen.queryByText("Boat • E6")).not.toBeInTheDocument();
   });
 });

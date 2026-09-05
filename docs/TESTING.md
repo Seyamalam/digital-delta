@@ -17,6 +17,22 @@ camera and target-phone performance acceptance remain unverified.
 
 ## Custody checkpoint gate — 2026-09-05
 
+### Later mission-headquarters gate
+
+After the custody checkpoint, the full local connected gate passed **102 JVM tests,
+78 connected Android tests, 27 dashboard tests and 12 Worker tests** on the
+Pixel_10_Pro_XL AVD running Android 16. Debug/minified release assembly, Go
+race/vet/build, Protobuf/localization/map/model checks, Next.js production build and
+Wrangler dry run passed too. See the [mission checkpoint](../artifacts/reports/code-review/2026-09-05-mission-headquarters-checkpoint.md)
+and [gate log](../artifacts/reports/verification/2026-09-05-mission-headquarters-local.log).
+
+Regression coverage includes mission isolation, out-of-order route/evaluation
+publication, publisher/route binding, warning recovery, no-route and same-node
+journeys, stale/future timestamps, selection through navigation and reset, and the
+fresh-event clock-tick regression found in the live browser check. The connected
+test also verifies durable Android publication of all three SLA outcomes after an
+offline/restart cycle. Physical-device acceptance remains separate.
+
 The follow-up local gate passed **102 JVM tests, 78 connected Android tests,
 21 dashboard tests and 11 Worker tests**, with debug/minified release assembly,
 fresh Go race/vet/build checks, schema/localization/map/model checks, Next.js build

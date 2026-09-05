@@ -88,6 +88,36 @@ telemetry.
 This tests observer isolation and replay, not physical three-phone independence.
 That still requires a separate laptop-off test on real phones.
 
+## Mission selection and SLA check
+
+Select a row in `/missions`, then follow **Open selected route** or the sidebar.
+Other missions' updates must leave the selection unchanged. A full browser reload
+rebuilds the log and selects its first mission; a stream-generation reset clears
+the selection. Unscoped legacy routes stay in history instead of being assigned
+to an unrelated request.
+
+`SlaEvaluated` binds a complete result to one route event. Its arrival figures
+include elapsed time since request creation. The UI displays the estimate's
+source, time and simulation status. No feasible route has no ETA; zero travel is
+reserved for explicitly coincident origin and destination. Neither proves custody.
+
+For a local-only browser regression exercise, start an isolated local D1 store
+on port 7071 using the commands above with a separate `--persist-to` directory.
+Keep any existing store intact. Then run from the repository root:
+
+```bash
+node scripts/observer-mission-qa.mjs initial
+node scripts/observer-mission-qa.mjs recover
+node scripts/observer-mission-qa.mjs no-route
+```
+
+Inspect the UI between commands. `initial` adds two visibly simulated QA missions.
+Select QA-SUPPLIES before `recover`: QA-MEDICAL's update must not steal selection.
+Select QA-MEDICAL before `no-route`: its ETA must become unavailable without a
+false clock warning. The script reads ignored local credentials, prints none,
+and publishes only to loopback. These fixtures test the real HTTP/D1/SSE bridge,
+not vehicle telemetry or three physical phones.
+
 ## Hosted deployment
 
 The package retains its existing Worker/database names for migration continuity.

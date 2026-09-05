@@ -9,6 +9,7 @@ import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter }
 import { Empty, EmptyHeader, EmptyTitle, EmptyDescription } from "@/components/ui/empty";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useOperations } from "./OperationsProvider";
+import type { MissionSlaState } from "../projection";
 
 const GeographicMap = lazy(() => import("../OfflineDeltaMap").then((m) => ({ default: m.OfflineDeltaMap })));
 
@@ -21,10 +22,12 @@ export function NoData({ title, detail }: { title: string; detail: string }) {
 }
 
 export function MapPanel({ full = false }: { full?: boolean }) {
-  const { language, edgeIds, failedEdges, edgeRisks, exercise, projection, routeLabel, say } = useOperations();
+  const { language, edgeIds, failedEdges, edgeRisks, exercise, selectedRoute, selectedMission, selectedMissionId, slaState, routeLabel, say } = useOperations();
   return <Card className={full ? "hq-map-panel hq-map-panel-full" : "hq-map-panel"}>
-    <CardHeader><CardTitle>{say("Sylhet operating area", "সিলেট কার্যক্রম এলাকা")}</CardTitle><CardDescription>{say("OpenStreetMap geography · locally bundled · not a flood forecast", "OpenStreetMap ভূগোল · স্থানীয় সংরক্ষণ · বন্যার পূর্বাভাস নয়")}</CardDescription></CardHeader>
-    <CardContent><Suspense fallback={<Skeleton className="h-full min-h-96 w-full" />}><GeographicMap useWaterRoute={false} showRisk={false} language={language} exerciseOverlay={exercise} simulated={exercise || (projection.route?.simulated ?? false)} edgeIds={edgeIds} failedEdgeIds={[...failedEdges]} edgeRisks={Object.fromEntries(edgeRisks)} rendezvous={exercise ? undefined : projection.rendezvous} /></Suspense></CardContent>
+    <CardHeader><CardTitle>{say("Sylhet operating area", "সিলেট কার্যক্রম এলাকা")}</CardTitle><CardDescription>{say("OpenStreetMap geography · locally bundled · not a flood forecast", "OpenStreetMap ভূগোল · স্থানীয় সংরক্ষণ · বন্যার পূর্বাভাস নয়")}{!exercise && selectedMissionId && <> · {selectedMissionId}</>}</CardDescription>
+      {!exercise && selectedRoute && <div className="flex flex-wrap gap-2"><SlaBadge state={slaState} /><Badge variant="secondary">{selectedRoute.simulated ? say("Simulated route estimate", "সিমুলেটেড পথের হিসাব") : say("Field route snapshot", "ফিল্ড পথের সংরক্ষিত হিসাব")}</Badge></div>}
+    </CardHeader>
+    <CardContent><Suspense fallback={<Skeleton className="h-full min-h-96 w-full" />}><GeographicMap useWaterRoute={false} showRisk={false} language={language} exerciseOverlay={exercise} simulated={exercise || (selectedRoute?.simulated ?? false)} edgeIds={edgeIds} failedEdgeIds={[...failedEdges]} edgeRisks={Object.fromEntries(edgeRisks)} rendezvous={exercise ? undefined : selectedMission?.rendezvous} /></Suspense></CardContent>
     <CardFooter><span><Route aria-hidden="true" />{routeLabel}</span>{!full && <Button asChild variant="outline"><Link href="/map">{say("Open map", "মানচিত্র খুলুন")}<ArrowUpRight data-icon="inline-end" /></Link></Button>}</CardFooter>
   </Card>;
 }
@@ -33,18 +36,37 @@ export function Metrics() {
   const { exercise, projection, eta, failedEdges, edgeRisks, say } = useOperations();
   const items = [
     { title: say("Relief requests", "ত্রাণ অনুরোধ"), value: exercise ? "01" : String(projection.requests.size).padStart(2, "0"), detail: exercise ? say("P0 · exercise mission", "P0 · মহড়ার মিশন") : say("Requests received by observer", "পর্যবেক্ষকে প্রাপ্ত অনুরোধ"), icon: Route },
-    { title: say("Route ETA", "পথের আনুমানিক সময়"), value: eta === undefined ? "—" : `${eta}`, detail: say("Minutes · latest route estimate", "মিনিট · সর্বশেষ পথের হিসাব"), icon: Clock3 },
+    { title: say("Route ETA", "পথের আনুমানিক সময়"), value: eta === undefined ? "—" : `${eta}`, detail: say("Minutes · selected mission snapshot", "মিনিট · নির্বাচিত মিশনের সংরক্ষিত হিসাব"), icon: Clock3 },
     { title: say("Attention needed", "মনোযোগ প্রয়োজন"), value: String(new Set([...failedEdges, ...edgeRisks.keys()]).size).padStart(2, "0"), detail: say("Closed or predicted-risk edges", "বন্ধ বা ঝুঁকি-পূর্বাভাসের পথ"), icon: TriangleAlert },
     { title: say("Reporting sources", "তথ্য প্রদানকারী উৎস"), value: exercise ? "03" : String(projection.sources.size).padStart(2, "0"), detail: say("Seen sources, not online presence", "প্রাপ্ত উৎস, অনলাইন উপস্থিতি নয়"), icon: RadioTower },
   ];
   return <section className="hq-metrics" aria-label={say("Operational summary", "কার্যক্রম সারসংক্ষেপ")}>{items.map(({ title, value, detail, icon: Icon }) => <Card key={title}><CardHeader><CardDescription>{title}</CardDescription><Icon className="hq-metric-icon" aria-hidden="true" /></CardHeader><CardContent><strong className="hq-metric-number">{value}</strong><p>{detail}</p></CardContent></Card>)}</section>;
 }
 
-export function MissionSummary() {
-  const { exercise, projection, routeLabel, eta, failedEdges, edgeRisks, say } = useOperations();
+export function MissionSummary({ linkToMap = false }: { linkToMap?: boolean }) {
+  const { exercise, selectedMission, selectedMissionId, selectedRoute, evaluation, slaState, routeLabel, eta, failedEdges, edgeRisks, say, language } = useOperations();
   return <Card><CardHeader><CardDescription>{say("PRIORITY WORK", "অগ্রাধিকার কাজ")}</CardDescription><CardTitle>{say("Relief delivery", "ত্রাণ সরবরাহ")}</CardTitle></CardHeader><CardContent>
-    {!exercise && !projection.route && !projection.requests.size ? <NoData title={say("No mission received", "কোনো মিশন পাওয়া যায়নি")} detail={say("Waiting for field observations. Seeded missions are kept separate.", "ফিল্ড পর্যবেক্ষণের অপেক্ষায়। মহড়ার মিশন আলাদা রাখা হয়।")} /> : <div className="hq-mission-summary"><Badge variant="secondary">{exercise ? say("P0 · SIMULATED", "P0 · সিমুলেটেড") : projection.includesSimulated ? say("SIMULATED OBSERVATIONS", "সিমুলেটেড পর্যবেক্ষণ") : say("FIELD RECORD", "ফিল্ড রেকর্ড")}</Badge><h3>{exercise ? say("Blood & medicine to Companyganj", "কোম্পানীগঞ্জে রক্ত ও ওষুধ") : projection.route?.vehicleId ?? say("Incoming relief request", "প্রাপ্ত ত্রাণ অনুরোধ")}</h3><p>{routeLabel}</p><dl><div><dt>{say("ETA", "আনুমানিক সময়")}</dt><dd>{eta === undefined ? "—" : `${eta} ${say("min", "মিনিট")}`}</dd></div><div><dt>{say("Closures", "বন্ধ পথ")}</dt><dd>{failedEdges.size}</dd></div><div><dt>{say("Predicted risks", "পূর্বাভাসিত ঝুঁকি")}</dt><dd>{edgeRisks.size}</dd></div></dl></div>}
-  </CardContent><CardFooter><Button asChild variant="outline"><Link href="/missions">{say("Review missions", "মিশন দেখুন")}<ArrowUpRight data-icon="inline-end" /></Link></Button></CardFooter></Card>;
+    {!exercise && !selectedMission ? <NoData title={say("No mission received", "কোনো মিশন পাওয়া যায়নি")} detail={say("Waiting for field observations. Seeded missions are kept separate.", "ফিল্ড পর্যবেক্ষণের অপেক্ষায়। মহড়ার মিশন আলাদা রাখা হয়।")} /> : <div className="hq-mission-summary">
+      <Badge variant="secondary">{exercise ? say("P0 · SIMULATED", "P0 · সিমুলেটেড") : selectedRoute ? selectedRoute.simulated ? say("SIMULATED ROUTE ESTIMATE", "সিমুলেটেড পথের হিসাব") : say("FIELD ROUTE SNAPSHOT", "ফিল্ড পথের সংরক্ষিত হিসাব") : say("REQUEST · NO ROUTE YET", "অনুরোধ · পথ এখনো আসেনি")}</Badge>
+      <h3>{exercise ? say("Blood & medicine to Companyganj", "কোম্পানীগঞ্জে রক্ত ও ওষুধ") : selectedMissionId}</h3><p>{routeLabel}</p>
+      {!exercise && <><SlaBadge state={slaState} /><p>{say("Read-only planning snapshot, not a vehicle assignment or proof of delivery.", "শুধু দেখার পরিকল্পনা। এটি যান বরাদ্দ বা সরবরাহের প্রমাণ নয়।")}</p>
+        {selectedRoute && <p>{say("Route source", "পথের উৎস")}: {selectedRoute.sourceNodeId} · <time dateTime={new Date(selectedRoute.occurredAtUnixMs).toISOString()}>{new Date(selectedRoute.occurredAtUnixMs).toLocaleString(language === "bn" ? "bn-BD" : "en-GB", { timeZone: "Asia/Dhaka" })}</time> · {say("Refresh required after 5 minutes", "৫ মিনিট পর নতুন হিসাব প্রয়োজন")}</p>}
+        {evaluation && evaluation.presentation?.stateCode !== "NO_ROUTE" && <p>{say("Arrival with 30% route slowdown", "পথে ৩০% বিলম্বে পৌঁছানোর সময়")}: {String(evaluation.presentation?.slowedArrivalMinutes)} / {String(evaluation.presentation?.slaMinutes)} {say("min from request creation", "মিনিট, অনুরোধ তৈরির পর থেকে")}</p>}</>}
+      <dl><div><dt>{say("ETA", "আনুমানিক সময়")}</dt><dd>{eta === undefined ? "—" : `${eta} ${say("min", "মিনিট")}`}</dd></div><div><dt>{say("Closures", "বন্ধ পথ")}</dt><dd>{failedEdges.size}</dd></div><div><dt>{say("Predicted risks", "পূর্বাভাসিত ঝুঁকি")}</dt><dd>{edgeRisks.size}</dd></div></dl></div>}
+  </CardContent><CardFooter><Button asChild variant="outline"><Link href={linkToMap ? "/map" : "/missions"}>{linkToMap ? say("Open selected route", "নির্বাচিত পথ খুলুন") : say("Review missions", "মিশন দেখুন")}<ArrowUpRight data-icon="inline-end" /></Link></Button></CardFooter></Card>;
+}
+
+export function SlaBadge({ state }: { state: MissionSlaState }) {
+  const { say } = useOperations();
+  const labels: Record<MissionSlaState, string> = {
+    WITHIN_SLA: say("Within SLA at evaluation", "হিসাবের সময় SLA-এর মধ্যে"),
+    BREACH: say("SLA breach predicted", "SLA অতিক্রমের পূর্বাভাস"),
+    NO_ROUTE: say("No feasible ground route", "ব্যবহারযোগ্য স্থল বা নৌপথ নেই"),
+    STALE: say("Stale estimate · replan needed", "পুরোনো হিসাব · নতুন পরিকল্পনা দরকার"),
+    CLOCK_SKEW: say("Check device clock", "ডিভাইসের সময় যাচাই করুন"),
+    UNKNOWN: say("SLA not evaluated", "SLA মূল্যায়ন হয়নি"),
+  };
+  return <Badge variant={state === "BREACH" || state === "NO_ROUTE" ? "destructive" : "outline"}>{labels[state]}</Badge>;
 }
 
 export function ActivityList({ limit = 100, query = "" }: { limit?: number; query?: string }) {
@@ -55,6 +77,7 @@ export function ActivityList({ limit = 100, query = "" }: { limit?: number; quer
     ...(state.failedRoad ? [{ eventId: "exercise-closure", kind: "edgeStatusChanged", sourceNodeId: "N2", sequence: 3, simulated: true, occurredAtUnixMs: Date.UTC(2026, 3, 12, 2, 1, 22) }] : []),
   ];
   const names: Record<string, string> = {
+    slaEvaluated: say("SLA evaluated", "SLA মূল্যায়ন হয়েছে"), slaBreachPredicted: say("SLA breach predicted", "SLA অতিক্রমের পূর্বাভাস"),
     reliefRequestCreated: say("Relief request received", "ত্রাণ অনুরোধ গ্রহণ করা হয়েছে"), routePlanned: say("Route plan received", "পথের পরিকল্পনা গ্রহণ করা হয়েছে"), edgeStatusChanged: say("Edge status changed", "পথের অবস্থা পরিবর্তিত"), edgeRiskPredicted: say("Route risk prediction", "পথের ঝুঁকি পূর্বাভাস"), vehicleStateChanged: say("Vehicle state changed", "যানের অবস্থা পরিবর্তিত"), rendezvousPlanned: say("Handoff plan received", "হস্তান্তর পরিকল্পনা গ্রহণ করা হয়েছে"),
   };
   const events = (exercise ? seeded : observations).filter((item) => `${item.eventId} ${item.sourceNodeId} ${item.kind} ${names[item.kind] ?? ""}`.toLowerCase().includes(query.toLowerCase())).slice(-limit).reverse();

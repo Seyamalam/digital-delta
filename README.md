@@ -176,7 +176,7 @@ They exercise separate replicas on one emulator, not three physical radios.
 Remaining release gates include:
 
 - Physical three-phone request/edit/custody propagation and relay recovery with laptop off.
-- Generalized driver assignment, multi-hop operational custody and a reconciliation workflow for edits crossing delivery.
+- Live bilingual checks of the implemented driver-path/reconciliation dialogs, plus generalized post-handoff reassignment recovery.
 - Accepted-mission integration of fleet/preemption controls beyond the labelled exercises.
 - Target-phone memory/latency measurements and real camera checks.
 - Fresh UI evidence, human accessibility review and three unchanged offline passes.
@@ -194,3 +194,10 @@ it is not a physical-phone measurement. See the dated reports in `artifacts/`.
 All environment and vehicle scenarios remain visibly simulated. Bundled
 OpenStreetMap geography and road/waterway polylines are real map data, not proof
 that any road is passable or any shelter is currently safe.
+
+Headquarters now keeps each mission's route and SLA separately. Selecting a mission
+in `/missions` carries its map/ETA into other sidebar pages. Android records a
+route-bound SLA result for breach, within-SLA and no-route cases; old or unrelated
+evaluations cannot clear the selected route's warning. Estimates older than five
+minutes require replanning. See the [mission checkpoint](artifacts/reports/code-review/2026-09-05-mission-headquarters-checkpoint.md)
+for local evidence and remaining fleet work.

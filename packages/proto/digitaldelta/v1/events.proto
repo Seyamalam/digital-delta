@@ -94,6 +94,19 @@ message SlaBreachPredicted {
   string policy_version = 6;
 }
 
+// A complete evaluation bound to one route snapshot, including a cleared warning.
+// Arrival minutes include time elapsed since the request, not just journey time.
+message SlaEvaluated {
+  string mission_id = 1;
+  string route_event_id = 2;
+  PriorityClass priority = 3;
+  string state_code = 4; // WITHIN_SLA, BREACH, or NO_ROUTE
+  uint32 baseline_arrival_minutes = 5;
+  uint32 slowed_arrival_minutes = 6;
+  uint32 sla_minutes = 7;
+  string policy_version = 8;
+}
+
 message PreemptionConfirmed {
   string mission_id = 1;
   string urgent_cargo_id = 2;
@@ -223,5 +236,6 @@ message DomainEvent {
     SignedAuthorizationAuditEntry authorization_audit = 32;
     SignedCredentialRevocation credential_revoked = 33;
     CustodyReconciled custody_reconciled = 34;
+    SlaEvaluated sla_evaluated = 35;
   }
 }
