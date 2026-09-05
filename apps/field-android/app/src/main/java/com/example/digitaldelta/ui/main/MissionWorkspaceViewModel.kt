@@ -33,6 +33,7 @@ data class FieldMission(
     val canResolve: Boolean,
     val delivered: Boolean,
     val custodyNeedsReconciliation: Boolean,
+    val canRecordPlan: Boolean,
 )
 
 @HiltViewModel
@@ -48,6 +49,8 @@ class MissionWorkspaceViewModel @Inject constructor(
     private val publisher = MissionEventPublisher(database, profiles, protector,
         AndroidEnvelopeSecurity(keys, database.recipientKeyDao(), trust)) { com.example.digitaldelta.service.ObserverPublication.schedule(context) }
     private val graph by lazy { SylhetMapParser().parse(context.assets.open("sylhet_map.json").bufferedReader().use { it.readText() }).graph }
+    private val planRecorder by lazy { MissionPlanRecorder(database, profiles, keys, graph) { com.example.digitaldelta.service.ObserverPublication.schedule(context) } }
+    val recordedPlan = MutableStateFlow<String?>(null)
     val busy = MutableStateFlow(false)
     val failed = MutableStateFlow(false)
     val selectedMission = selection.missionId
@@ -82,12 +85,15 @@ class MissionWorkspaceViewModel @Inject constructor(
                 canEdit = receipt == null && active && (coordinator || event.actorIdentityId == profile.identityId || (profile.role == com.example.digitaldelta.proto.v1.IdentityRole.IDENTITY_ROLE_HOSPITAL && request.destinationNodeId == profile.nodeId)) && conflicts.none { it.missionId == operation.missionId },
                 canResolve = coordinator,
                 delivered = receipt != null,
-                custodyNeedsReconciliation = pinnedIds != null && missionHistory.any { it.eventType != "CUSTODY_TRANSFER" && it.eventId !in pinnedIds })
+                custodyNeedsReconciliation = pinnedIds != null && missionHistory.any { it.eventType != "CUSTODY_TRANSFER" && it.eventId !in pinnedIds },
+                canRecordPlan = active && receipt == null && conflicts.none { it.missionId == operation.missionId } &&
+                    (profile.nodeId in request.participantNodeIdsList || profile.nodeId in setOf(request.requesterNodeId, request.originNodeId, request.destinationNodeId)))
         }
     }.flowOn(Dispatchers.IO).stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyList())
 
     fun edit(id: String, field: MissionField, value: String) = act { publisher.edit(id, field, value) }
     fun resolve(id: String, side: ConflictSide) = act { publisher.resolve(id, side) }
+    fun recordPlan(id: String) = act { planRecorder.record(id); recordedPlan.value = id }
     private fun act(action: suspend () -> Unit) {
         if (busy.value) return
         busy.value = true; failed.value = false

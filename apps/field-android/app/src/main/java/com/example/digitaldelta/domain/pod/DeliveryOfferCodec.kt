@@ -125,7 +125,9 @@ class DeliveryOfferCodec {
             .setSenderSigningPublicKeyDer(ByteString.copyFrom(signer.publicKeyDer))
             .setSenderSignature(signature)
             .build()
-        return CODE_PREFIX + Base64.getUrlEncoder().withoutPadding().encodeToString(signed.toByteArray())
+        val code = CODE_PREFIX + Base64.getUrlEncoder().withoutPadding().encodeToString(signed.toByteArray())
+        require(code.length <= 16_384) { "delivery offer is too large" }
+        return code
     }
 
     fun decodeCode(code: String): SignedDeliveryOffer {

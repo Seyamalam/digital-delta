@@ -13,15 +13,18 @@ is retained behind `--legacy-observer` for migration comparisons, not normal use
   arbitrary summaries, or unknown presentation fields.
 - Publication requires a source-bound bearer secret in `PUBLISHER_KEYS`.
   This authenticates the enrolled collector, **not** each originating field event.
-  Android's signed-event publisher is not yet integrated.
+  Android publishes its locally authored request and recorded planning summaries;
+  received mesh contents are not indiscriminately republished.
 - D1 assigns monotonically increasing sequences. Repeating identical event IDs is
   idempotent; changing their contents returns 409. Sequences may contain gaps.
 - Public reads contain only approved presentation metadata. Do not publish sensitive
   locations or identifying medical details to the hosted instance.
 - Exact CORS origins, a 16 KiB streamed byte limit, numeric/coordinate validation,
   and publisher rate limits apply. CORS alone is not authentication.
-- Streamed history is ascending. EventSource resumes with Last-Event-ID; full reload
-  rebuilds from sequence zero. Each stream bounds its D1 polling then reconnects.
+- Streamed history is ascending. EventSource resumes with `generation:sequence`
+  Last-Event-ID; full reload rebuilds from sequence zero. A generation change clears
+  the old projection and cursor, including when the replacement log is empty.
+  Each stream bounds its D1 polling then reconnects.
 - Seeded data is explicitly simulated even when received over a real connection.
 - Field Room operations, routing, custody and mesh do not call this service.
 
@@ -52,6 +55,30 @@ local dashboard. Publisher tokens must never be bundled in Next.js or committed.
 
 ## Disconnect and replay
 
+### Android publication
+
+The identity/settings screen accepts a separately provisioned configuration containing
+`endpoint`, `sourceNodeId` and `token`. Use a dedicated source-bound publisher token,
+not the public browser. Android encrypts the stored configuration with a Keystore AES
+key. Release requires HTTPS; debug allows explicit localhost/emulator HTTP addresses
+for local QA. Enabling this optional channel does not enable a field command channel.
+
+Create an accepted request normally. In Missions, **Record current planning estimate**
+saves its computed route and SLA summary; the action works while disconnected.
+WorkManager drains the durable operation log when publication is configured and a
+network is available. It records per-destination outcomes, retries transient failures,
+and deduplicates with the same event ID after reconnect/restart. Cargo contents,
+request notes and cryptographic material are excluded. A saved plan is not proof
+that its summary has reached headquarters; inspect Activity for its event ID.
+
+The September 5 emulator HTTP test reached an isolated local Hono/D1 instance, and
+its actual event IDs were visible in the browser. The test configuration was removed
+from the debug assets afterwards. No production deployment or field-radio test is
+implied. The standard `make demo` feed below is a labelled seeded exercise, not phone
+telemetry.
+
+### Seeded observer exercise
+
 1. Run `node scripts/observer-local.mjs seed fair-pass-01`.
 2. Open `/network` and disconnect the dashboard.
 3. Run `node scripts/observer-local.mjs seed fair-pass-02`.
@@ -64,10 +91,17 @@ That still requires a separate laptop-off test on real phones.
 ## Hosted deployment
 
 The package retains its existing Worker/database names for migration continuity.
-Migration 0002 adds an authenticated-publication log; old anonymous archive rows
+Migration 0002 adds an authenticated-publication log; migration 0003 adds the stream
+generation. Old anonymous archive rows
 are deliberately not promoted into it. Configure a source-to-secret JSON object
 through `wrangler secret put PUBLISHER_KEYS`, review exact allowed origins, apply
 remote migrations, and deploy. Hosted publishers must use HTTPS.
+
+If an operator deliberately replaces or clears an observation log, rotate the
+singleton `observer_stream.generation` in the same database transaction. Do not
+reuse an old generation with a reset sequence. Normal deployment/restart must
+preserve both the log and generation. Deleting field data is never part of an
+observer reset.
 
 The implementation has been tested in local workerd/D1 and dry-run bundled.
 A new production deployment is not implied by a local test or dry run. The checked

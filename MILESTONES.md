@@ -2,6 +2,17 @@
 
 All eight modules remain in scope. Milestones control build order and evidence, not whether a module exists.
 
+## September 5 remediation status
+
+The dated evidence paragraphs below are historical checkpoints, not a current
+completion claim. The active observer is Hono/Workers with D1; Go is an explicitly
+reduced loopback load harness. Native accepted requests, three-writer replication,
+version-pinned operational receipts and optional Android publication now have
+independent-replica automated evidence. Physical three-phone acceptance, generalized
+operational fleet/custody integration, target-phone measurements and three unchanged
+full demos remain open. No milestone is promoted to Verified or Hardened solely
+because its engines compile. See [the follow-up review](artifacts/reports/code-review/2026-09-05-remediation-review.md).
+
 ## Status vocabulary
 
 | Status | Meaning |

@@ -38,7 +38,9 @@ import org.junit.Test
 
 @OptIn(ExperimentalTestApi::class)
 class ProductionRequestFlowTest {
-    @get:Rule
+    @get:Rule(order = 0)
+    val pin = ProductionPinRule()
+    @get:Rule(order = 1)
     val composeTestRule = createAndroidComposeRule<MainActivity>()
 
     @Test
@@ -119,10 +121,12 @@ class ProductionRequestFlowTest {
         composeTestRule.onNode(hasTestTag("authorization-audit-id")).assertExists()
         assertTrue(runBlocking { entryPoint.authorizationAuditTrail().verifyChain() })
 
+        val expectedPayload = runBlocking { entryPoint.database().operationLogDao().forMission(createdMissionId).single { it.eventType == "RELIEF_REQUEST_CREATED" }.payloadBytes }
+        val expectedHash = java.security.MessageDigest.getInstance("SHA-256").digest(expectedPayload)
         val envelope = runBlocking {
             entryPoint.database().outboxDao().pending(System.currentTimeMillis(), 100)
                 .map { MeshWireCodec.decode(it.wireBytes) }
-                .first { it.recipientNodeId == "N6" && !it.encryptedPayload.wrappedAes256Key.isEmpty }
+                .first { it.recipientNodeId == "N6" && it.payloadSha256.toByteArray().contentEquals(expectedHash) }
         }
         val encrypted = envelope.encryptedPayload
         val associatedData = "${envelope.messageId}|${envelope.senderNodeId}|${envelope.recipientNodeId}|${envelope.createdAtUnixMs}"

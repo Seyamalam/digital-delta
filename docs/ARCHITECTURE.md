@@ -16,16 +16,16 @@
 flowchart LR
     A[Clinic phone\nBangla or English] <-->|Nearby encrypted messages| B[Relay and boat phone\nBangla or English]
     B <-->|Nearby encrypted messages| C[Hospital or operator phone\nBangla or English]
-    A -. planned signed-event collector .-> P[Sanitized publisher]
-    B -. planned signed-event collector .-> P
-    C -. planned signed-event collector .-> P
+    A -. optional local publication queue .-> P[Sanitized publisher]
+    B -. optional local publication queue .-> P
+    C -. optional local publication queue .-> P
     E[Deterministic drill\nLaptop] -->|Allow-listed simulated observations| P
     P -->|Authenticated presentation HTTP| F[Hono Worker + D1\nlocal Wrangler or optional cloud]
     F -->|Read-only SSE replay| D[Delta Command\nLaptop and projector]
     F -. optional public feed .-> G[Vercel\nNext.js presentation]
 ```
 
-Every observer link can fail without stopping the field mission. The drill-to-observer path is implemented; the phone collector links are planned, not live evidence. Vercel and D1 never sit between field phones.
+Every observer link can fail without stopping field transactions. The drill and Android request publishers are implemented; an Android-created test request has reached local Hono/D1 and the browser. This is emulator/HTTP evidence, not physical three-phone independence. Vercel and D1 never sit between field phones.
 
 ## Components
 
@@ -171,9 +171,9 @@ For a non-simulated handoff, the QR's sender key is accepted only when it matche
 
 ### Dashboard observation
 
-The active observer uses Hono on Cloudflare Workers and ordered D1 storage. An enrolled collector converts domain events to allow-listed presentation JSON and publishes with a source-bound bearer token. Hono assigns sequences, rejects duplicate-ID content changes, and provides cursor replay through SSE. JSON exists only outside the mesh at this presentation boundary. No envelopes, ciphertext, credentials, signatures, arbitrary summaries or medical payload details are accepted. The Android signed-event collector is not yet connected; collector authentication must not be described as end-to-end field-event verification.
+The active observer uses Hono on Cloudflare Workers and ordered D1 storage. An enrolled Android publisher converts locally authored domain events to allow-listed presentation JSON and publishes with a source-bound bearer token. Hono assigns sequences, rejects duplicate-ID content changes, and provides generation-aware cursor replay through SSE. JSON exists only outside the mesh at this presentation boundary. No envelopes, ciphertext, credentials, signatures, arbitrary summaries or medical payload details are accepted. Collector authentication must not be described as end-to-end field-event signature verification.
 
-The Next.js headquarters dashboard is a disposable projection. Its root provider survives navigation across seven App Router workspaces; observer and exercise state are kept separate. When events arrive it rebuilds route, risk, rendezvous and vehicle state in sequence order. The visible recent log is bounded without discarding accumulated projections. A simulated observation remains labelled even over a live stream. Closing the SSE connection or laptop cannot block phone Room, routing, triage, queueing or custody. See docs/OBSERVER.md for the migration and remaining publisher gap.
+The Next.js headquarters dashboard is a disposable projection. Its root provider survives navigation across seven App Router workspaces; observer and exercise state are kept separate. When events arrive it rebuilds route, risk, rendezvous and vehicle state in sequence order. The visible recent log is bounded without discarding accumulated projections. A simulated observation remains labelled even over a live stream. Closing the SSE connection or laptop cannot block phone Room, routing, triage, queueing or custody. See docs/OBSERVER.md for configuration and publication limits.
 
 The Vercel deployment is a presentation surface, not the fair control plane. Locally, Wrangler runs Hono and persisted D1 on the laptop without cloud access. A hosted Hono instance is optional; its publisher credentials belong in Worker secrets, never the browser. Losing Vercel, Workers, D1, the laptop or internet does not stop field workflows. The old Go observer is available only with --legacy-observer for comparison. Local test evidence does not certify a production deployment.
 
@@ -386,8 +386,14 @@ cannot permanently starve new creation events. Transport receipts are not accept
 Operational custody uses persisted requests, current projections and provisioned
 participant credentials. The production dependency graph no longer uses same-phone
 demo aliases. M8 retains an explicitly simulated boat/drone exercise. The initial
-operational custodian is currently the requesting node; generalized driver assignment
-and returning the signed receipt to the sender are not yet closed.
+operational custodian is the request's origin node, not its requester. The normal
+clinic N4 → coordinator N1 → hospital N6 workflow freezes its reader set at creation.
+Edits, resolutions and independently signed receipts fan out to those readers.
+Receipt versions pin a canonical set of immutable mission-event IDs; missing
+revisions remain retryable. Later edits cannot rewrite an earlier custody chain.
+Local post-delivery edits/offers are blocked; a concurrent edit crossing a receipt
+is retained with a bilingual reconciliation warning. This is one origin-to-destination
+handoff, not generalized driver assignment or arbitrary multi-hop custody.
 
 Optional headquarters publication uses the operation log as durable work and
 `observer_publications` as its per-destination receipt ledger (Room schema 8).
@@ -396,8 +402,12 @@ source-bound token encrypted under an Android Keystore AES key. HTTPS is require
 in release; debug permits explicit emulator/loopback HTTP addresses. Publication
 failure cannot roll back field work. The Android allowlist currently covers request,
 route and SLA summaries; cargo details, free text, keys, signatures and mesh payloads
-are excluded. Only the request workflow currently schedules immediate publication;
-the periodic worker also drains eligible locally recorded events.
+are excluded. Requests, edits and resolutions schedule publication, though unsupported
+event kinds are filtered, not exposed. Missions also offers an explicit record-plan
+action that computes a fresh route/SLA snapshot from accepted state, commits it
+without network access and schedules publication. Packaged travel times are always
+labelled simulated, even for a non-simulated request. It neither assigns a vehicle
+nor invents road conditions. The periodic worker also drains eligible local events.
 
 Go's engineering workload is registered only as `ReducedMeshLoadHarnessService`,
 with separate request/response types and literal loopback binding. It does not

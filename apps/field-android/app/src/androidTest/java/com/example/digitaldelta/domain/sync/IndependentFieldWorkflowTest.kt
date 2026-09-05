@@ -83,6 +83,43 @@ class IndependentFieldWorkflowTest {
         store.aliases().toList().filter { it.startsWith("$namespace-") }.forEach(store::deleteEntry)
     }
 
+    @Test fun recordedMissionPlanUsesAcceptedDestinationAndSurvivesOfflinePublication() = runTest {
+        val (a, _, c) = setupPhones()
+        val submitted = DefaultReliefRequestSubmission(RoomRequestPersistence(a.db, applyLocalProjection = true), a.protector,
+            envelopeSigner = a.security).submit(ReliefRequestDraft(a.profile.nodeId, "N1", c.profile.nodeId,
+            listOf(CargoDraft("medicine", 5, "pack")), PriorityClass.PRIORITY_CLASS_P0, false, "", a.profile.identityId))
+        val graph = com.example.digitaldelta.domain.routing.SylhetMapParser().parse(context.assets.open("sylhet_map.json").bufferedReader().use { it.readText() }).graph
+        fun recorder() = com.example.digitaldelta.domain.routing.MissionPlanRecorder(a.db, a.profiles, a.keys, graph)
+        val events = recorder().record(submitted.requestId)
+        assertEquals(listOf("E5"), events.single { it.hasRoutePlanned() }.routePlanned.edgeIdsList)
+        assertEquals(120, events.single { it.hasRoutePlanned() }.routePlanned.etaMinutes)
+        assertTrue(events.all { it.simulated && it.scenarioSeed == "packaged-network-v1" })
+        assertTrue(events.single { it.hasSlaBreachPredicted() }.slaBreachPredicted.slowedEtaMinutes > 120)
+        val configuration = ObserverConfiguration("https://observer.invalid/v1/observations", a.profile.nodeId, "test-token-never-sent")
+        assertFalse(ObserverPublisher(a.db, ObservationTransport { _, _ -> error("Laptop unavailable") }).drain(configuration))
+        a.restart()
+        val sent = mutableListOf<org.json.JSONObject>()
+        val publisher = ObserverPublisher(a.db, ObservationTransport { _, body -> sent += org.json.JSONObject(body.decodeToString()); 201 })
+        assertTrue(publisher.drain(configuration))
+        assertEquals(3, sent.size)
+        assertTrue(publisher.drain(configuration))
+        assertEquals(3, sent.size)
+        assertEquals(events.map { it.eventId }.toSet(), sent.filter { it.getString("kind") != "reliefRequestCreated" }.map { it.getString("eventId") }.toSet())
+        assertFalse(sent.any { it.toString().contains("medicine") })
+        a.publisher.edit(submitted.requestId, MissionField.PRIORITY, "4")
+        val withinSla = recorder().record(submitted.requestId)
+        assertEquals(1, withinSla.size)
+        assertTrue(withinSla.single().hasRoutePlanned()) // P3 is not a breach notification.
+        a.publisher.edit(submitted.requestId, MissionField.DESTINATION, "N7")
+        val noRoute = recorder().record(submitted.requestId)
+        assertEquals(1, noRoute.size)
+        assertEquals(0, noRoute.single().routePlanned.edgeIdsCount)
+        assertEquals("NO_FEASIBLE_GROUND_ROUTE", noRoute.single().routePlanned.explanationCode)
+        val authority = a.db.recipientKeyDao().findByNodeId(a.profile.nodeId)!!
+        a.db.recipientKeyDao().upsert(authority.copy(revokedAtUnixMs = System.currentTimeMillis()))
+        assertTrue(runCatching { recorder().record(submitted.requestId) }.isFailure)
+    }
+
     @Test fun signedRequestSurvivesRelayRestartThenIndependentEditsConvergeAndCustodyVerifies() = runTest {
         val (a, b, c) = setupPhones()
         val receipt = DefaultReliefRequestSubmission(RoomRequestPersistence(a.db, applyLocalProjection = true), a.protector,

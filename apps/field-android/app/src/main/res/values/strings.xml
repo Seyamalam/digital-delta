@@ -325,6 +325,8 @@
     <string name="mission_route_assumptions">Planning estimate · packaged network and scenario travel times, not live road conditions</string>
     <string name="mission_no_route">No truck or boat route in the packaged network. Human planning required.</string>
     <string name="mission_minutes">min</string>
+    <string name="mission_record_plan">Record current planning estimate</string>
+    <string name="mission_plan_recorded">Estimate saved on this phone. If headquarters publication is enabled, its summary will send when connected. This does not assign a vehicle.</string>
     <string name="mission_sla_warning">30% slowdown would breach the priority deadline. Review the plan.</string>
     <string name="mission_sla_within">Estimated arrival remains within the priority deadline at 30% slowdown.</string>
     <string name="mission_conflict_help">Unresolved safety conflict. A coordinator must select the accepted value before handoff.</string>

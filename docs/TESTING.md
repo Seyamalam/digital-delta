@@ -1,5 +1,29 @@
 # Testing and evidence strategy
 
+## Latest combined remediation gate — 2026-09-05
+
+`ANDROID_SERIAL=emulator-5554 scripts/verify-local.sh --connected` passed after the
+final recorder, custody-version and test-isolation corrections: **102 Android JVM
+tests, 75 connected Android tests, 21 dashboard tests and 11 Worker tests**. The gate
+also passed debug/minified release assembly, schema/localization/map checks,
+reproducible model export, Go race/vet/build, Next.js typecheck/build and Wrangler
+dry run. Go results in this final gate were cached; an earlier same-turn gate ran
+the changed Go packages freshly. No hosted deployment was performed.
+
+The six independent-field regressions now cover three-writer convergence, receipt
+return to the origin, receipt-before-prerequisite retry, historical custody despite
+a crossing edit, unauthorized dual-signer rejection, known revoked peer proof and
+recorded route/SLA publication recovery. E5 is computed from an accepted N1→N6
+mission; P0 produces a breach warning, P3 does not, and N7 explicitly has no truck
+or boat route. Timings stay labelled as packaged simulation.
+
+The final combined gate does not contain the temporary HTTP publication token.
+Actual emulator→Hono/D1→browser evidence was collected separately earlier in this
+turn, then the ignored debug asset was removed. See the
+[remediation review](../artifacts/reports/code-review/2026-09-05-remediation-review.md)
+and [fresh reduced load result](../artifacts/reports/load/2026-09-05-reduced-go-10000.md).
+Historical counts below are not additive and do not certify physical devices.
+
 ## Independent field workflow regressions
 
 `IndependentFieldWorkflowTest` uses three separate Room files and disjoint Keystore
@@ -15,10 +39,11 @@ request to a local Hono/D1 instance and checks the returned event ID exactly onc
 The asset contains `{endpoint, sourceNodeId, token}` and must never be committed or
 distributed. Only debug permits `http://10.0.2.2`; release requires HTTPS.
 
-The September 5 remediation run passed 70 connected tests on emulator-5554 with
+An earlier September 5 remediation checkpoint passed 70 connected tests on emulator-5554 with
 zero failures/skips, including that actual HTTP extension against local port 7073.
-This does not prove a physical camera scan, receipt return to the sender, generalized
-driver assignment, target-phone memory, or three full unchanged venue rehearsals.
+That checkpoint did not prove receipt return; the later 75-test run above does at
+the independent-replica layer. Neither run proves a physical camera scan, generalized
+driver assignment, target-phone memory, or three unchanged venue rehearsals.
 
 ## September 5 migration checkpoint
 

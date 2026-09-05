@@ -26,6 +26,7 @@ fun MissionWorkspace(language: String, model: MissionWorkspaceViewModel = viewMo
     val busy by model.busy.collectAsStateWithLifecycle()
     val failed by model.failed.collectAsStateWithLifecycle()
     val selectedMission by model.selectedMission.collectAsStateWithLifecycle()
+    val recordedPlan by model.recordedPlan.collectAsStateWithLifecycle()
     var editing by remember { mutableStateOf<FieldMission?>(null) }
     var field by remember { mutableStateOf(MissionField.DESTINATION) }
     var value by remember { mutableStateOf("") }
@@ -57,6 +58,9 @@ fun MissionWorkspace(language: String, model: MissionWorkspaceViewModel = viewMo
                         ?: localized.getString(R.string.mission_no_route), style = MaterialTheme.typography.titleMedium)
                     mission.triage?.let { Text(localized.getString(if (it.willBreachSla) R.string.mission_sla_warning else R.string.mission_sla_within)) }
                     if (mission.hash.isNotBlank()) Text(localized.getString(R.string.mission_hash, mission.hash.take(16)), style = MaterialTheme.typography.bodySmall)
+                    OutlinedButton(onClick = { model.recordPlan(mission.id) }, enabled = !busy && mission.canRecordPlan,
+                        modifier = Modifier.fillMaxWidth().heightIn(min = 52.dp)) { Text(localized.getString(R.string.mission_record_plan)) }
+                    if (recordedPlan == mission.id) Text(localized.getString(R.string.mission_plan_recorded))
                     OutlinedButton(onClick = { model.selectMission(mission.id) }, enabled = !busy && selectedMission != mission.id,
                         modifier = Modifier.fillMaxWidth().heightIn(min = 52.dp)) { Text(localized.getString(if (selectedMission == mission.id) R.string.mission_selected_custody else R.string.mission_select_custody)) }
                     OutlinedButton(onClick = { editing = mission; field = MissionField.DESTINATION; value = mission.destination }, enabled = !busy && mission.canEdit,

@@ -325,6 +325,8 @@
     <string name="mission_route_assumptions">পরিকল্পনার হিসাব · সংরক্ষিত নেটওয়ার্ক ও মহড়ার যাত্রাসময়, সরাসরি সড়কের অবস্থা নয়</string>
     <string name="mission_no_route">সংরক্ষিত নেটওয়ার্কে ট্রাক বা নৌযানের পথ নেই। মানুষের পরিকল্পনা প্রয়োজন।</string>
     <string name="mission_minutes">মিনিট</string>
+    <string name="mission_record_plan">বর্তমান পরিকল্পনার হিসাব সংরক্ষণ করুন</string>
+    <string name="mission_plan_recorded">হিসাব এই ফোনে সংরক্ষিত হয়েছে। সদর দপ্তরে প্রকাশ চালু থাকলে সংযোগ ফিরলে সারাংশ পাঠানো হবে। এতে কোনো যানবাহন বরাদ্দ হয় না।</string>
     <string name="mission_sla_warning">৩০% ধীরগতিতে অগ্রাধিকারের সময়সীমা অতিক্রম হবে। পরিকল্পনা পর্যালোচনা করুন।</string>
     <string name="mission_sla_within">৩০% ধীরগতিতেও আনুমানিক আগমন অগ্রাধিকারের সময়সীমার মধ্যে থাকবে।</string>
     <string name="mission_conflict_help">নিরাপত্তাসংশ্লিষ্ট দ্বন্দ্ব অমীমাংসিত। হস্তান্তরের আগে সমন্বয়কারীকে গ্রহণযোগ্য মান নির্বাচন করতে হবে।</string>

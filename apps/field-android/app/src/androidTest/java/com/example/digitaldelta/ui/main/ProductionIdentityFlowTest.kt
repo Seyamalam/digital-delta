@@ -14,7 +14,9 @@ import org.junit.Test
 
 @OptIn(ExperimentalTestApi::class)
 class ProductionIdentityFlowTest {
-    @get:Rule
+    @get:Rule(order = 0)
+    val pin = ProductionPinRule()
+    @get:Rule(order = 1)
     val composeTestRule = createAndroidComposeRule<MainActivity>()
 
     @Test

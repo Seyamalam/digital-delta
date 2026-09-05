@@ -2,7 +2,27 @@
 
 This checklist tracks implementation. Milestone exit criteria live in [MILESTONES.md](MILESTONES.md). Requirement identifiers map to [docs/TRACEABILITY.md](docs/TRACEABILITY.md).
 
-Current count: 151 of 167 checklist items complete (90.4 percent). All eight software module paths and the final submission artifacts are implemented. The 16 open items are external release evidence requiring organizers, physical phones, named booth equipment, human reviewers, or repeated rehearsals; they must not be closed from emulator or generated evidence.
+The earlier 90.4 percent estimate is withdrawn: checklist coverage was not end-to-end
+acceptance. All eight module areas remain in scope, but both software integration and
+physical evidence remain. Older checked items describe their implementation slice,
+not a certified release. The current evidence and finding matrix are in
+[the September 5 remediation review](artifacts/reports/code-review/2026-09-05-remediation-review.md).
+
+## Remediation and remaining integration
+
+- [x] Apply authenticated received requests and replicated mission edits/resolutions to Room.
+- [x] Test three independent writers, delivery permutations, relay restart and duplicate handling.
+- [x] Use provisioned origin/recipient identities for operational custody and replicate signed receipts.
+- [x] Pin receipt mission versions, retry missing revisions, and flag concurrent post-delivery edits.
+- [x] Add durable optional Android request/plan publication with source-bound Hono authentication.
+- [x] Separate observer and exercise state; retain projections and reset across stream generations.
+- [x] Bound QR generation with a bilingual full-code fallback.
+- [ ] Add explicit post-delivery reconciliation and generalized custodian assignment.
+- [ ] Connect received missions to operational fleet/preemption confirmation, not only local exercises.
+- [ ] Add general origin/destination selection, validated against the offline graph.
+- [ ] Add per-mission live routes/SLA state and mission selection to headquarters; its map currently shows the latest route observation.
+- [ ] Verify credential rotation with retained historical verification keys.
+- [ ] Reconcile final pitch/report claims and screenshots with the newly integrated build.
 
 ## Documentation and decisions
 

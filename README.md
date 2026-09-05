@@ -159,23 +159,31 @@ The observer has moved to Hono/Workers with ordered D1 storage, source-bound
 publisher authentication, replay, and a strictly sanitized SSE stream. Wrangler
 runs it locally without internet. The Go mesh harness remains Protobuf/gRPC; the
 old Go observer is opt-in legacy code. The local drill-to-Hono-to-Next.js path
-works, but the Android signed-event publisher is still outstanding.
+works. A durable Android publisher also sends locally authored request and recorded
+planning summaries; the actual emulator HTTP request path reached local Hono/D1
+and was inspected in the browser. This authenticates the publisher, not individual
+field-event signatures at headquarters.
 See [the observer runbook](docs/OBSERVER.md).
 
 Android provides offline PIN/enrollment, signed credentials and acknowledgements,
 Room queues, routing, on-device synthetic-risk inference, triage and custody
 rehearsals. The current hardening adds signed envelope origins, per-peer forwarding
-receipts, and stricter received-event application. These mechanisms do not yet
-prove end-to-end cross-phone request handling or replicated conflict resolution.
+receipts, and stricter received-event application. Independent Room/Keystore tests
+now prove accepted requests through an interrupted relay, three-writer convergence,
+replicated conflict resolution and origin-to-hospital custody with receipt return.
+They exercise separate replicas on one emulator, not three physical radios.
 
 Remaining release gates include:
 
-- Android-to-observer publication and actual received-request UI integration.
-- Complete cross-device CRDT propagation and conflict-resolution replication.
-- Cross-phone custody and physical three-phone relay/recovery with laptop off.
+- Physical three-phone request/edit/custody propagation and relay recovery with laptop off.
+- Generalized driver assignment, multi-hop operational custody and a reconciliation workflow for edits crossing delivery.
+- Accepted-mission integration of fleet/preemption controls beyond the labelled exercises.
 - Target-phone memory/latency measurements and real camera checks.
 - Fresh UI evidence, human accessibility review and three unchanged offline passes.
 - Review of hosted deployment configuration and public claims after migration.
+
+See the [remediation and follow-up review](artifacts/reports/code-review/2026-09-05-remediation-review.md)
+for individual finding status, current tests and the remaining software work.
 
 Historical evidence: the September 4 Go load run held 10,000 gRPC streams with
 approximately 1.19 GiB peak server RSS and 57.645-second p95 acknowledgement latency.
