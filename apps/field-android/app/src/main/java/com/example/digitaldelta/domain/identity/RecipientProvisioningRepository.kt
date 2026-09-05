@@ -46,7 +46,8 @@ class RecipientProvisioningRepository(
         val existingRevokedAt = dao.findByNodeId(claims.nodeId)
             ?.takeIf { it.credentialBytes.contentEquals(credentialBytes) }
             ?.revokedAtUnixMs
-        dao.upsert(
+        val fingerprint = java.security.MessageDigest.getInstance("SHA-256").digest(credentialBytes).joinToString("") { "%02x".format(it) }
+        dao.installCredential(
             RecipientKeyEntity(
                 nodeId = claims.nodeId,
                 identityId = claims.identityId,
@@ -63,13 +64,16 @@ class RecipientProvisioningRepository(
                 revokedAtUnixMs = existingRevokedAt,
                 provisionedAtUnixMs = nowUnixMs,
             ),
+            com.example.digitaldelta.data.local.HistoricalCredentialEntity(fingerprint, claims.nodeId, claims.identityId, claims.credentialId,
+                claims.signingKeyId, credentialBytes.copyOf(), claims.issuedAtUnixMs, claims.expiresAtUnixMs, existingRevokedAt),
         )
+        val installed = requireNotNull(dao.findByNodeId(claims.nodeId))
         return RecipientEncryptionKey(
             nodeId = claims.nodeId,
-            keyId = claims.encryptionKeyId,
-            publicKeyDer = claims.rsa2048EncryptionPublicKeyDer.toByteArray(),
-            validUntilUnixMs = claims.expiresAtUnixMs,
-            revokedAtUnixMs = existingRevokedAt,
+            keyId = installed.encryptionKeyId,
+            publicKeyDer = installed.encryptionPublicKeyDer,
+            validUntilUnixMs = installed.expiresAtUnixMs,
+            revokedAtUnixMs = installed.revokedAtUnixMs,
         )
     }
 
@@ -80,26 +84,34 @@ class RecipientProvisioningRepository(
     ): RevocationReceipt {
         val claims = revocations.verify(revocationBytes, trustedIssuerPublicKeyDer, nowUnixMs)
         val installed = dao.findByNodeId(claims.nodeId)
+        val archived = dao.archivedRevocationTargets(claims.nodeId, claims.credentialId)
+        val target = archived.firstOrNull()?.credentialBytes ?: installed?.credentialBytes
             ?: throw ProvisioningCredentialException("revocation target is not installed")
         val installedClaims = runCatching {
             com.example.digitaldelta.proto.v1.IdentityProvisioningCredential
-                .parseFrom(installed.credentialBytes)
+                .parseFrom(target)
                 .claims
         }.getOrElse { throw ProvisioningCredentialException("installed credential is malformed", it) }
         if (
             installedClaims.credentialId != claims.credentialId ||
-            installed.identityId != claims.identityId ||
-            installed.issuerIdentityId != claims.issuerIdentityId
+            installedClaims.identityId != claims.identityId ||
+            installedClaims.nodeId != claims.nodeId ||
+            installedClaims.issuerIdentityId != claims.issuerIdentityId ||
+            archived.any {
+                val stored = com.example.digitaldelta.proto.v1.IdentityProvisioningCredential.parseFrom(it.credentialBytes).claims
+                stored.identityId != claims.identityId || stored.issuerIdentityId != claims.issuerIdentityId
+            }
         ) {
             throw ProvisioningCredentialException("revocation target does not match the installed credential")
         }
         val updated = dao.revokeExactCredential(
             nodeId = claims.nodeId,
             identityId = claims.identityId,
-            credentialBytes = installed.credentialBytes,
+            credentialBytes = target,
             revokedAtUnixMs = claims.revokedAtUnixMs,
         )
-        if (updated == 0 && installed.revokedAtUnixMs == null) {
+        dao.revokeHistory(claims.nodeId, claims.credentialId, claims.revokedAtUnixMs)
+        if (updated == 0 && archived.isEmpty() && installed?.revokedAtUnixMs == null) {
             throw ProvisioningCredentialException("revocation target changed before it could be applied")
         }
         return RevocationReceipt(
@@ -144,6 +156,15 @@ class RecipientProvisioningRepository(
                 revokedAtUnixMs = entity.revokedAtUnixMs,
             )
         }
+
+    suspend fun signingIdentity(identityId: String, keyId: String, at: Long): InstalledIdentityCredential? {
+        val record = dao.historicalSigners(identityId, keyId, at).firstOrNull() ?: return dao.findSigningIdentity(identityId, keyId)?.let { installedIdentity(it.nodeId) }
+        val claims = com.example.digitaldelta.proto.v1.IdentityProvisioningCredential.parseFrom(record.credentialBytes).claims
+        return InstalledIdentityCredential(claims.credentialId, claims.identityId, claims.nodeId, claims.role,
+            claims.encryptionKeyId, claims.rsa2048EncryptionPublicKeyDer.toByteArray(), claims.signingKeyId,
+            claims.rsa2048SigningPublicKeyDer.toByteArray(), claims.issuerIdentityId, claims.issuedAtUnixMs,
+            claims.expiresAtUnixMs, record.revokedAtUnixMs)
+    }
 }
 
 class RoomRecipientKeyDirectory(private val dao: RecipientKeyDao) : RecipientKeyDirectory {

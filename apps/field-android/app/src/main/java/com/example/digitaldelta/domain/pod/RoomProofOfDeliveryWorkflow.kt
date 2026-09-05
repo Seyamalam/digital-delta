@@ -92,6 +92,7 @@ class RoomProofOfDeliveryWorkflow(
     private val eventId: () -> String = { "custody-${UUID.randomUUID()}" },
     private val senderCredentialLookup: suspend (String) -> InstalledIdentityCredential? = { null },
     private val receiptSink: suspend (DomainEvent) -> Unit = {},
+    private val receiptCredentialLookup: suspend (String, String, Long) -> InstalledIdentityCredential? = { _, _, _ -> null },
 ) : ProofOfDeliveryWorkflow {
     private val payloadHash = sha256(scenario.payloadDescription.encodeToByteArray())
 
@@ -258,8 +259,10 @@ class RoomProofOfDeliveryWorkflow(
         require(verifyTransferSignatures(transfer)) { "Invalid custody signatures" }
         for ((node, permission) in listOf(scenario.senderNodeId to com.example.digitaldelta.domain.identity.Permission.OFFER_CUSTODY,
             scenario.recipientNodeId to com.example.digitaldelta.domain.identity.Permission.ACCEPT_CUSTODY)) {
-            val credential = senderCredentialLookup(node) ?: throw com.example.digitaldelta.domain.sync.MissingEventDependency("Custody signer credential unavailable")
             val at = transfer.timestampUnixMs
+            val identity = if (node == scenario.senderNodeId) transfer.senderIdentityId else transfer.recipientIdentityId
+            val keyId = if (node == scenario.senderNodeId) transfer.senderSignature.keyId else transfer.recipientSignature.keyId
+            val credential = receiptCredentialLookup(identity, keyId, at) ?: senderCredentialLookup(node) ?: throw com.example.digitaldelta.domain.sync.MissingEventDependency("Custody signer credential unavailable")
             require(credential.issuedAtUnixMs <= at && com.example.digitaldelta.domain.identity.AuthorizationPolicy().authorize(
                 com.example.digitaldelta.domain.identity.OfflineCredential(credential.identityId, credential.role.toAuthorizationRole(), credential.expiresAtUnixMs,
                     credential.revokedAtUnixMs?.let { it <= at } == true), permission, at).allowed) { "Custody signer was not authorized at handoff" }
@@ -279,14 +282,12 @@ class RoomProofOfDeliveryWorkflow(
     }
 
     private suspend fun reconstructChainInternal(): CustodyChain {
-        val operations = database.operationLogDao().forMission(scenario.missionId)
-            .filter { it.eventType == EVENT_TYPE }
+        val operations = orderedCustodyEvents(database.operationLogDao().forMission(scenario.missionId))
         val receipts = mutableListOf<CustodyReceiptRecord>()
         var expectedPrevious = GENESIS_HASH
         var valid = true
-        for (operation in operations) {
-            val event = runCatching { DomainEvent.parseFrom(operation.payloadBytes) }.getOrNull()
-            if (event == null || !event.hasCustodyTransfer()) {
+        for (event in operations) {
+            if (!event.hasCustodyTransfer()) {
                 valid = false
                 continue
             }
@@ -294,7 +295,7 @@ class RoomProofOfDeliveryWorkflow(
             if (!MessageDigest.isEqual(transfer.previousReceiptSha256.toByteArray(), expectedPrevious)) {
                 valid = false
             }
-            if (!verifyTransferSignatures(transfer)) valid = false
+            if (!verifyTransferSignatures(transfer) || !verifyHistoricalAuthority(transfer)) valid = false
             val receiptHash = sha256(transfer.toByteArray())
             receipts += CustodyReceiptRecord(
                 eventId = event.eventId,
@@ -364,8 +365,8 @@ class RoomProofOfDeliveryWorkflow(
             .setSimulatedVehicle(transfer.simulatedVehicle)
             .setMissionSnapshot(transfer.missionSnapshot)
             .build()
-        val installedSender = senderCredentialLookup(scenario.senderNodeId)
-            ?.takeIf { it.identityId == scenario.senderIdentityId }
+        val installedSender = receiptCredentialLookup(transfer.senderIdentityId, transfer.senderSignature.keyId, transfer.timestampUnixMs)
+            ?: senderCredentialLookup(scenario.senderNodeId)?.takeIf { it.identityId == transfer.senderIdentityId }
         val sender = if (installedSender == null && scenario.simulatedVehicle) {
             deviceKeys.createOrGet(scenario.senderNodeId)
         } else {
@@ -381,8 +382,8 @@ class RoomProofOfDeliveryWorkflow(
             transfer.senderSignature,
         )
         val unsignedReceipt = transfer.toBuilder().clearRecipientSignature().build()
-        val installedRecipient = senderCredentialLookup(scenario.recipientNodeId)
-            ?.takeIf { it.identityId == scenario.recipientIdentityId }
+        val installedRecipient = receiptCredentialLookup(transfer.recipientIdentityId, transfer.recipientSignature.keyId, transfer.timestampUnixMs)
+            ?: senderCredentialLookup(scenario.recipientNodeId)?.takeIf { it.identityId == transfer.recipientIdentityId }
         val demoRecipient = if (installedRecipient == null && scenario.simulatedVehicle) deviceKeys.createOrGet(scenario.recipientNodeId) else null
         val recipientValid = verifySignature(
             installedRecipient?.signingPublicKeyDer ?: demoRecipient?.signingPublicKeyDer ?: return false,
@@ -392,6 +393,20 @@ class RoomProofOfDeliveryWorkflow(
         )
         return senderValid && recipientValid
     }
+
+    private suspend fun verifyHistoricalAuthority(transfer: CustodyTransfer): Boolean {
+        val sender = receiptCredentialLookup(transfer.senderIdentityId, transfer.senderSignature.keyId, transfer.timestampUnixMs)
+            ?: senderCredentialLookup(scenario.senderNodeId)?.takeIf { it.identityId == transfer.senderIdentityId }
+        val recipient = receiptCredentialLookup(transfer.recipientIdentityId, transfer.recipientSignature.keyId, transfer.timestampUnixMs)
+            ?: senderCredentialLookup(scenario.recipientNodeId)?.takeIf { it.identityId == transfer.recipientIdentityId }
+        return (sender?.let { wasAuthorized(it, com.example.digitaldelta.domain.identity.Permission.OFFER_CUSTODY, transfer.timestampUnixMs) } ?: scenario.simulatedVehicle) &&
+            (recipient?.let { wasAuthorized(it, com.example.digitaldelta.domain.identity.Permission.ACCEPT_CUSTODY, transfer.timestampUnixMs) } ?: scenario.simulatedVehicle)
+    }
+
+    private fun wasAuthorized(credential: InstalledIdentityCredential, permission: com.example.digitaldelta.domain.identity.Permission, at: Long): Boolean =
+        credential.issuedAtUnixMs <= at && com.example.digitaldelta.domain.identity.AuthorizationPolicy().authorize(
+            com.example.digitaldelta.domain.identity.OfflineCredential(credential.identityId, credential.role.toAuthorizationRole(), credential.expiresAtUnixMs,
+                credential.revokedAtUnixMs?.let { it <= at } == true), permission, at).allowed
 
     private fun verifySignature(
         publicKeyDer: ByteArray,

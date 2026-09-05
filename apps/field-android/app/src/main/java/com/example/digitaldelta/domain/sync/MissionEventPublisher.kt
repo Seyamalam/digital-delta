@@ -52,6 +52,23 @@ class MissionEventPublisher(
         event.eventId
     }.also { runCatching { afterCommit() } }
 
+    suspend fun reconcile(missionId: String, reason: String, expectedChangeEventIds: Set<String>? = null): String = database.withTransaction {
+        val profile = profiles.profile.first()
+        val creation = creation(missionId)
+        val history = database.operationLogDao().forMission(missionId)
+        if (expectedChangeEventIds != null) require(
+            com.example.digitaldelta.domain.pod.unreconciledCustodyChanges(history).map { it.eventId }.toSet() == expectedChangeEventIds
+        ) { "Mission changed while the review was open; review the latest changes" }
+        val receipt = com.example.digitaldelta.domain.pod.orderedCustodyEvents(history).firstOrNull()
+            ?: error("No signed receipt to reconcile")
+        val reviewed = history.filter { it.eventType in setOf("RELIEF_REQUEST_CREATED", "MISSION_FIELD_UPDATED", "CONFLICT_RESOLVED") }.map { it.eventId }.sorted()
+        val event = event(profile, creation).setCustodyReconciled(CustodyReconciled.newBuilder()
+            .setMissionId(missionId).setReceiptEventId(receipt.eventId).addAllReviewedEventIds(reviewed)
+            .setOutcomeCode("RETAIN_SIGNED_CUSTODY").setReason(reason.trim())).build()
+        publish(event, creation, profile)
+        event.eventId
+    }.also { runCatching { afterCommit() } }
+
     private suspend fun publish(event: DomainEvent, creation: DomainEvent, profile: LocalDeviceProfile) {
         val request = creation.reliefRequestCreated
         val recipients = (request.participantNodeIdsList.toSet() + setOf(request.requesterNodeId, request.originNodeId, request.destinationNodeId)) - profile.nodeId
@@ -69,7 +86,9 @@ class MissionEventPublisher(
             check(database.outboxDao().enqueue(MeshEnvelopeEntity(id, envelope.toByteArray(), envelope.priorityValue,
                 envelope.expiresAtUnixMs, QueueState.PENDING.name, 0, now)) > 0)
         }
-        ReceivedEventApplication(database).apply(event, requireNotNull(signedOrigin), profile.nodeId)
+        if (event.hasCustodyTransfer()) {
+            require(database.operationLogDao().find(event.eventId)?.payloadBytes?.contentEquals(event.toByteArray()) == true) { "Only an accepted local receipt can be forwarded" }
+        } else ReceivedEventApplication(database).apply(event, requireNotNull(signedOrigin), profile.nodeId)
     }
 
     private suspend fun creation(missionId: String): DomainEvent = database.operationLogDao().forMission(missionId)

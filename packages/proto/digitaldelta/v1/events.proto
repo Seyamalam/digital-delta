@@ -189,6 +189,16 @@ message SignedAuthorizationAuditEntry {
   Signature actor_signature = 2;
 }
 
+// Coordinator acknowledgement of edits that crossed a signed custody receipt.
+// Does not replace cargo, signatures, custody or any original event.
+message CustodyReconciled {
+  string mission_id = 1;
+  string receipt_event_id = 2;
+  repeated string reviewed_event_ids = 3;
+  string outcome_code = 4;
+  string reason = 5;
+}
+
 message DomainEvent {
   string event_id = 1;
   uint32 schema_version = 2;
@@ -212,5 +222,6 @@ message DomainEvent {
     RendezvousPlanned rendezvous_planned = 31;
     SignedAuthorizationAuditEntry authorization_audit = 32;
     SignedCredentialRevocation credential_revoked = 33;
+    CustodyReconciled custody_reconciled = 34;
   }
 }

@@ -80,6 +80,7 @@ object AppModule {
                 DeltaMigrations.VERSION_5_TO_6,
                 DeltaMigrations.VERSION_6_TO_7,
                 DeltaMigrations.VERSION_7_TO_8,
+                DeltaMigrations.VERSION_8_TO_9,
             )
             .build()
 
@@ -196,7 +197,7 @@ object AppModule {
         payloadProtector = payloadProtector,
         envelopeSigner = com.example.digitaldelta.domain.mesh.AndroidEnvelopeSecurity(deviceKeys, database.recipientKeyDao(), trustAnchors),
         additionalParticipants = { database.recipientKeyDao().validAt(System.currentTimeMillis())
-            .filter { it.revokedAtUnixMs == null && it.roleCode == com.example.digitaldelta.proto.v1.IdentityRole.IDENTITY_ROLE_COORDINATOR.name }
+            .filter { it.revokedAtUnixMs == null && it.issuedAtUnixMs <= System.currentTimeMillis() && it.roleCode in setOf(com.example.digitaldelta.proto.v1.IdentityRole.IDENTITY_ROLE_COORDINATOR.name, com.example.digitaldelta.proto.v1.IdentityRole.IDENTITY_ROLE_DRIVER.name) }
             .map { it.nodeId }.toSet() },
     )
 

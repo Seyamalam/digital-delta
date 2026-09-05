@@ -1,6 +1,38 @@
 # Testing and evidence strategy
 
-## Latest combined remediation gate — 2026-09-05
+## Fair phone acceptance target
+
+The exhibitor confirmed standard **4 GB RAM Android phones** as the target on
+September 5. Exact models, Android versions and available storage remain to be
+recorded when devices are connected; do not substitute an emulator model for them.
+Keep the existing under-150 MB mobile processing budget and under-two-second route
+recomputation target. Total installed RAM is not an app memory measurement.
+
+The physical gate requires three independently provisioned phones for A→B→C
+relay/recovery, camera provisioning and signed handoffs, with commercial internet
+disabled and the command laptop disconnected during field operations. Record
+model/OS, build hash, PSS readings, route latency, battery conditions and results
+for three unchanged offline demo passes. Until these runs exist, physical radio,
+camera and target-phone performance acceptance remain unverified.
+
+## Custody checkpoint gate — 2026-09-05
+
+The follow-up local gate passed **102 JVM tests, 78 connected Android tests,
+21 dashboard tests and 11 Worker tests**, with debug/minified release assembly,
+fresh Go race/vet/build checks, schema/localization/map/model checks, Next.js build
+and Wrangler dry run. The connected target was emulator-5554, Android 15 / API 35.
+The added tests cover multi-leg assigned custody with crossing-edit reconciliation,
+historical public-key rotation/revocation, and the Room 8 → 9 migration.
+
+`ProductionRequestFlowTest` optionally accepts `holdMissionForVisualQa=true` and
+`visualQaLanguage=en` for a bounded 45-second inspection window. This window is off
+in the full gate. Argent development captures show the actual Room-backed mission
+in both languages; coordinator-dialog and physical-phone acceptance remain open.
+After fixing authority-refresh loss of the audit label, the English 45-second
+inspection variant passed its remaining authorization/revocation assertions too.
+See the [custody checkpoint](../artifacts/reports/code-review/2026-09-05-custody-checkpoint.md).
+
+## Earlier combined remediation gate — 2026-09-05
 
 `ANDROID_SERIAL=emulator-5554 scripts/verify-local.sh --connected` passed after the
 final recorder, custody-version and test-isolation corrections: **102 Android JVM

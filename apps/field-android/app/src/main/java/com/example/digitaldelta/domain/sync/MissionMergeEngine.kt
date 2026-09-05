@@ -5,6 +5,7 @@ enum class MissionField(val requiresHumanReviewWhenConcurrent: Boolean) {
     DESTINATION(true),
     PRIORITY(true),
     MEDICAL_QUANTITY(true),
+    CUSTODY_PATH(true),
 }
 
 data class FieldRevision(

@@ -57,14 +57,16 @@ class LocalAuthorizationCredentialTest {
             initialize(2048)
             generateKeyPair()
         }
+        var credentialVersion = 0L
         suspend fun install(
             role: IdentityRole,
             identityId: String,
             encryptionPublicKeyDer: ByteArray = publicIdentity.encryptionPublicKeyDer,
             signingPublicKeyDer: ByteArray = publicIdentity.signingPublicKeyDer,
         ) {
+            credentialVersion += 1
             val claims = IdentityProvisioningClaims.newBuilder()
-                .setCredentialId("credential-${role.name}")
+                .setCredentialId("credential-${role.name}-$credentialVersion")
                 .setIdentityId(identityId)
                 .setNodeId(profile.nodeId)
                 .setDisplayName(profile.displayName)
@@ -73,7 +75,7 @@ class LocalAuthorizationCredentialTest {
                 .setRsa2048EncryptionPublicKeyDer(ByteString.copyFrom(encryptionPublicKeyDer))
                 .setSigningKeyId(publicIdentity.signingKeyId)
                 .setRsa2048SigningPublicKeyDer(ByteString.copyFrom(signingPublicKeyDer))
-                .setIssuedAtUnixMs(now - 1_000)
+                .setIssuedAtUnixMs(now - 1_000 + credentialVersion)
                 .setExpiresAtUnixMs(now + 86_400_000)
                 .setIssuerIdentityId("delta-admin-1")
                 .build()

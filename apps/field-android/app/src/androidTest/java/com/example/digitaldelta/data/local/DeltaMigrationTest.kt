@@ -146,6 +146,27 @@ class DeltaMigrationTest {
         }
     }
 
+    @Test
+    fun migrationEightToNineArchivesProvisionedSignerAndRevocation() {
+        val credential = com.example.digitaldelta.proto.v1.IdentityProvisioningCredential.newBuilder()
+            .setClaims(com.example.digitaldelta.proto.v1.IdentityProvisioningClaims.newBuilder()
+                .setCredentialId("credential-n6").setIdentityId("hospital-1").setNodeId("N6")
+                .setSigningKeyId("sig-1").setIssuedAtUnixMs(100).setExpiresAtUnixMs(1000)).build().toByteArray()
+        helper.createDatabase("delta-migration-v9-test", 8).apply {
+            execSQL("INSERT INTO recipient_keys (nodeId, identityId, displayName, roleCode, encryptionKeyId, encryptionPublicKeyDer, signingKeyId, signingPublicKeyDer, issuerIdentityId, credentialBytes, issuedAtUnixMs, expiresAtUnixMs, revokedAtUnixMs, provisionedAtUnixMs) VALUES ('N6', 'hospital-1', 'Habiganj Medical', 'IDENTITY_ROLE_HOSPITAL', 'enc-1', X'01', 'sig-1', X'02', 'admin-1', ?, 100, 1000, 300, 110)", arrayOf(credential))
+            close()
+        }
+        helper.runMigrationsAndValidate("delta-migration-v9-test", 9, true, DeltaMigrations.VERSION_8_TO_9).use { migrated ->
+            assertEquals(1, migrated.count("SELECT COUNT(*) FROM recipient_keys"))
+            migrated.query("SELECT credentialId, signingKeyId, revokedAtUnixMs FROM credential_history").use { cursor ->
+                org.junit.Assert.assertTrue(cursor.moveToFirst())
+                assertEquals("credential-n6", cursor.getString(0))
+                assertEquals("sig-1", cursor.getString(1))
+                assertEquals(300L, cursor.getLong(2))
+            }
+        }
+    }
+
     private fun SupportSQLiteDatabase.count(query: String): Int =
         query(query).use { cursor ->
             check(cursor.moveToFirst())

@@ -23,6 +23,7 @@ class ReceivedEventApplication(private val database: DeltaDatabase) {
             event.hasReliefRequestCreated() -> event.reliefRequestCreated.requestId
             event.hasMissionFieldUpdated() -> event.missionFieldUpdated.missionId
             event.hasConflictResolved() -> event.conflictResolved.missionId
+            event.hasCustodyReconciled() -> event.custodyReconciled.missionId
             else -> return false
         }
         require(missionId.isNotBlank())
@@ -30,6 +31,20 @@ class ReceivedEventApplication(private val database: DeltaDatabase) {
             val previous = database.operationLogDao().find(event.eventId)
             if (previous != null) {
                 require(previous.payloadBytes.contentEquals(event.toByteArray())) { "Event ID reused with different contents" }
+                return@withTransaction
+            }
+            if (event.hasCustodyReconciled()) {
+                val decision = event.custodyReconciled
+                require(role == IdentityRole.IDENTITY_ROLE_COORDINATOR)
+                require(decision.outcomeCode == "RETAIN_SIGNED_CUSTODY" && decision.reason.length in 8..1000)
+                require(decision.reviewedEventIdsCount in 1..256 && decision.reviewedEventIdsList == decision.reviewedEventIdsList.distinct().sorted())
+                val receipt = database.operationLogDao().find(decision.receiptEventId) ?: throw MissingEventDependency("Receipt unavailable")
+                require(receipt.missionId == missionId && receipt.eventType == "CUSTODY_TRANSFER")
+                for (id in decision.reviewedEventIdsList) {
+                    val reviewed = database.operationLogDao().find(id) ?: throw MissingEventDependency("Reviewed revision unavailable")
+                    require(reviewed.missionId == missionId && reviewed.eventType in setOf("RELIEF_REQUEST_CREATED", "MISSION_FIELD_UPDATED", "CONFLICT_RESOLVED"))
+                }
+                database.operationLogDao().append(OperationEntity(event.eventId, missionId, event.bodyCase.name, event.toByteArray(), event.occurredAtUnixMs))
                 return@withTransaction
             }
             if (event.hasReliefRequestCreated()) {
@@ -81,6 +96,18 @@ class ReceivedEventApplication(private val database: DeltaDatabase) {
                     MissionField.MEDICAL_QUANTITY -> require(value.toLongOrNull()?.let { it in 0..10_000_000 } == true)
                     MissionField.DESTINATION -> require(value.matches(Regex("[A-Za-z0-9_-]{1,128}")))
                     MissionField.DESCRIPTION -> require(value.isNotBlank())
+                    MissionField.CUSTODY_PATH -> {
+                        require(role == IdentityRole.IDENTITY_ROLE_COORDINATOR)
+                        val path = value.split(">")
+                        val request = creation.reliefRequestCreated
+                        require(path.size in 2..8 && path.distinct().size == path.size && path.first() == request.originNodeId)
+                        val members = request.participantNodeIdsList.toSet() + setOf(request.originNodeId, request.destinationNodeId, request.requesterNodeId)
+                        require(path.all { it in members }) { "Custody path requires authorized mission readers" }
+                        for (node in path.drop(1).dropLast(1)) {
+                            val credential = database.recipientKeyDao().findByNodeId(node) ?: throw MissingEventDependency("Driver credential unavailable")
+                            require(credential.roleCode == IdentityRole.IDENTITY_ROLE_DRIVER.name || credential.roleCode == IdentityRole.IDENTITY_ROLE_COORDINATOR.name)
+                        }
+                    }
                 }
                 val incoming = FieldRevision(event.eventId, missionId, field, value, clock, event.occurredAtUnixMs)
                 val history = database.operationLogDao().forMission(missionId).map { DomainEvent.parseFrom(it.payloadBytes) }
@@ -90,6 +117,7 @@ class ReceivedEventApplication(private val database: DeltaDatabase) {
                     MissionField.PRIORITY -> original.cargoList.minOf { it.priorityValue }.toString()
                     MissionField.MEDICAL_QUANTITY -> original.cargoList.filter { it.itemCode in setOf("medicine", "ors", "blood") }.sumOf { it.quantity.toLong() }.toString()
                     MissionField.DESCRIPTION -> null
+                    MissionField.CUSTODY_PATH -> null
                 }
                 val revisions = mutableListOf(incoming)
                 if (initialValue != null) revisions += FieldRevision(creation.eventId, missionId, field, initialValue, VectorClock(mapOf(original.requesterNodeId to 1)), creation.occurredAtUnixMs)

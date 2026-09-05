@@ -116,6 +116,16 @@ class ProductionRequestFlowTest {
         val createdMissionId = runBlocking { entryPoint.database().operationLogDao().requests().first().missionId }
         composeTestRule.waitUntilAtLeastOneExists(hasTestTag("mission-$createdMissionId"), timeoutMillis = 4_000)
         composeTestRule.onNode(hasTestTag("mission-$createdMissionId")).assertExists()
+        composeTestRule.onNode(hasTestTag("mission-custodian-$createdMissionId")).assertExists()
+        // Opt-in, bounded inspection window for Argent; never part of release app code.
+        if (androidx.test.platform.app.InstrumentationRegistry.getArguments().getString("holdMissionForVisualQa") == "true") {
+            if (androidx.test.platform.app.InstrumentationRegistry.getArguments().getString("visualQaLanguage") == "en") {
+                composeTestRule.onNode(androidx.compose.ui.test.hasText("English")).performClick()
+                composeTestRule.waitForIdle()
+            }
+            val started = android.os.SystemClock.uptimeMillis()
+            composeTestRule.waitUntil(timeoutMillis = 46_000) { android.os.SystemClock.uptimeMillis() - started >= 45_000 }
+        }
         composeTestRule.onNode(hasTestTag("identity-open")).performClick()
         composeTestRule.waitUntilAtLeastOneExists(hasTestTag("authorization-audit-id"), timeoutMillis = 4_000)
         composeTestRule.onNode(hasTestTag("authorization-audit-id")).assertExists()

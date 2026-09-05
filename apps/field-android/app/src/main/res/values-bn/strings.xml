@@ -325,6 +325,13 @@
     <string name="mission_route_assumptions">পরিকল্পনার হিসাব · সংরক্ষিত নেটওয়ার্ক ও মহড়ার যাত্রাসময়, সরাসরি সড়কের অবস্থা নয়</string>
     <string name="mission_no_route">সংরক্ষিত নেটওয়ার্কে ট্রাক বা নৌযানের পথ নেই। মানুষের পরিকল্পনা প্রয়োজন।</string>
     <string name="mission_minutes">মিনিট</string>
+    <string name="mission_custody_path">নির্ধারিত হস্তান্তরের ধাপ</string>
+    <string name="mission_current_custodian">বর্তমান জিম্মাদার: %1$s</string>
+    <string name="mission_custody_path_help">অনুমোদিত মিশন সদস্যদের ক্রমানুসারে লিখুন, মাঝে &gt; দিন। যেমন N1&gt;RLY-01&gt;N6। উৎস থেকে শুরু করে গন্তব্যে শেষ করুন। প্রথম স্বাক্ষরিত হস্তান্তরের আগে শুধু সমন্বয়কারী এই ধাপ ঠিক করতে পারবেন।</string>
+    <string name="mission_reconcile_action">হস্তান্তরের পরের পরিবর্তন পর্যালোচনা</string>
+    <string name="mission_reconcile_help">প্রথম স্বাক্ষরিত রসিদের মালামাল ও হস্তান্তরের ধাপ বহাল থাকবে। নিশ্চিত করার আগে পরের সব পরিবর্তন পর্যালোচনা করুন। বাড়তি বা পরিবর্তিত চাহিদার জন্য আলাদা অনুরোধ তৈরি করতে হবে। এই সিদ্ধান্ত স্বাক্ষরিত হেফাজত বদলায় না এবং বাড়তি মালামাল পৌঁছে দেয় না।</string>
+    <string name="mission_reconcile_reason">পর্যালোচনার কারণ (অন্তত ৮ অক্ষর)</string>
+    <string name="mission_reconcile_confirm">স্বাক্ষরিত মালামাল ও ধাপ বহাল রাখুন</string>
     <string name="mission_record_plan">বর্তমান পরিকল্পনার হিসাব সংরক্ষণ করুন</string>
     <string name="mission_plan_recorded">হিসাব এই ফোনে সংরক্ষিত হয়েছে। সদর দপ্তরে প্রকাশ চালু থাকলে সংযোগ ফিরলে সারাংশ পাঠানো হবে। এতে কোনো যানবাহন বরাদ্দ হয় না।</string>
     <string name="mission_sla_warning">৩০% ধীরগতিতে অগ্রাধিকারের সময়সীমা অতিক্রম হবে। পরিকল্পনা পর্যালোচনা করুন।</string>

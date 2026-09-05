@@ -325,6 +325,13 @@
     <string name="mission_route_assumptions">Planning estimate · packaged network and scenario travel times, not live road conditions</string>
     <string name="mission_no_route">No truck or boat route in the packaged network. Human planning required.</string>
     <string name="mission_minutes">min</string>
+    <string name="mission_custody_path">Assigned handoff path</string>
+    <string name="mission_current_custodian">Current custodian: %1$s</string>
+    <string name="mission_custody_path_help">Enter provisioned mission participants in order, separated by &gt;, for example N1&gt;RLY-01&gt;N6. Start at the origin and finish at the destination. Only a coordinator can assign the path, before the first signed handoff.</string>
+    <string name="mission_reconcile_action">Review edits after handoff</string>
+    <string name="mission_reconcile_help">This keeps the cargo and path from the first signed receipt. Review all later edits before confirming. Any changed needs must be recorded in a separate request; this decision does not alter signed custody or physically deliver extra supplies.</string>
+    <string name="mission_reconcile_reason">Review reason (at least 8 characters)</string>
+    <string name="mission_reconcile_confirm">Keep signed cargo and path</string>
     <string name="mission_record_plan">Record current planning estimate</string>
     <string name="mission_plan_recorded">Estimate saved on this phone. If headquarters publication is enabled, its summary will send when connected. This does not assign a vehicle.</string>
     <string name="mission_sla_warning">30% slowdown would breach the priority deadline. Review the plan.</string>

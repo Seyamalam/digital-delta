@@ -8,6 +8,7 @@ import androidx.room.Insert
 import androidx.room.OnConflictStrategy
 import androidx.room.PrimaryKey
 import androidx.room.Query
+import androidx.room.Transaction
 import androidx.room.RoomDatabase
 import androidx.room.migration.Migration
 import androidx.sqlite.db.SupportSQLiteDatabase
@@ -127,6 +128,19 @@ data class RecipientKeyEntity(
     val expiresAtUnixMs: Long,
     val revokedAtUnixMs: Long?,
     val provisionedAtUnixMs: Long,
+)
+
+@Entity(tableName = "credential_history")
+data class HistoricalCredentialEntity(
+    @PrimaryKey val fingerprint: String,
+    val nodeId: String,
+    val identityId: String,
+    val credentialId: String,
+    val signingKeyId: String,
+    val credentialBytes: ByteArray,
+    val issuedAtUnixMs: Long,
+    val expiresAtUnixMs: Long,
+    val revokedAtUnixMs: Long?,
 )
 
 @Entity(
@@ -309,7 +323,7 @@ interface NonceDao {
 
 @Dao
 interface OperationLogDao {
-    @Query("SELECT * FROM operation_log WHERE eventType IN ('CUSTODY_TRANSFER', 'RELIEF_REQUEST_CREATED', 'MISSION_FIELD_UPDATED', 'CONFLICT_RESOLVED') ORDER BY createdAtUnixMs, eventId")
+    @Query("SELECT * FROM operation_log WHERE eventType IN ('CUSTODY_TRANSFER', 'RELIEF_REQUEST_CREATED', 'MISSION_FIELD_UPDATED', 'CONFLICT_RESOLVED', 'CUSTODY_RECONCILED') ORDER BY createdAtUnixMs, eventId")
     fun observeMissionHistory(): kotlinx.coroutines.flow.Flow<List<OperationEntity>>
     @Query("SELECT * FROM operation_log WHERE eventType = 'RELIEF_REQUEST_CREATED' ORDER BY createdAtUnixMs DESC, eventId")
     fun observeRequests(): kotlinx.coroutines.flow.Flow<List<OperationEntity>>
@@ -343,6 +357,31 @@ interface OperationLogDao {
 
 @Dao
 interface RecipientKeyDao {
+    @Insert(onConflict = OnConflictStrategy.IGNORE)
+    suspend fun archiveCredential(credential: HistoricalCredentialEntity)
+
+    @Query("SELECT * FROM credential_history WHERE fingerprint = :fingerprint")
+    suspend fun archivedCredential(fingerprint: String): HistoricalCredentialEntity?
+
+    @Query("SELECT * FROM credential_history WHERE nodeId = :node AND credentialId = :credential")
+    suspend fun archivedRevocationTargets(node: String, credential: String): List<HistoricalCredentialEntity>
+
+    @Query("SELECT * FROM credential_history WHERE identityId = :identity AND signingKeyId = :key AND issuedAtUnixMs <= :at AND expiresAtUnixMs > :at ORDER BY issuedAtUnixMs DESC")
+    suspend fun historicalSigners(identity: String, key: String, at: Long): List<HistoricalCredentialEntity>
+
+    @Query("UPDATE credential_history SET revokedAtUnixMs = :at WHERE nodeId = :node AND credentialId = :credential AND (revokedAtUnixMs IS NULL OR revokedAtUnixMs > :at)")
+    suspend fun revokeHistory(node: String, credential: String, at: Long)
+
+    @Transaction
+    suspend fun installCredential(key: RecipientKeyEntity, history: HistoricalCredentialEntity) {
+        archiveCredential(history)
+        val existing = findByNodeId(key.nodeId)
+        // A replayed older credential may remain verification history, never restore active authority.
+        if (existing == null || key.issuedAtUnixMs > existing.issuedAtUnixMs || key.credentialBytes.contentEquals(existing.credentialBytes))
+            upsert(key.copy(revokedAtUnixMs = archivedCredential(history.fingerprint)?.revokedAtUnixMs ?: key.revokedAtUnixMs))
+    }
+    @Query("SELECT * FROM recipient_keys WHERE identityId = :identityId AND signingKeyId = :keyId LIMIT 1")
+    suspend fun findSigningIdentity(identityId: String, keyId: String): RecipientKeyEntity?
     @Query("SELECT * FROM recipient_keys ORDER BY nodeId")
     fun observeAuthorities(): kotlinx.coroutines.flow.Flow<List<RecipientKeyEntity>>
 
@@ -457,8 +496,9 @@ interface ConflictDao {
         InboxApplicationEntity::class,
         MeshForwardReceipt::class,
         ObserverPublication::class,
+        HistoricalCredentialEntity::class,
     ],
-    version = 8,
+    version = 9,
     exportSchema = true,
 )
 abstract class DeltaDatabase : RoomDatabase() {
@@ -477,6 +517,19 @@ abstract class DeltaDatabase : RoomDatabase() {
 }
 
 object DeltaMigrations {
+    val VERSION_8_TO_9 = object : Migration(8, 9) {
+        override fun migrate(db: SupportSQLiteDatabase) {
+            db.execSQL("CREATE TABLE IF NOT EXISTS credential_history (fingerprint TEXT NOT NULL PRIMARY KEY, nodeId TEXT NOT NULL, identityId TEXT NOT NULL, credentialId TEXT NOT NULL, signingKeyId TEXT NOT NULL, credentialBytes BLOB NOT NULL, issuedAtUnixMs INTEGER NOT NULL, expiresAtUnixMs INTEGER NOT NULL, revokedAtUnixMs INTEGER)")
+            db.query("SELECT nodeId, identityId, signingKeyId, credentialBytes, issuedAtUnixMs, expiresAtUnixMs, revokedAtUnixMs FROM recipient_keys").use { cursor ->
+                while (cursor.moveToNext()) {
+                    val bytes = cursor.getBlob(3)
+                    val claims = runCatching { com.example.digitaldelta.proto.v1.IdentityProvisioningCredential.parseFrom(bytes).claims }.getOrNull() ?: continue
+                    val fingerprint = java.security.MessageDigest.getInstance("SHA-256").digest(bytes).joinToString("") { "%02x".format(it) }
+                    db.execSQL("INSERT OR IGNORE INTO credential_history VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)", arrayOf(fingerprint, cursor.getString(0), cursor.getString(1), claims.credentialId, cursor.getString(2), bytes, cursor.getLong(4), cursor.getLong(5), if (cursor.isNull(6)) null else cursor.getLong(6)))
+                }
+            }
+        }
+    }
     val VERSION_7_TO_8 = object : Migration(7, 8) {
         override fun migrate(db: SupportSQLiteDatabase) {
             db.execSQL("CREATE TABLE IF NOT EXISTS observer_publications (eventId TEXT NOT NULL, destination TEXT NOT NULL, status TEXT NOT NULL, recordedAtUnixMs INTEGER NOT NULL, PRIMARY KEY(eventId, destination))")

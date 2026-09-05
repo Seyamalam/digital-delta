@@ -25,10 +25,11 @@ class OperationalProofOfDeliveryWorkflow(
         val mission = selectedMissionId() ?: database.operationLogDao().requests().firstOrNull {
             DomainEvent.parseFrom(it.payloadBytes).reliefRequestCreated.originNodeId == profile.nodeId
         }?.missionId ?: error("Select an accepted mission whose custodian is this phone")
-        val scenario = scenario(mission)
+        require(!custodyNeedsReconciliation(database.operationLogDao().forMission(mission))) { "Reconcile crossing revisions first" }
+        val receipts = orderedCustodyEvents(database.operationLogDao().forMission(mission))
+        val scenario = scenario(mission, receipts.firstOrNull()?.custodyTransfer?.missionSnapshot?.toByteArray(), receipts.size)
         require(scenario.senderNodeId == profile.nodeId && scenario.senderIdentityId == profile.identityId)
         lastMissionId = mission
-        require(workflow(scenario).reconstructChain().receipts.isEmpty()) { "This delivery already has an accepted custodian" }
         workflow(scenario).prepare()
     }
 
@@ -36,7 +37,12 @@ class OperationalProofOfDeliveryWorkflow(
         val profile = activeProfile(Permission.ACCEPT_CUSTODY)
         val offer = runCatching { DeliveryOfferCodec().decodeCode(code).offer }.getOrNull()
             ?: return@withTransaction DeliveryReceiptResult.Rejected(DeliveryOfferRejection.MALFORMED, emptyList())
-        val scenario = runCatching { scenario(offer.missionId) }.getOrNull()
+        val receipts = orderedCustodyEvents(database.operationLogDao().forMission(offer.missionId))
+        if (database.nonceDao().count(sha256(offer.nonce.toByteArray()).joinToString("") { "%02x".format(it) }) > 0)
+            return@withTransaction DeliveryReceiptResult.Rejected(DeliveryOfferRejection.REPLAY_REJECTED, reconstructChain().receipts)
+        if (custodyNeedsReconciliation(database.operationLogDao().forMission(offer.missionId)))
+            return@withTransaction DeliveryReceiptResult.Rejected(DeliveryOfferRejection.WRONG_MISSION, emptyList())
+        val scenario = runCatching { scenario(offer.missionId, receipts.firstOrNull()?.custodyTransfer?.missionSnapshot?.toByteArray(), receipts.size) }.getOrNull()
             ?: return@withTransaction DeliveryReceiptResult.Rejected(DeliveryOfferRejection.WRONG_MISSION, emptyList())
         if (scenario.recipientNodeId != profile.nodeId || scenario.recipientIdentityId != profile.identityId)
             return@withTransaction DeliveryReceiptResult.Rejected(DeliveryOfferRejection.WRONG_RECIPIENT, emptyList())
@@ -45,20 +51,24 @@ class OperationalProofOfDeliveryWorkflow(
     }
 
     suspend fun importReceipt(event: DomainEvent): Boolean = database.withTransaction {
+        database.operationLogDao().find(event.eventId)?.let { require(it.payloadBytes.contentEquals(event.toByteArray())); return@withTransaction true }
         require(!event.custodyTransfer.missionSnapshot.isEmpty) { "Operational receipt requires an immutable mission version" }
-        workflow(scenario(event.custodyTransfer.missionId, event.custodyTransfer.missionSnapshot.toByteArray())).importReceipt(event)
+        val receipts = orderedCustodyEvents(database.operationLogDao().forMission(event.custodyTransfer.missionId))
+        val head = receipts.lastOrNull()?.let { sha256(it.custodyTransfer.toByteArray()) } ?: custodyGenesis
+        if (!event.custodyTransfer.previousReceiptSha256.toByteArray().contentEquals(head)) throw MissingEventDependency("Custody predecessor unavailable or competing")
+        receipts.firstOrNull()?.let { require(it.custodyTransfer.missionSnapshot == event.custodyTransfer.missionSnapshot) { "Custody version changed mid-chain" } }
+        workflow(scenario(event.custodyTransfer.missionId, event.custodyTransfer.missionSnapshot.toByteArray(), receipts.size)).importReceipt(event)
     }
 
     override suspend fun reconstructChain(): CustodyChain {
         val mission = lastMissionId ?: selectedMissionId() ?: return CustodyChain(emptyList(), true)
-        val receipt = database.operationLogDao().forMission(mission).firstOrNull { it.eventType == "CUSTODY_TRANSFER" }
-            ?.let { DomainEvent.parseFrom(it.payloadBytes).custodyTransfer }
+        val receipt = orderedCustodyEvents(database.operationLogDao().forMission(mission)).firstOrNull()?.custodyTransfer
         return workflow(scenario(mission, receipt?.missionSnapshot?.toByteArray()?.takeIf { it.isNotEmpty() })).reconstructChain()
     }
     override fun tamperForDemo(code: String) = DeliveryOfferCodec().tamperRecipientForDemo(code, "tampered-recipient")
 
     private fun workflow(scenario: DeliveryScenario) = RoomProofOfDeliveryWorkflow(database, keys, scenario,
-        senderCredentialLookup = recipients::installedIdentity, receiptSink = receiptSink)
+        senderCredentialLookup = recipients::installedIdentity, receiptSink = receiptSink, receiptCredentialLookup = recipients::signingIdentity)
 
     private suspend fun activeProfile(permission: Permission): LocalDeviceProfile {
         val profile = requireNotNull(profiles) { "A local profile is required for custody actions" }.profile.first()
@@ -70,7 +80,7 @@ class OperationalProofOfDeliveryWorkflow(
         return profile
     }
 
-    private suspend fun scenario(missionId: String, pinnedSnapshot: ByteArray? = null): DeliveryScenario {
+    private suspend fun scenario(missionId: String, pinnedSnapshot: ByteArray? = null, leg: Int = 0): DeliveryScenario {
         val types = setOf("RELIEF_REQUEST_CREATED", "MISSION_FIELD_UPDATED", "CONFLICT_RESOLVED")
         val snapshot = if (pinnedSnapshot == null) MissionCustodySnapshot.newBuilder().addAllEventIds(
             database.operationLogDao().forMission(missionId).filter { it.eventType in types }.map { it.eventId }.sorted()).build()
@@ -83,25 +93,16 @@ class OperationalProofOfDeliveryWorkflow(
         }
         val creation = events.singleOrNull { it.hasReliefRequestCreated() } ?: throw MissingEventDependency("Mission creation has not arrived")
         val request = creation.reliefRequestCreated
-        val initial = mapOf(MissionField.DESTINATION to request.destinationNodeId,
-            MissionField.PRIORITY to request.cargoList.minOf { it.priorityValue }.toString(),
-            MissionField.MEDICAL_QUANTITY to request.cargoList.filter { it.itemCode in setOf("medicine", "ors", "blood") }.sumOf { it.quantity.toLong() }.toString())
-        val revisions = initial.map { (field, value) -> FieldRevision(creation.eventId, missionId, field, value, VectorClock(mapOf(request.requesterNodeId to 1)), creation.occurredAtUnixMs) }.toMutableList()
-        for (event in events) {
-            if (event.hasMissionFieldUpdated()) {
-                val update = event.missionFieldUpdated
-                revisions += FieldRevision(event.eventId, missionId, MissionField.valueOf(update.fieldCode), update.value.toStringUtf8(), update.vectorClock.toDomainClock(), event.occurredAtUnixMs)
-            } else if (event.hasConflictResolved()) {
-                val resolution = event.conflictResolved
-                val field = resolution.fieldCode.ifBlank { database.conflictDao().find(resolution.conflictId)?.fieldCode ?: throw MissingEventDependency("Resolution field unavailable") }
-                revisions += FieldRevision(event.eventId, missionId, MissionField.valueOf(field), resolution.selectedValue.toStringUtf8(), resolution.vectorClock.toDomainClock(), event.occurredAtUnixMs)
-            }
+        val normalized = events.map { event ->
+            if (event.hasConflictResolved() && event.conflictResolved.fieldCode.isBlank()) event.toBuilder().setConflictResolved(event.conflictResolved.toBuilder()
+                .setFieldCode(database.conflictDao().find(event.conflictResolved.conflictId)?.fieldCode ?: throw MissingEventDependency("Resolution field unavailable"))).build() else event
         }
-        val projection = revisions.groupBy { it.field }.mapValues { projectRevisions(it.value) }
-        require(projection.values.none { value -> value.conflicts.any { it.active } }) { "Resolve mission conflicts before custody" }
-        val destination = projection.getValue(MissionField.DESTINATION).revision.value
-        val sender = requireNotNull(recipients.installedIdentity(request.originNodeId))
-        val recipient = requireNotNull(recipients.installedIdentity(destination))
+        val projection = projectMissionVersion(normalized)
+        val destination = projection.getValue(MissionField.DESTINATION)
+        val path = projection[MissionField.CUSTODY_PATH]?.split(">") ?: listOf(request.originNodeId, destination)
+        require(path.first() == request.originNodeId && path.last() == destination && leg < path.lastIndex) { "Custody path complete or destination changed; review assignment" }
+        val sender = requireNotNull(recipients.installedIdentity(path[leg]))
+        val recipient = requireNotNull(recipients.installedIdentity(path[leg + 1]))
         // Signed immutable event IDs pin the exact cargo/destination revision even
         // when a receipt overtakes its prerequisites or later edits in the mesh.
         val commitment = Base64.getEncoder().encodeToString(snapshot.toByteArray())

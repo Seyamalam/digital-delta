@@ -15,6 +15,12 @@ because its engines compile. See [the follow-up review](artifacts/reports/code-r
 
 ## Status vocabulary
 
+The next software checkpoint adds signed pre-handoff driver paths, multi-leg
+receipts, retained-cargo reconciliation and historical public credential storage.
+These are not generalized post-handoff reassignment or physical recovery evidence.
+The fair phones are confirmed as standard 4 GB RAM devices; models and OS versions
+remain to be recorded. This does not change milestone acceptance levels.
+
 | Status | Meaning |
 |---|---|
 | Planned | Scope and acceptance criteria exist |

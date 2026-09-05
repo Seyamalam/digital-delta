@@ -34,6 +34,11 @@ data class FieldMission(
     val delivered: Boolean,
     val custodyNeedsReconciliation: Boolean,
     val canRecordPlan: Boolean,
+    val custodyPath: List<String>,
+    val custodian: String,
+    val canAssign: Boolean,
+    val pendingCustodyChanges: List<Pair<MissionField, String>>,
+    val pendingCustodyChangeIds: Set<String>,
 )
 
 @HiltViewModel
@@ -70,30 +75,47 @@ class MissionWorkspaceViewModel @Inject constructor(
             val event = DomainEvent.parseFrom(operation.payloadBytes)
             val request = event.reliefRequestCreated
             val missionHistory = history.filter { it.missionId == operation.missionId }
-            val receipt = missionHistory.firstOrNull { it.eventType == "CUSTODY_TRANSFER" }?.let { DomainEvent.parseFrom(it.payloadBytes).custodyTransfer }
+            val receipts = com.example.digitaldelta.domain.pod.orderedCustodyEvents(missionHistory)
+            val receipt = receipts.firstOrNull()?.custodyTransfer
             val pinnedIds = receipt?.let { runCatching { com.example.digitaldelta.proto.v1.MissionCustodySnapshot.parseFrom(it.missionSnapshot).eventIdsList.toSet() }.getOrDefault(emptySet()) }
             val fields = projections.filter { it.missionId == operation.missionId }.associateBy { it.fieldCode }
-            val destination = fields["DESTINATION"]?.value ?: request.destinationNodeId
-            val priority = CargoPriority.entries[((fields["PRIORITY"]?.value?.toIntOrNull() ?: request.cargoList.minOf { it.priorityValue }) - 1).coerceIn(0, 3)]
+            val values = if (pinnedIds == null) fields.mapValues { it.value.value } else projectMissionVersion(missionHistory.filter { it.eventId in pinnedIds }.map { DomainEvent.parseFrom(it.payloadBytes) }).mapKeys { it.key.name }
+            val destination = values["DESTINATION"] ?: request.destinationNodeId
+            val path = values["CUSTODY_PATH"]?.split(">") ?: listOf(request.originNodeId, destination)
+            val priority = CargoPriority.entries[((values["PRIORITY"]?.toIntOrNull() ?: request.cargoList.minOf { it.priorityValue }) - 1).coerceIn(0, 3)]
             val route = listOf(VehicleType.TRUCK, VehicleType.BOAT).mapNotNull { vehicle ->
                 runCatching { RoutePlanner().findRoute(graph, request.originNodeId, destination, vehicle) }.getOrNull()
             }.minByOrNull { it.totalMinutes }
             FieldMission(operation.missionId, request.originNodeId, destination, priority,
-                fields["MEDICAL_QUANTITY"]?.value ?: "—", fields.values.firstOrNull()?.convergenceHash.orEmpty(), event.simulated, route,
+                values["MEDICAL_QUANTITY"] ?: "—", fields.values.firstOrNull()?.convergenceHash.orEmpty(), event.simulated, route,
                 route?.let { TriageEngine().evaluate(priority, ((now - request.createdAtUnixMs).coerceAtLeast(0) / 60_000).coerceAtMost(Int.MAX_VALUE.toLong()).toInt(), it.totalMinutes) },
                 conflicts.filter { it.missionId == operation.missionId },
                 canEdit = receipt == null && active && (coordinator || event.actorIdentityId == profile.identityId || (profile.role == com.example.digitaldelta.proto.v1.IdentityRole.IDENTITY_ROLE_HOSPITAL && request.destinationNodeId == profile.nodeId)) && conflicts.none { it.missionId == operation.missionId },
                 canResolve = coordinator,
-                delivered = receipt != null,
-                custodyNeedsReconciliation = pinnedIds != null && missionHistory.any { it.eventType != "CUSTODY_TRANSFER" && it.eventId !in pinnedIds },
+                delivered = receipts.size >= path.lastIndex,
+                custodyNeedsReconciliation = com.example.digitaldelta.domain.pod.custodyNeedsReconciliation(missionHistory),
                 canRecordPlan = active && receipt == null && conflicts.none { it.missionId == operation.missionId } &&
-                    (profile.nodeId in request.participantNodeIdsList || profile.nodeId in setOf(request.requesterNodeId, request.originNodeId, request.destinationNodeId)))
+                    (profile.nodeId in request.participantNodeIdsList || profile.nodeId in setOf(request.requesterNodeId, request.originNodeId, request.destinationNodeId)),
+                custodyPath = path, custodian = path[receipts.size.coerceAtMost(path.lastIndex)],
+                canAssign = coordinator && receipt == null && conflicts.none { it.missionId == operation.missionId },
+                pendingCustodyChangeIds = com.example.digitaldelta.domain.pod.unreconciledCustodyChanges(missionHistory).map { it.eventId }.toSet(),
+                pendingCustodyChanges = com.example.digitaldelta.domain.pod.unreconciledCustodyChanges(missionHistory).mapNotNull { change ->
+                    when {
+                        change.hasMissionFieldUpdated() -> MissionField.valueOf(change.missionFieldUpdated.fieldCode) to change.missionFieldUpdated.value.toStringUtf8()
+                        change.hasConflictResolved() -> change.conflictResolved.let { resolution ->
+                            val code = resolution.fieldCode.ifBlank { database.conflictDao().find(resolution.conflictId)?.fieldCode.orEmpty() }
+                            MissionField.valueOf(code) to resolution.selectedValue.toStringUtf8()
+                        }
+                        else -> null
+                    }
+                })
         }
     }.flowOn(Dispatchers.IO).stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyList())
 
     fun edit(id: String, field: MissionField, value: String) = act { publisher.edit(id, field, value) }
     fun resolve(id: String, side: ConflictSide) = act { publisher.resolve(id, side) }
     fun recordPlan(id: String) = act { planRecorder.record(id); recordedPlan.value = id }
+    fun reconcile(id: String, reason: String, expectedChanges: Set<String>) = act { publisher.reconcile(id, reason, expectedChanges) }
     private fun act(action: suspend () -> Unit) {
         if (busy.value) return
         busy.value = true; failed.value = false

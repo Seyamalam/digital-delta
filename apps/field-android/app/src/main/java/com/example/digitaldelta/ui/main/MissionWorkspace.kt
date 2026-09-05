@@ -4,6 +4,8 @@ import android.content.res.Configuration
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
@@ -31,11 +33,14 @@ fun MissionWorkspace(language: String, model: MissionWorkspaceViewModel = viewMo
     var field by remember { mutableStateOf(MissionField.DESTINATION) }
     var value by remember { mutableStateOf("") }
     var menu by remember { mutableStateOf(false) }
+    var reconciling by remember { mutableStateOf<FieldMission?>(null) }
+    var reconciliationReason by remember { mutableStateOf("") }
     fun label(field: MissionField): String = localized.getString(when (field) {
         MissionField.DESTINATION -> R.string.mission_destination
         MissionField.PRIORITY -> R.string.mission_priority
         MissionField.MEDICAL_QUANTITY -> R.string.mission_quantity
         MissionField.DESCRIPTION -> R.string.mission_note
+        MissionField.CUSTODY_PATH -> R.string.mission_custody_path
     })
     LazyColumn(Modifier.fillMaxSize().testTag("field-missions"), contentPadding = PaddingValues(20.dp), verticalArrangement = Arrangement.spacedBy(16.dp)) {
         item {
@@ -51,7 +56,14 @@ fun MissionWorkspace(language: String, model: MissionWorkspaceViewModel = viewMo
                     Text(mission.id, style = MaterialTheme.typography.bodyMedium)
                     Text(localized.getString(if (mission.simulated) R.string.mission_simulated else R.string.mission_field_record))
                     if (mission.delivered) Text(localized.getString(R.string.mission_delivered), style = MaterialTheme.typography.titleMedium)
+                    Text(localized.getString(R.string.mission_current_custodian, mission.custodian), style = MaterialTheme.typography.titleMedium,
+                        modifier = Modifier.testTag("mission-custodian-${mission.id}"))
+                    Text("${localized.getString(R.string.mission_custody_path)}: ${mission.custodyPath.joinToString(" → ")}")
                     if (mission.custodyNeedsReconciliation) Text(localized.getString(R.string.mission_custody_reconcile), color = MaterialTheme.colorScheme.error)
+                    if (mission.custodyNeedsReconciliation && mission.canResolve) {
+                        OutlinedButton(onClick = { reconciling = mission; reconciliationReason = "" }, enabled = !busy,
+                            modifier = Modifier.fillMaxWidth().heightIn(min = 52.dp)) { Text(localized.getString(R.string.mission_reconcile_action)) }
+                    }
                     Text("${localized.getString(R.string.mission_quantity)}: ${mission.medicalQuantity}")
                     Text(localized.getString(R.string.mission_route_assumptions), color = MaterialTheme.colorScheme.onSurfaceVariant)
                     Text(mission.route?.let { "${it.edgeIds.joinToString(" → ")} · ${it.totalMinutes} ${localized.getString(R.string.mission_minutes)}" }
@@ -81,13 +93,31 @@ fun MissionWorkspace(language: String, model: MissionWorkspaceViewModel = viewMo
             text = { Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
                 Box {
                     OutlinedButton(onClick = { menu = true }) { Text(label(field)) }
-                    DropdownMenu(menu, { menu = false }) { MissionField.entries.forEach { option ->
+                    DropdownMenu(menu, { menu = false }) { MissionField.entries.filter { it != MissionField.CUSTODY_PATH || mission.canAssign }.forEach { option ->
                         DropdownMenuItem(text = { Text(label(option)) }, onClick = { field = option; value = ""; menu = false })
                     } }
                 }
                 OutlinedTextField(value, { value = it }, label = { Text(label(field)) }, modifier = Modifier.fillMaxWidth())
+                if (field == MissionField.CUSTODY_PATH) Text(localized.getString(R.string.mission_custody_path_help))
                 Text(localized.getString(R.string.mission_edit_help))
             } }, confirmButton = { TextButton(onClick = { model.edit(mission.id, field, value); editing = null }, enabled = value.isNotBlank() && !busy && missions.any { it.id == mission.id && it.canEdit }) { Text(localized.getString(R.string.mission_save)) } },
             dismissButton = { TextButton(onClick = { editing = null }) { Text(localized.getString(android.R.string.cancel)) } })
+    }
+    reconciling?.let { mission ->
+        AlertDialog(onDismissRequest = { if (!busy) reconciling = null },
+            title = { Text(localized.getString(R.string.mission_reconcile_action)) },
+            text = { Column(Modifier.verticalScroll(rememberScrollState()), verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                Text(localized.getString(R.string.mission_reconcile_help))
+                mission.pendingCustodyChanges.forEach { (changedField, changedValue) ->
+                    Text("${label(changedField)}: $changedValue", style = MaterialTheme.typography.bodyLarge)
+                }
+                OutlinedTextField(reconciliationReason, { reconciliationReason = it.take(1000) },
+                    label = { Text(localized.getString(R.string.mission_reconcile_reason)) }, modifier = Modifier.fillMaxWidth())
+            } },
+            confirmButton = { TextButton(onClick = { model.reconcile(mission.id, reconciliationReason, mission.pendingCustodyChangeIds); reconciling = null },
+                enabled = !busy && reconciliationReason.trim().length >= 8 && missions.any { it.id == mission.id && it.canResolve && it.custodyNeedsReconciliation }) {
+                Text(localized.getString(R.string.mission_reconcile_confirm))
+            } },
+            dismissButton = { TextButton(onClick = { reconciling = null }) { Text(localized.getString(android.R.string.cancel)) } })
     }
 }

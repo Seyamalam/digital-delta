@@ -136,6 +136,43 @@ class RecipientProvisioningRepositoryTest {
         }
     }
 
+    @Test
+    fun rotationKeepsHistoricalSignerAndLateRevocationCannotDisableReplacement() = runTest {
+        val issuer = rsaKeyPair()
+        val oldKey = rsaKeyPair()
+        val newKey = rsaKeyPair()
+        fun credential(version: Int, key: java.security.KeyPair, issuedAt: Long): ByteArray =
+            ProvisioningCredentialService().issue(IdentityProvisioningClaims.newBuilder()
+                .setCredentialId("credential-n6-$version").setIdentityId("hospital-operator-1")
+                .setNodeId("N6").setDisplayName("Habiganj Medical").setRole(IdentityRole.IDENTITY_ROLE_HOSPITAL)
+                .setEncryptionKeyId("n6-encryption-$version").setRsa2048EncryptionPublicKeyDer(ByteString.copyFrom(key.public.encoded))
+                .setSigningKeyId("n6-signing-$version").setRsa2048SigningPublicKeyDer(ByteString.copyFrom(key.public.encoded))
+                .setIssuedAtUnixMs(issuedAt).setExpiresAtUnixMs(10_000).setIssuerIdentityId("delta-admin-1").build(),
+                "admin-signing-1", issuer.private.encoded)
+        val original = credential(1, oldKey, 100)
+        val replacement = credential(2, newKey, 300)
+        val repository = RecipientProvisioningRepository(database.recipientKeyDao())
+        repository.accept(original, issuer.public.encoded, 200)
+        repository.accept(replacement, issuer.public.encoded, 400)
+        repository.accept(original, issuer.public.encoded, 500)
+        assertEquals("n6-signing-2", repository.installedIdentity("N6")?.signingKeyId)
+        assertEquals("n6-encryption-2", repository.accept(original, issuer.public.encoded, 500).keyId)
+        val historical = repository.signingIdentity("hospital-operator-1", "n6-signing-1", 200)
+        org.junit.Assert.assertArrayEquals(oldKey.public.encoded, historical?.signingPublicKeyDer)
+        assertNull(repository.signingIdentity("hospital-operator-1", "n6-signing-1", 99))
+        val revoked = CredentialRevocationService().issue(CredentialRevocationClaims.newBuilder()
+            .setRevocationId("revocation-n6-old").setCredentialId("credential-n6-1")
+            .setIdentityId("hospital-operator-1").setNodeId("N6").setRevokedAtUnixMs(250)
+            .setReasonCode("DEVICE_LOST").setIssuerIdentityId("delta-admin-1")
+            .setNonce(ByteString.copyFrom(ByteArray(16) { it.toByte() })).build(), "admin-signing-1", issuer.private.encoded)
+        repository.acceptRevocation(revoked, issuer.public.encoded, 600)
+        assertNull(repository.installedIdentity("N6")?.revokedAtUnixMs)
+        assertEquals(250L, repository.signingIdentity("hospital-operator-1", "n6-signing-1", 200)?.revokedAtUnixMs)
+        repository.accept(original, issuer.public.encoded, 700)
+        assertEquals("n6-signing-2", repository.installedIdentity("N6")?.signingKeyId)
+        assertEquals(250L, repository.signingIdentity("hospital-operator-1", "n6-signing-1", 400)?.revokedAtUnixMs)
+    }
+
     private fun rsaKeyPair() = KeyPairGenerator.getInstance("RSA").run {
         initialize(2048)
         generateKeyPair()

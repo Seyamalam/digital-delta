@@ -83,6 +83,56 @@ class IndependentFieldWorkflowTest {
         store.aliases().toList().filter { it.startsWith("$namespace-") }.forEach(store::deleteEntry)
     }
 
+    @Test fun assignedDriverSignsAnIntermediateHandoffAndCrossingEditsRequireCoordinatorReconciliation() = runTest {
+        val (hub, driver, hospital) = setupPhones()
+        val submitted = DefaultReliefRequestSubmission(RoomRequestPersistence(hub.db, applyLocalProjection = true), hub.protector,
+            envelopeSigner = hub.security).submit(ReliefRequestDraft(hub.profile.nodeId, "N1", hospital.profile.nodeId,
+            listOf(CargoDraft("medicine", 5, "pack")), PriorityClass.PRIORITY_CLASS_P0, false, "", hub.profile.identityId,
+            participantNodeIds = setOf(driver.profile.nodeId)))
+        hub.sendTo(driver, hospital); driver.apply(); hospital.apply()
+        hub.publisher.edit(submitted.requestId, MissionField.CUSTODY_PATH, "N1>RLY-01>N6")
+        hub.sendTo(driver, hospital); driver.apply(); hospital.apply()
+        fun custody(phone: Phone) = OperationalProofOfDeliveryWorkflow(phone.db, phone.keys, phone.recipients, phone.profiles,
+            selectedMissionId = { submitted.requestId }, receiptSink = phone.publisher::publishReceipt)
+        val offer = custody(hub).prepare()
+        assertEquals(driver.profile.identityId, offer.recipientIdentityId)
+        // This edit is made on the hub while the signed offer is being accepted elsewhere.
+        hub.publisher.edit(submitted.requestId, MissionField.MEDICAL_QUANTITY, "12")
+        assertTrue(custody(driver).verify(offer.qrCode) is DeliveryReceiptResult.Verified)
+        driver.sendTo(hub, hospital); assertEquals(1, hub.apply().applied); hospital.apply()
+        assertTrue(custodyNeedsReconciliation(hub.db.operationLogDao().forMission(submitted.requestId)))
+        hub.sendTo(driver, hospital); driver.apply(); hospital.apply()
+        assertTrue(runCatching { custody(driver).prepare() }.isFailure)
+        assertTrue(runCatching { driver.publisher.reconcile(submitted.requestId, "Keep the signed five packs; create a follow-up request for additional stock.") }.isFailure)
+        assertTrue(runCatching { hub.publisher.reconcile(submitted.requestId, "The dialog did not include the crossing edit.", emptySet()) }.isFailure)
+        hub.publisher.reconcile(submitted.requestId, "Keep the signed five packs; create a follow-up request for additional stock.")
+        hub.sendTo(driver, hospital); driver.apply(); hospital.apply()
+        assertFalse(custodyNeedsReconciliation(driver.db.operationLogDao().forMission(submitted.requestId)))
+        val second = custody(driver).prepare()
+        assertEquals(hospital.profile.identityId, second.recipientIdentityId)
+        assertArrayEquals(offer.payloadSha256, second.payloadSha256)
+        assertTrue(custody(hospital).verify(second.qrCode) is DeliveryReceiptResult.Verified)
+        hospital.sendTo(hub, driver); hub.apply(); driver.apply()
+        for (phone in listOf(hub, driver, hospital)) {
+            val chain = custody(phone).reconstructChain()
+            assertTrue(chain.valid); assertEquals(2, chain.receipts.size)
+            assertEquals(chain.receipts[0].recipientIdentityId, chain.receipts[1].senderIdentityId)
+            assertTrue(runCatching { custody(phone).prepare() }.isFailure)
+        }
+        val oldClaims = IdentityProvisioningCredential.parseFrom(hub.db.recipientKeyDao().findByNodeId(hub.profile.nodeId)!!.credentialBytes).claims
+        val replacementKeys = KeyPairGenerator.getInstance("RSA").apply { initialize(2048) }.generateKeyPair()
+        val replacement = ProvisioningCredentialService().issue(oldClaims.toBuilder()
+            .setCredentialId("replacement-hub-credential").setIssuedAtUnixMs(System.currentTimeMillis() - 1)
+            .setEncryptionKeyId("replacement-hub-encryption").setRsa2048EncryptionPublicKeyDer(ByteString.copyFrom(replacementKeys.public.encoded))
+            .setSigningKeyId("replacement-hub-signing").setRsa2048SigningPublicKeyDer(ByteString.copyFrom(replacementKeys.public.encoded)).build(),
+            "test-admin-key", issuer.private.encoded)
+        for (phone in listOf(hub, driver, hospital)) {
+            phone.recipients.accept(replacement, issuer.public.encoded)
+            assertEquals("replacement-hub-signing", phone.recipients.installedIdentity(hub.profile.nodeId)?.signingKeyId)
+            assertTrue(custody(phone).reconstructChain().valid)
+        }
+    }
+
     @Test fun recordedMissionPlanUsesAcceptedDestinationAndSurvivesOfflinePublication() = runTest {
         val (a, _, c) = setupPhones()
         val submitted = DefaultReliefRequestSubmission(RoomRequestPersistence(a.db, applyLocalProjection = true), a.protector,

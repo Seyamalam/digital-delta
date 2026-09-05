@@ -391,9 +391,26 @@ clinic N4 → coordinator N1 → hospital N6 workflow freezes its reader set at 
 Edits, resolutions and independently signed receipts fan out to those readers.
 Receipt versions pin a canonical set of immutable mission-event IDs; missing
 revisions remain retryable. Later edits cannot rewrite an earlier custody chain.
-Local post-delivery edits/offers are blocked; a concurrent edit crossing a receipt
-is retained with a bilingual reconciliation warning. This is one origin-to-destination
-handoff, not generalized driver assignment or arbitrary multi-hop custody.
+Before the first handoff, a coordinator can assign a two-to-eight-node custody path
+among frozen mission readers; intermediate nodes must have driver or coordinator
+credentials. Subsequent independently signed handoffs follow that path and preserve
+the first receipt's cargo/version commitment. Hash links, rather than disconnected
+phone timestamps, determine receipt order. Reassigning the path after custody begins
+is deliberately blocked; recovery requiring a different path is not implemented yet.
+
+A concurrent edit crossing a receipt is retained with a bilingual reconciliation
+warning. A coordinator can explicitly retain the signed cargo/path, with a reason
+and the exact reviewed revision IDs. New changes arriving while the dialog is open
+invalidate that confirmation. Reconciliation never modifies an existing receipt or
+claims that extra supplies were delivered; changed needs require a follow-up request.
+These records are signed Protobuf domain events and fan out to the frozen readers.
+
+Room schema 9 archives verified public credentials for historical receipt checks.
+An older credential replay cannot replace a newer active credential. Revocations
+target the exact archived credential, so revoking an old key does not revoke its
+replacement. A historical handoff must still satisfy authority at its signed time.
+No private keys are copied into the archive. Physical phone/key replacement and
+post-handoff lost-phone recovery are separate acceptance work.
 
 Optional headquarters publication uses the operation log as durable work and
 `observer_publications` as its per-destination receipt ledger (Room schema 8).

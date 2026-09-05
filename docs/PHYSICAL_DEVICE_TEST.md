@@ -4,6 +4,10 @@ Use this sheet on the exact phones that will go to the fair. Run the release APK
 
 ## Test inventory
 
+Confirmed target: standard **4 GB RAM Android phones**. Exact models and OS versions
+are still unknown. Measure app PSS and route latency on the actual phones; 4 GB of
+installed RAM does not establish compliance with the under-150 MB app target.
+
 | Role | Profile | Device model | Android version | Serial recorded privately | Battery at start |
 |---|---|---|---|---|---:|
 | Phone A, requester | N4 clinic |  |  |  |  |

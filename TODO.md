@@ -17,11 +17,13 @@ not a certified release. The current evidence and finding matrix are in
 - [x] Add durable optional Android request/plan publication with source-bound Hono authentication.
 - [x] Separate observer and exercise state; retain projections and reset across stream generations.
 - [x] Bound QR generation with a bilingual full-code fallback.
-- [ ] Add explicit post-delivery reconciliation and generalized custodian assignment.
+- [x] Implement signed pre-handoff driver paths and retained-cargo reconciliation, with independent-replica tests.
+- [ ] Verify the coordinator assignment/reconciliation dialogs live in both languages and support post-handoff reassignment recovery.
 - [ ] Connect received missions to operational fleet/preemption confirmation, not only local exercises.
 - [ ] Add general origin/destination selection, validated against the offline graph.
 - [ ] Add per-mission live routes/SLA state and mission selection to headquarters; its map currently shows the latest route observation.
-- [ ] Verify credential rotation with retained historical verification keys.
+- [x] Verify retained public-key history against existing multi-leg receipts after credential rotation in independent-replica tests.
+- [ ] Verify physical device replacement and encrypted backlog recovery; old private keys are not recoverable from the public archive.
 - [ ] Reconcile final pitch/report claims and screenshots with the newly integrated build.
 
 ## Documentation and decisions
@@ -32,6 +34,7 @@ not a certified release. The current evidence and finding matrix are in
 - [x] Create milestone, screenshot, demo, security, testing, and traceability plans.
 - [ ] Confirm Innovation Exhibitor acceptance, selected package, payment status, stall allocation, event date, booth rules, and any pitch duration. Touhidul Alam Seyam registered as an Innovation Exhibitor under BGC Trust University Bangladesh. The official site review is recorded in `docs/FAIR_SUBMISSION.md`, but organizer logistics still require the receipt or direct confirmation.
 - [ ] Record available Android phones, operating-system versions, laptops, and projector resolution.
+- [x] Record standard 4 GB RAM Android phones as the target; exact models/OS and measured performance remain pending.
 - [x] Confirm the implementation stack in `docs/DECISIONS.md`.
 - [x] Decide whether strict HackFusion gRPC transport compliance is a target for this fair build. DD-006 records gRPC for supported IP links and framed Protobuf for Nearby instead of making a false transport claim.
 - [x] Define measurable targets for latency, memory, battery, relay success, and load in `docs/ACCEPTANCE_TARGETS.md`.

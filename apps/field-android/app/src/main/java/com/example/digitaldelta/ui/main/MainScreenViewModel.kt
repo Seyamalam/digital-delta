@@ -541,7 +541,9 @@ class MainScreenViewModel @Inject constructor(
                     reasonCode = reasonCode,
                 )
             }.onSuccess { audit ->
-                mutableAuthorizationState.value = mutableAuthorizationState.value.copy(lastAudit = audit)
+                if (mutableAuthorizationState.value.subjectId == ready.localIdentityId) {
+                    mutableAuthorizationState.value = mutableAuthorizationState.value.copy(lastAudit = audit)
+                }
             }
         }
     }
@@ -560,6 +562,8 @@ class MainScreenViewModel @Inject constructor(
         mutableAuthorizationState.value = FieldAuthorizationUiState(
             role = role,
             permissions = permissions,
+            subjectId = ready?.localIdentityId,
+            lastAudit = mutableAuthorizationState.value.takeIf { it.subjectId == ready?.localIdentityId }?.lastAudit,
             denial = decision?.denialReason?.let { reason ->
                 AuthorizationDenial(Permission.INSPECT_AUDIT, reason.toAuthorizationFailure())
             },
@@ -723,6 +727,7 @@ data class FieldAuthorizationUiState(
     val permissions: Set<Permission> = emptySet(),
     val denial: AuthorizationDenial? = null,
     val lastAudit: AuthorizationAuditRecord? = null,
+    val subjectId: String? = null,
 ) {
     fun allows(permission: Permission): Boolean = permission in permissions
 }
